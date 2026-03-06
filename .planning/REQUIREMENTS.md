@@ -78,35 +78,35 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ESTR-01 | — | Pending |
-| ESTR-02 | — | Pending |
-| ESTR-03 | — | Pending |
-| GRAB-01 | — | Pending |
-| GRAB-02 | — | Pending |
-| GRAB-03 | — | Pending |
-| GRAB-04 | — | Pending |
-| TRAN-01 | — | Pending |
-| TRAN-02 | — | Pending |
-| TRAN-03 | — | Pending |
-| RESU-01 | — | Pending |
-| RESU-02 | — | Pending |
-| RESU-03 | — | Pending |
-| TICK-01 | — | Pending |
-| TICK-02 | — | Pending |
-| TICK-03 | — | Pending |
-| ADJU-01 | — | Pending |
-| ADJU-02 | — | Pending |
-| ADJU-03 | — | Pending |
-| UXPO-01 | — | Pending |
-| UXPO-02 | — | Pending |
-| UXPO-03 | — | Pending |
-| UXPO-04 | — | Pending |
+| ESTR-01 | Phase 1 | Pending |
+| ESTR-02 | Phase 1 | Pending |
+| ESTR-03 | Phase 1 | Pending |
+| GRAB-01 | Phase 2 | Pending |
+| GRAB-02 | Phase 5 | Pending |
+| GRAB-03 | Phase 5 | Pending |
+| GRAB-04 | Phase 2 | Pending |
+| TRAN-01 | Phase 2 | Pending |
+| TRAN-02 | Phase 2 | Pending |
+| TRAN-03 | Phase 2 | Pending |
+| RESU-01 | Phase 3 | Pending |
+| RESU-02 | Phase 3 | Pending |
+| RESU-03 | Phase 3 | Pending |
+| TICK-01 | Phase 4 | Pending |
+| TICK-02 | Phase 4 | Pending |
+| TICK-03 | Phase 4 | Pending |
+| ADJU-01 | Phase 4 | Pending |
+| ADJU-02 | Phase 4 | Pending |
+| ADJU-03 | Phase 4 | Pending |
+| UXPO-01 | Phase 5 | Pending |
+| UXPO-02 | Phase 5 | Pending |
+| UXPO-03 | Phase 5 | Pending |
+| UXPO-04 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-07*
-*Last updated: 2026-03-07 after initial definition*
+*Last updated: 2026-03-07 after roadmap creation*
