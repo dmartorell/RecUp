@@ -1,0 +1,112 @@
+# Requirements: BugShot
+
+**Defined:** 2026-03-07
+**Core Value:** El empleado graba, describe el problema hablando, y con un click tiene un ticket estructurado en ClickUp con toda la evidencia.
+
+## v1 Requirements
+
+### Estructura
+
+- [ ] **ESTR-01**: Proyecto Express sirve HTML/JS/CSS estatico con .env para credenciales
+- [ ] **ESTR-02**: Feature detection avisa si el navegador no es compatible (Chromium requerido)
+- [ ] **ESTR-03**: UI single-page con CSS moderno y estilo profesional
+
+### Grabacion
+
+- [ ] **GRAB-01**: Usuario puede grabar audio con MediaRecorder API
+- [ ] **GRAB-02**: Usuario puede grabar video (camara) con audio simultaneo
+- [ ] **GRAB-03**: Selector de modo en la UI: solo audio / video+audio
+- [ ] **GRAB-04**: Indicador visual de grabacion activa (duracion, estado)
+
+### Transcripcion
+
+- [ ] **TRAN-01**: Web Speech API transcribe durante la grabacion (es-ES)
+- [ ] **TRAN-02**: Transcripcion completa se muestra al parar la grabacion
+- [ ] **TRAN-03**: Auto-reinicio de SpeechRecognition en pausas de silencio
+
+### Resumen IA
+
+- [ ] **RESU-01**: Endpoint /api/summarize proxy a Claude API
+- [ ] **RESU-02**: Claude genera titulo + bullets estructurados a partir de la transcripcion
+- [ ] **RESU-03**: Usuario puede editar titulo y descripcion antes de crear ticket
+
+### Tickets
+
+- [ ] **TICK-01**: Endpoint /api/ticket proxy a ClickUp API para crear tareas
+- [ ] **TICK-02**: Modal con campos editables para crear el ticket
+- [ ] **TICK-03**: Confirmacion de exito con enlace al ticket creado
+
+### Adjuntos
+
+- [ ] **ADJU-01**: Usuario puede adjuntar fotos/videos desde galeria o camara
+- [ ] **ADJU-02**: Preview de archivos adjuntos antes de crear el ticket
+- [ ] **ADJU-03**: Endpoint /api/attachment sube archivos al ticket en ClickUp
+
+### UX Polish
+
+- [ ] **UXPO-01**: localStorage guarda campos del formulario entre sesiones
+- [ ] **UXPO-02**: Progress bar durante subida de archivos
+- [ ] **UXPO-03**: Retry automatico en errores de red
+- [ ] **UXPO-04**: Estados de carga claros en cada paso del flujo
+
+## v2 Requirements
+
+### Captura de Pantalla
+
+- **SCRN-01**: Grabacion de pantalla con Screen Capture API (solo desktop)
+- **SCRN-02**: Audio del microfono mezclado con captura de pantalla via WebAudio API
+- **SCRN-03**: Selector de modo ampliado: audio / video / pantalla
+
+### Infraestructura
+
+- **INFR-01**: Autenticacion de empleados
+- **INFR-02**: Hosting en produccion
+- **INFR-03**: Transcripcion en tiempo real visible durante grabacion
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| App movil nativa | Webapp first, movil via browser |
+| Chat en tiempo real | No es el caso de uso |
+| Whisper/transcripcion server-side | Web Speech API nativa suficiente para prototipo |
+| Almacenamiento externo de archivos | Subida directa a ClickUp, sin almacenamiento intermedio |
+| Dashboard o historial | Prototipo single-flow, sin persistencia de sesiones |
+| OAuth/SSO | Prototipo interno, acceso libre |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ESTR-01 | — | Pending |
+| ESTR-02 | — | Pending |
+| ESTR-03 | — | Pending |
+| GRAB-01 | — | Pending |
+| GRAB-02 | — | Pending |
+| GRAB-03 | — | Pending |
+| GRAB-04 | — | Pending |
+| TRAN-01 | — | Pending |
+| TRAN-02 | — | Pending |
+| TRAN-03 | — | Pending |
+| RESU-01 | — | Pending |
+| RESU-02 | — | Pending |
+| RESU-03 | — | Pending |
+| TICK-01 | — | Pending |
+| TICK-02 | — | Pending |
+| TICK-03 | — | Pending |
+| ADJU-01 | — | Pending |
+| ADJU-02 | — | Pending |
+| ADJU-03 | — | Pending |
+| UXPO-01 | — | Pending |
+| UXPO-02 | — | Pending |
+| UXPO-03 | — | Pending |
+| UXPO-04 | — | Pending |
+
+**Coverage:**
+- v1 requirements: 23 total
+- Mapped to phases: 0
+- Unmapped: 23
+
+---
+*Requirements defined: 2026-03-07*
+*Last updated: 2026-03-07 after initial definition*
