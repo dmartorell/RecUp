@@ -26,10 +26,10 @@ BugShot transforma grabaciones de audio/video en tickets estructurados de ClickU
   1. Al ejecutar `npm start`, el servidor arranca y sirve la pagina principal en localhost
   2. Si el usuario abre la app en Firefox o Safari, ve un mensaje claro indicando que necesita Chrome/Edge
   3. La UI tiene estructura single-page con aspecto profesional (layout, colores, tipografia coherentes)
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 01-01: TBD
+- [ ] 01-01-PLAN.md — Servidor Express + feature detection + UI feed con Tailwind
 
 ### Phase 2: Audio + Transcripcion
 **Goal**: El usuario puede grabar audio y obtener una transcripcion completa de lo que ha dicho
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Estructura del Proyecto | 0/? | Not started | - |
+| 1. Estructura del Proyecto | 0/1 | Planning complete | - |
 | 2. Audio + Transcripcion | 0/? | Not started | - |
 | 3. Resumen IA | 0/? | Not started | - |
 | 4. Tickets + Adjuntos | 0/? | Not started | - |
