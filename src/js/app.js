@@ -1,6 +1,7 @@
 import { requestMicAccess, getStream, startRecording, stopRecording } from './recorder.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
 import { initVisualizer, startVisualization, stopVisualization } from './visualizer.js';
+import { summarize } from './summarizer.js';
 
 function isBrowserCompatible() {
   return !!window.chrome;
@@ -92,20 +93,55 @@ function createCard(transcript, audioBlob, duration) {
   const card = document.createElement('div');
   card.className = 'card';
 
-  let text = transcript.trim() || 'No se pudo transcribir este audio.';
-  if (text && !text.endsWith('.') && !text.endsWith('?') && !text.endsWith('!')) {
-    text += '.';
-  }
+  const rawText = transcript.trim();
   const durationStr = formatDuration(duration);
   const timestamp = new Date().toLocaleTimeString('es-ES');
 
+  card.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
+
+  if (!rawText) {
+    card.innerHTML = `
+      <div class="card-header">
+        <div class="card-badges">
+          <span class="badge badge-audio">Audio</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="card-time">${timestamp} · ${durationStr}</span>
+          <button class="card-delete" aria-label="Eliminar">&times;</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="card-text">No se detecto voz. Intenta grabar de nuevo.</p>
+      </div>
+    `;
+    card.querySelector('.card-delete').addEventListener('click', () => {
+      card.remove();
+      updateEmptyState();
+    });
+    feed.prepend(card);
+    updateEmptyState();
+    return;
+  }
+
+  let displayText = rawText;
+  if (!displayText.endsWith('.') && !displayText.endsWith('?') && !displayText.endsWith('!')) {
+    displayText += '.';
+  }
+
   card.innerHTML = `
     <div class="card-header">
-      <span class="card-time">${timestamp} · ${durationStr}</span>
-      <button class="card-delete" aria-label="Eliminar">&times;</button>
+      <div class="card-badges">
+        <span class="badge badge-audio">Audio</span>
+        <span class="badge badge-processing js-status-badge">Processing</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="card-time">${timestamp} · ${durationStr}</span>
+        <button class="card-delete" aria-label="Eliminar">&times;</button>
+      </div>
     </div>
     <div class="card-body">
-      <p class="card-text">${text}</p>
+      <p class="card-text">${displayText}</p>
+      <div class="card-spinner js-spinner"></div>
     </div>
   `;
 
@@ -114,10 +150,75 @@ function createCard(transcript, audioBlob, duration) {
     updateEmptyState();
   });
 
-  card.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
-
   feed.prepend(card);
   updateEmptyState();
+
+  runSummarize(card, rawText);
+}
+
+function runSummarize(card, rawText) {
+  summarize(rawText).then((result) => {
+    const badge = card.querySelector('.js-status-badge');
+    badge.textContent = 'Completed';
+    badge.className = 'badge badge-completed js-status-badge';
+
+    const spinner = card.querySelector('.js-spinner');
+    if (spinner) spinner.remove();
+
+    const body = card.querySelector('.card-body');
+
+    const title = document.createElement('h3');
+    title.className = 'card-title';
+    title.textContent = result.title;
+    body.insertBefore(title, body.firstChild);
+
+    const textEl = card.querySelector('.card-text');
+    textEl.textContent = result.transcript;
+
+    const bullets = document.createElement('ul');
+    bullets.className = 'card-bullets';
+    result.bullets.forEach((b) => {
+      const li = document.createElement('li');
+      li.textContent = b;
+      bullets.appendChild(li);
+    });
+    body.appendChild(bullets);
+
+    const footer = document.createElement('div');
+    footer.className = 'card-footer';
+    footer.innerHTML = `<button class="btn-create-ticket" disabled>Crear Ticket</button>`;
+    card.appendChild(footer);
+
+    card.dataset.summaryTitle = result.title;
+    card.dataset.summaryTranscript = result.transcript;
+    card.dataset.summaryBullets = JSON.stringify(result.bullets);
+  }).catch((err) => {
+    const badge = card.querySelector('.js-status-badge');
+    badge.textContent = 'Error';
+    badge.className = 'badge badge-error js-status-badge';
+
+    const spinner = card.querySelector('.js-spinner');
+    if (spinner) spinner.remove();
+
+    const body = card.querySelector('.card-body');
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn-retry';
+    retryBtn.textContent = 'Reintentar';
+    retryBtn.addEventListener('click', () => {
+      badge.textContent = 'Processing';
+      badge.className = 'badge badge-processing js-status-badge';
+
+      const newSpinner = document.createElement('div');
+      newSpinner.className = 'card-spinner js-spinner';
+      body.appendChild(newSpinner);
+
+      retryBtn.remove();
+      runSummarize(card, rawText);
+    });
+    body.appendChild(retryBtn);
+
+    showToast('Error al resumir: ' + err.message);
+  });
 }
 
 function updateEmptyState() {
