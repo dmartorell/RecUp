@@ -24,36 +24,27 @@ const attachmentError = document.getElementById('attachment-error');
 const modalError = document.getElementById('ticket-modal-error');
 const appBadges = document.querySelectorAll('#app-badges .badge-app');
 const platformBadges = document.querySelectorAll('#platform-badges .badge-platform');
-const warningModal = document.getElementById('warning-modal');
-const warningMissingList = document.getElementById('warning-missing-list');
-const warningBackBtn = document.getElementById('warning-back-btn');
-const warningSendBtn = document.getElementById('warning-send-btn');
+const missingBanner = document.getElementById('missing-fields-banner');
+const missingList = document.getElementById('missing-fields-list');
+const missingCompleteBtn = document.getElementById('missing-fields-complete-btn');
 let selectedApp = 'alfred';
 let selectedPlatform = 'iOS';
 
 appBadges.forEach(btn => {
   btn.addEventListener('click', () => {
-    if (btn.classList.contains('selected')) {
-      btn.classList.remove('selected');
-      selectedApp = '';
-    } else {
-      appBadges.forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedApp = btn.dataset.app;
-    }
+    if (btn.classList.contains('selected')) return;
+    appBadges.forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedApp = btn.dataset.app;
   });
 });
 
 platformBadges.forEach(btn => {
   btn.addEventListener('click', () => {
-    if (btn.classList.contains('selected')) {
-      btn.classList.remove('selected');
-      selectedPlatform = '';
-    } else {
-      platformBadges.forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedPlatform = btn.dataset.platform;
-    }
+    if (btn.classList.contains('selected')) return;
+    platformBadges.forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedPlatform = btn.dataset.platform;
   });
 });
 
@@ -80,11 +71,11 @@ function showAttachmentError(msg) {
 
 function showModalError(msg) {
   modalError.textContent = msg;
-  modalError.classList.remove('hidden');
+  modalError.classList.remove('invisible');
 }
 
 function hideModalError() {
-  modalError.classList.add('hidden');
+  modalError.classList.add('invisible');
   modalError.textContent = '';
 }
 
@@ -100,7 +91,7 @@ function closeModal() {
   assetIdInput.value = '';
   appVersionInput.value = '';
   submitBtn.disabled = false;
-  submitBtn.textContent = 'Crear Ticket';
+  submitBtn.textContent = 'Crear ticket';
   resetProgress();
   hideModalError();
   attachmentError.classList.add('invisible');
@@ -111,6 +102,8 @@ function closeModal() {
   currentCardElement = null;
   currentTranscript = '';
   createdTaskId = null;
+  hideMissingBanner();
+  bannerShown = false;
 
   const retryBtn = modal.querySelector('.btn-retry-attachments');
   if (retryBtn) retryBtn.remove();
@@ -157,7 +150,7 @@ async function openCamera() {
     cameraViewfinder.srcObject = cameraStream;
     cameraOverlay.classList.remove('hidden');
   } catch {
-    showAttachmentError('Camara sin permisos.');
+    showAttachmentError('Cámara sin permisos.');
   }
 }
 
@@ -197,6 +190,25 @@ cameraCancelBtn.addEventListener('click', closeCamera);
 closeBtn.addEventListener('click', closeModal);
 cancelBtn.addEventListener('click', closeModal);
 
+modal.addEventListener('focusin', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (bannerShown) {
+      hideMissingBanner();
+      bannerShown = false;
+    }
+    hideModalError();
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!cameraOverlay.classList.contains('hidden')) {
+    closeCamera();
+  } else if (!modal.classList.contains('hidden')) {
+    closeModal();
+  }
+});
+
 
 async function uploadAttachments(taskId, files) {
   const formData = new FormData();
@@ -205,7 +217,7 @@ async function uploadAttachments(taskId, files) {
 
   const res = await fetch('/api/attachment', { method: 'POST', body: formData });
   const data = await res.json();
-  if (!res.ok) throw { partial: data.uploaded > 0, data };
+  if (!res.ok) throw { partial: data.uploaded.length > 0, data };
   return data;
 }
 
@@ -220,35 +232,47 @@ function getMissingFields() {
   const missing = [];
   if (!selectedApp) missing.push('App');
   if (!selectedPlatform) missing.push('Plataforma');
-  if (!appVersionInput.value.trim()) missing.push('Version de la app');
+  if (!appVersionInput.value.trim()) missing.push('Versión de la app');
   if (!assetIdInput.value.trim()) missing.push('Asset ID');
   return missing;
 }
 
-function showWarningModal(fields) {
-  warningMissingList.innerHTML = '';
+function showMissingBanner(fields) {
+  missingList.innerHTML = '';
   fields.forEach(f => {
     const li = document.createElement('li');
     li.textContent = f;
-    warningMissingList.appendChild(li);
+    missingList.appendChild(li);
   });
-  warningModal.classList.remove('hidden');
+  missingBanner.classList.remove('hidden');
+  const panel = modal.querySelector('.modal-panel');
+  panel.scrollTo({ top: panel.scrollHeight, behavior: 'smooth' });
+  submitBtn.textContent = 'Crear ticket';
+  submitBtn.classList.remove('bg-accent', 'hover:bg-accent-hover');
+  submitBtn.classList.add('bg-amber-500', 'hover:bg-amber-600');
 }
 
-function hideWarningModal() {
-  warningModal.classList.add('hidden');
+function hideMissingBanner() {
+  missingBanner.classList.add('hidden');
+  submitBtn.textContent = 'Crear ticket';
+  submitBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+  submitBtn.classList.add('bg-accent', 'hover:bg-accent-hover');
 }
 
 async function executeSubmit() {
+  hideMissingBanner();
+  bannerShown = false;
   const name = titleInput.value.trim();
   submitBtn.disabled = true;
   hideModalError();
   setProgress(10);
 
+  const selectedBadge = modal.querySelector('#app-badges .badge-app.selected');
+  const selectedAppLabel = selectedBadge ? selectedBadge.textContent.trim() : '';
   const bullets = descriptionEl.value;
   let markdownDescription = bullets;
   if (currentTranscript) {
-    markdownDescription += '\n\n---\n\n**Transcripcion completa:**\n\n' + currentTranscript;
+    markdownDescription += '\n\n---\n\n**Transcripción completa:**\n\n' + currentTranscript;
   }
 
   try {
@@ -261,12 +285,17 @@ async function executeSubmit() {
         reporterEmail: getLoggedEmail(),
         assetId: assetIdInput.value.trim(),
         platform: selectedPlatform,
-        appVersion: appVersionInput.value.trim()
+        appVersion: [appVersionInput.value.trim(), selectedAppLabel].filter(Boolean).join(' ')
       })
     });
 
     if (!ticketRes.ok) {
       const err = await ticketRes.json().catch(() => ({}));
+      if (err.error === 'no_member') {
+        closeModal();
+        showToastHtml('<strong>Error</strong><br>Comunícate con el gestor de ClickUp en Alfred Smart.');
+        return;
+      }
       const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || 'Error al crear el ticket');
       throw new Error(msg);
     }
@@ -308,7 +337,7 @@ async function executeSubmit() {
         modalError.after(retryBtn);
 
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Crear Ticket';
+        submitBtn.textContent = 'Crear ticket';
         return;
       }
     }
@@ -335,27 +364,34 @@ async function executeSubmit() {
   }
 }
 
+let bannerShown = false;
+
 submitBtn.addEventListener('click', () => {
   const name = titleInput.value.trim();
   if (!name) {
-    showModalError('El titulo es obligatorio.');
+    showModalError('El título es obligatorio.');
     return;
   }
 
   const missingFields = getMissingFields();
-  if (missingFields.length > 0) {
-    showWarningModal(missingFields);
+  if (missingFields.length > 0 && !bannerShown) {
+    showMissingBanner(missingFields);
+    bannerShown = true;
     return;
   }
 
   executeSubmit();
 });
 
-warningBackBtn.addEventListener('click', hideWarningModal);
-
-warningSendBtn.addEventListener('click', () => {
-  hideWarningModal();
-  executeSubmit();
+missingCompleteBtn.addEventListener('click', () => {
+  hideMissingBanner();
+  bannerShown = false;
+  const firstEmpty = !selectedApp ? appBadges[0]
+    : !selectedPlatform ? platformBadges[0]
+    : !appVersionInput.value.trim() ? appVersionInput
+    : assetIdInput;
+  firstEmpty.focus();
+  firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
 function markCardAsSent(ticketUrl) {
@@ -373,6 +409,17 @@ function markCardAsSent(ticketUrl) {
       <a href="${ticketUrl}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket en ClickUp</a>
     `;
   }
+}
+
+function showToastHtml(html) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = html;
+  document.getElementById('toast-container').appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-fade-out');
+    toast.addEventListener('transitionend', () => toast.remove());
+  }, 6000);
 }
 
 function showToast(message) {
