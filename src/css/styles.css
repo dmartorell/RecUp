@@ -198,6 +198,17 @@ body {
   color: #fff;
 }
 
+.badge-platform {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.badge-platform.selected {
+  background-color: #4b5563;
+  color: #fff;
+}
+
 .card-badges {
   display: flex;
   gap: 6px;
@@ -383,4 +394,8 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+#warning-modal {
+  z-index: 55;
 }
