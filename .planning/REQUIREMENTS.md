@@ -7,9 +7,9 @@
 
 ### Estructura
 
-- [ ] **ESTR-01**: Proyecto Express sirve HTML/JS/CSS estatico con .env para credenciales
-- [ ] **ESTR-02**: Feature detection avisa si el navegador no es compatible (Chromium requerido)
-- [ ] **ESTR-03**: UI single-page con CSS moderno y estilo profesional
+- [x] **ESTR-01**: Proyecto Express sirve HTML/JS/CSS estatico con .env para credenciales
+- [x] **ESTR-02**: Feature detection avisa si el navegador no es compatible (Chromium requerido)
+- [x] **ESTR-03**: UI single-page con CSS moderno y estilo profesional
 
 ### Grabacion
 
@@ -78,9 +78,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ESTR-01 | Phase 1 | Pending |
-| ESTR-02 | Phase 1 | Pending |
-| ESTR-03 | Phase 1 | Pending |
+| ESTR-01 | Phase 1 | Complete |
+| ESTR-02 | Phase 1 | Complete |
+| ESTR-03 | Phase 1 | Complete |
 | GRAB-01 | Phase 2 | Pending |
 | GRAB-02 | Phase 5 | Pending |
 | GRAB-03 | Phase 5 | Pending |
