@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** El empleado graba, describe el problema hablando, y con un click tiene un ticket estructurado en ClickUp con toda la evidencia.
-**Current focus:** Phase 2 - Audio + Transcripcion
+**Current focus:** Phase 3 - Resumen IA
 
 ## Current Position
 
-Phase: 2 of 5 (Audio + Transcripcion)
-Plan: 2 of 2 in current phase
-Status: Phase 02 complete (UAT passed)
-Last activity: 2026-03-07 — Plan 02-02 verified (human checkpoint)
+Phase: 3 of 5 (Resumen IA)
+Plan: 1 of 1 in current phase
+Status: Phase 03 complete
+Last activity: 2026-03-07 — Plan 03-01 executed
 
-Progress: [██████░░░░] 60%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 3min
-- Total execution time: 0.10 hours
+- Total execution time: 0.13 hours
 
 **By Phase:**
 
@@ -42,10 +42,11 @@ Progress: [██████░░░░] 60%
 |-------|-------|-------|----------|
 | 01-estructura | 1 | 4min | 4min |
 | 02-audio-transcripcion | 2 | 2min | 1min |
+| 03-resumen-ia | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 02-01 (2min), 02-02 (UAT)
-- Trend: improving
+- Last 5 plans: 01-01 (4min), 02-01 (2min), 02-02 (UAT), 03-01 (2min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -68,6 +69,9 @@ Recent decisions affecting current work:
 - AudioContext se crea tras click del usuario (autoplay policy)
 - stopTranscription debe ser async (esperar onend antes de leer transcript)
 - Punto final automatico en transcripciones (puntuacion delegada a Claude en fase 3)
+- System prompt con instruccion de JSON puro para parseo fiable de respuestas Claude
+- AbortController con timeout 30s para requests a Claude API
+- Datos del resumen guardados en card.dataset para reutilizar en fase 4
 
 ### Pending Todos
 
@@ -81,5 +85,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Phase 02 complete — all plans executed, UAT passed
+Stopped at: Phase 03 complete — plan 03-01 executed
 Resume file: None

@@ -26,8 +26,8 @@
 
 ### Resumen IA
 
-- [ ] **RESU-01**: Endpoint /api/summarize proxy a Claude API
-- [ ] **RESU-02**: Claude genera titulo + bullets estructurados a partir de la transcripcion
+- [x] **RESU-01**: Endpoint /api/summarize proxy a Claude API
+- [x] **RESU-02**: Claude genera titulo + bullets estructurados a partir de la transcripcion
 - [ ] **RESU-03**: Usuario puede editar titulo y descripcion antes de crear ticket
 
 ### Tickets
@@ -88,8 +88,8 @@
 | TRAN-01 | Phase 2 | Complete |
 | TRAN-02 | Phase 2 | Complete |
 | TRAN-03 | Phase 2 | Complete |
-| RESU-01 | Phase 3 | Pending |
-| RESU-02 | Phase 3 | Pending |
+| RESU-01 | Phase 3 | Complete |
+| RESU-02 | Phase 3 | Complete |
 | RESU-03 | Phase 3 | Pending |
 | TICK-01 | Phase 4 | Pending |
 | TICK-02 | Phase 4 | Pending |
