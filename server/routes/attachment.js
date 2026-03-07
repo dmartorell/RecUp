@@ -35,8 +35,9 @@ router.post('/api/attachment', upload.array('attachment', 5), async (req, res) =
     );
 
     try {
+      const capturaFieldId = '567894b1-a0bf-4ae5-926d-5e0a4d55a982';
       const response = await fetch(
-        `https://api.clickup.com/api/v2/task/${taskId}/attachment`,
+        `https://api.clickup.com/api/v2/task/${taskId}/attachment?custom_field_id=${capturaFieldId}`,
         {
           method: 'POST',
           headers: { 'Authorization': apiKey },
