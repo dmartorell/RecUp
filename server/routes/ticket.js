@@ -39,14 +39,14 @@ router.post('/api/ticket', async (req, res) => {
         name: name.trim(),
         markdown_description: finalDescription,
         priority: 3,
-        status: 'to do',
       }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data });
+      const msg = data?.err || data?.error || data?.message || JSON.stringify(data);
+      return res.status(response.status).json({ error: typeof msg === 'string' ? msg : JSON.stringify(msg) });
     }
 
     return res.json({ id: data.id, url: data.url });

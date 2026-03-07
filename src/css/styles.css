@@ -49,7 +49,7 @@ body {
 .card {
   background: white;
   border-radius: 12px;
-  padding: 16px;
+  padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: box-shadow 200ms ease;
 }
@@ -62,7 +62,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .card-time {
@@ -186,7 +186,7 @@ body {
 .card-bullets {
   list-style: disc;
   padding-left: 20px;
-  margin: 8px 0 0 0;
+  margin: 12px 0 0 0;
   color: #1f2937;
   font-size: 0.95rem;
   line-height: 1.6;
@@ -197,12 +197,15 @@ body {
 }
 
 .card-footer {
-  margin-top: 12px;
-  padding-top: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
   border-top: 1px solid #e5e7eb;
 }
 
 .btn-create-ticket {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background-color: #2563eb;
   color: white;
   padding: 8px 16px;
@@ -215,7 +218,8 @@ body {
 }
 
 .btn-create-ticket:hover {
-  background-color: #1d4ed8;
+  background-color: #1e40af;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .btn-create-ticket:disabled {
