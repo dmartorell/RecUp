@@ -71,8 +71,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Endpoints proxy /api/ticket y /api/attachment para ClickUp API
-- [ ] 04-02-PLAN.md — Modal de creacion de ticket con adjuntos, preview, y flujo completo de envio
+- [x] 04-01-PLAN.md — Endpoints proxy /api/ticket y /api/attachment para ClickUp API
+- [x] 04-02-PLAN.md — Modal de creacion de ticket con adjuntos, preview, y flujo completo de envio
 
 ### Phase 5: Video + UX Polish
 **Goal**: El usuario puede grabar video con camara ademas de audio, y la experiencia general es fluida y resistente a errores
@@ -99,5 +99,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Estructura del Proyecto | 1/1 | Complete | 2026-03-07 |
 | 2. Audio + Transcripcion | 1/2 | In progress | - |
 | 3. Resumen IA | 0/1 | Not started | - |
-| 4. Tickets + Adjuntos | 0/2 | Not started | - |
+| 4. Tickets + Adjuntos | 2/2 | Complete | 2026-03-07 |
 | 5. Video + UX Polish | 0/? | Not started | - |
