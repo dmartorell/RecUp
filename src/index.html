@@ -1,211 +1,520 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bugshot</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bugshot</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <style type="text/tailwindcss">
-    @theme {
-      --color-accent: #2563eb;
-      --color-accent-hover: #1e40af;
-      --font-sans: 'Inter', sans-serif;
-    }
-  </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-accent: #2563eb;
+        --color-accent-hover: #1e40af;
+        --font-sans: "Inter", sans-serif;
+      }
+    </style>
 
-  <link rel="stylesheet" href="css/styles.css">
-</head>
-<body class="bg-[#f5f5f5] font-sans h-screen flex flex-col overflow-hidden" style="color:var(--color-text)">
-
-  <div id="unsupported" style="display:none; position:fixed; inset:0; background:#fff; z-index:9999; justify-content:center; align-items:center; flex-direction:column; padding:2rem; text-align:center;">
-    <div style="max-width:420px;">
-      <svg style="width:64px; height:64px; margin:0 auto 1.5rem; color:#d1d5db;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-      </svg>
-      <h1 style="font-size:1.5rem; font-weight:600; margin:0 0 0.75rem; color:var(--color-text);">Navegador no compatible</h1>
-      <p style="font-size:1rem; line-height:1.6; color:#666; margin:0 0 1.5rem;">Bugshot necesita APIs que solo están disponibles en navegadores basados en Chromium. Por favor, usa Chrome o Edge.</p>
-      <a href="https://www.google.com/chrome/" style="display:inline-block; background:#2563eb; color:#fff; padding:0.75rem 1.5rem; border-radius:8px; text-decoration:none; font-weight:500; font-size:0.95rem;">Descargar Chrome</a>
-    </div>
-  </div>
-
-  <div id="login-screen" class="hidden fixed inset-0 z-[70] bg-[#f5f5f5] flex items-center justify-center">
-    <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm mx-4 p-8">
-      <h1 class="text-xl font-semibold text-[var(--color-text)] mb-1">Bugshot</h1>
-      <p class="text-sm text-gray-400 mb-6">Inicia sesion para continuar</p>
-      <div class="space-y-4">
-        <div>
-          <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input type="email" id="login-email" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent" placeholder="tu@alfredsmart.com">
-        </div>
-        <div>
-          <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input type="password" id="login-password" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
-        </div>
-        <p id="login-error" class="text-sm text-red-600 hidden"></p>
-        <button id="login-btn" type="button" class="w-full px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer">Entrar</button>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body
+    class="bg-[#f5f5f5] font-sans h-screen flex flex-col overflow-hidden"
+    style="color: var(--color-text)"
+  >
+    <div
+      id="unsupported"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #fff;
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        padding: 2rem;
+        text-align: center;
+      "
+    >
+      <div style="max-width: 420px">
+        <svg
+          style="
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            color: #d1d5db;
+          "
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+          />
+        </svg>
+        <h1
+          style="
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0 0 0.75rem;
+            color: var(--color-text);
+          "
+        >
+          Navegador no compatible
+        </h1>
+        <p
+          style="
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #666;
+            margin: 0 0 1.5rem;
+          "
+        >
+          Bugshot necesita APIs que solo están disponibles en navegadores
+          basados en Chromium. Por favor, usa Chrome o Edge.
+        </p>
+        <a
+          href="https://www.google.com/chrome/"
+          style="
+            display: inline-block;
+            background: #2563eb;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+          "
+          >Descargar Chrome</a
+        >
       </div>
     </div>
-  </div>
 
-  <div id="app" class="flex flex-col flex-1 overflow-hidden">
-    <header class="fixed top-0 left-0 right-0 z-40 border-b border-gray-200/50 backdrop-blur-xl bg-white/20">
-      <div class="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between">
-        <h1 class="text-xl font-semibold text-[var(--color-text)]">Bugshot</h1>
-        <div id="user-avatar" class="hidden flex items-center gap-2 cursor-pointer" title="Cerrar sesion">
-          <span id="avatar-email" class="text-xs text-gray-400 hidden sm:inline"></span>
-          <div class="w-6 h-6 rounded-full bg-gray-300 text-gray-500 flex items-center justify-center">
-            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+    <div
+      id="login-screen"
+      class="hidden fixed inset-0 z-[70] bg-[#f5f5f5] flex items-center justify-center"
+    >
+      <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm mx-4 p-8">
+        <h1 class="text-xl font-semibold text-[var(--color-text)] mb-1">
+          Bugshot
+        </h1>
+        <p class="text-sm text-gray-400 mb-6">Inicia sesión</p>
+        <div class="space-y-4">
+          <div>
+            <label
+              for="login-email"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Email</label
+            >
+            <input
+              type="email"
+              id="login-email"
+              class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              placeholder="tu@alfredsmart.com"
+            />
           </div>
+          <div>
+            <label
+              for="login-password"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Password</label
+            >
+            <input
+              type="password"
+              id="login-password"
+              class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            />
+          </div>
+          <p id="login-error" class="text-sm text-red-600 hidden"></p>
+          <button
+            id="login-btn"
+            type="button"
+            class="w-full px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
+          >
+            Entrar
+          </button>
         </div>
       </div>
-    </header>
+    </div>
 
-    <main class="mx-auto max-w-3xl w-full px-4 pt-24 pb-32 flex-1 overflow-y-auto">
-
-      <div id="empty-state" class="hidden flex flex-col items-center justify-center py-24">
-        <img src="img/bug.png" alt="Bug" class="w-[220px] mb-4">
-        <p class="text-lg font-medium text-gray-600">No tienes audios reportados</p>
-        <p class="text-sm text-gray-400 mt-1">Pulsa el botón para empezar</p>
-      </div>
-
-      <div id="feed" class="space-y-4"></div>
-
-
-    </main>
-
-    <section id="recording-section" class="fixed bottom-0 left-0 right-0 py-4 backdrop-blur-xl bg-white/20 z-40 border-t border-gray-200/50">
-      <div class="mx-auto max-w-3xl px-4 flex items-center justify-center relative">
-        <button id="clear-all-btn" class="hidden absolute left-4 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" aria-label="Limpiar todo">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
-          </svg>
-        </button>
-        <button id="record-btn" class="w-[72px] h-[72px] rounded-full bg-accent hover:bg-accent-hover text-white flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-0">
-          <svg id="mic-icon" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"/>
-          </svg>
-          <div id="recording-ui" class="hidden flex flex-col items-center">
-            <div class="flex items-center gap-1 h-7">
-              <div class="waveform-bar"></div>
-              <div class="waveform-bar"></div>
+    <div id="app" class="flex flex-col flex-1 overflow-hidden">
+      <header
+        class="fixed top-0 left-0 right-0 z-40 border-b border-gray-200/50 backdrop-blur-xl bg-white/20"
+      >
+        <div
+          class="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between"
+        >
+          <h1 class="text-xl font-semibold text-[var(--color-text)]">
+            Bugshot
+          </h1>
+          <div
+            id="user-avatar"
+            class="hidden flex items-center gap-2 cursor-pointer"
+            title="Cerrar sesión"
+          >
+            <span
+              id="avatar-email"
+              class="text-xs text-gray-400 hidden sm:inline"
+            ></span>
+            <div
+              class="w-6 h-6 rounded-full bg-gray-300 text-gray-500 flex items-center justify-center"
+            >
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fill-rule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clip-rule="evenodd"
+                />
+              </svg>
             </div>
-            <span id="timer" class="font-mono text-sm text-white/90 leading-none">00:00</span>
           </div>
+        </div>
+      </header>
+
+      <main
+        class="mx-auto max-w-3xl w-full px-4 pt-24 pb-32 flex-1 overflow-y-auto"
+      >
+        <div
+          id="empty-state"
+          class="hidden flex flex-col items-center justify-center py-24"
+        >
+          <img src="img/bug.png" alt="Bug" class="w-[220px] mb-4" />
+          <p class="text-lg font-medium text-gray-600">Sin registros</p>
+          <p class="text-sm text-gray-400 mt-1">
+            Envía un audio y cuéntanos qué está fallando
+          </p>
+        </div>
+
+        <div id="feed" class="space-y-4"></div>
+      </main>
+
+      <section
+        id="recording-section"
+        class="fixed bottom-0 left-0 right-0 py-4 backdrop-blur-xl bg-white/20 z-40 border-t border-gray-200/50"
+      >
+        <div
+          class="mx-auto max-w-3xl px-4 flex items-center justify-center relative"
+        >
+          <button
+            id="clear-all-btn"
+            class="hidden absolute left-4 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+            aria-label="Limpiar todo"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+              />
+            </svg>
+          </button>
+          <button
+            id="record-btn"
+            class="w-[72px] h-[72px] rounded-full bg-accent hover:bg-accent-hover text-white flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-0"
+          >
+            <svg
+              id="mic-icon"
+              class="w-8 h-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"
+              />
+            </svg>
+            <div id="recording-ui" class="hidden flex flex-col items-center">
+              <div class="flex items-center gap-1 h-7">
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+              </div>
+              <span
+                id="timer"
+                class="font-mono text-sm text-white/90 leading-none"
+                >00:00</span
+              >
+            </div>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div
+      id="toast-container"
+      class="fixed top-4 right-4 z-50 flex flex-col gap-2"
+    ></div>
+
+    <div
+      id="ticket-modal"
+      class="modal-overlay hidden"
+      aria-modal="true"
+      role="dialog"
+    >
+      <div
+        class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto overscroll-contain"
+      >
+        <div
+          class="flex items-start justify-between px-6 py-4 border-b border-gray-100"
+        >
+          <div>
+            <h2 class="text-lg font-semibold text-[var(--color-text)]">
+              Crear ticket
+            </h2>
+            <p class="text-sm text-gray-400 mt-0.5">
+              Genera un report de bug en ClickUp a partir de este audio.
+            </p>
+          </div>
+          <button
+            id="ticket-close-btn"
+            class="text-gray-400 hover:text-gray-600 text-2xl leading-none cursor-pointer"
+            aria-label="Cerrar"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label
+              for="ticket-title"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Título</label
+            >
+            <input
+              type="text"
+              id="ticket-title"
+              class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >App</label
+            >
+            <div id="app-badges" class="flex gap-2">
+              <button
+                type="button"
+                class="badge badge-app cursor-pointer"
+                data-app="alfred"
+              >
+                Alfred Smart
+              </button>
+              <button
+                type="button"
+                class="badge badge-app cursor-pointer"
+                data-app="nn"
+              >
+                Núñez i Navarro
+              </button>
+              <button
+                type="button"
+                class="badge badge-app cursor-pointer"
+                data-app="lavidda"
+              >
+                Lavidda
+              </button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Plataforma</label
+            >
+            <div id="platform-badges" class="flex gap-2">
+              <button
+                type="button"
+                class="badge badge-platform cursor-pointer"
+                data-platform="iOS"
+              >
+                iOS
+              </button>
+              <button
+                type="button"
+                class="badge badge-platform cursor-pointer"
+                data-platform="Android"
+              >
+                Android
+              </button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                for="ticket-app-version"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Versión de la app</label
+              >
+              <input
+                type="text"
+                id="ticket-app-version"
+                class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                placeholder="1.2.3"
+              />
+            </div>
+            <div>
+              <label
+                for="ticket-asset-id"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Asset ID</label
+              >
+              <input
+                type="text"
+                id="ticket-asset-id"
+                class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              for="ticket-description"
+              class="block text-sm font-medium text-gray-700 mb-1"
+              >Descripción</label
+            >
+            <textarea
+              id="ticket-description"
+              rows="8"
+              class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"
+            ></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Adjuntos</label
+            >
+            <div class="flex gap-2 mb-2">
+              <button
+                id="attach-file-btn"
+                type="button"
+                class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                Añadir archivo
+              </button>
+              <button
+                id="attach-camera-btn"
+                type="button"
+                class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                Hacer foto
+              </button>
+              <input
+                type="file"
+                id="attach-file-input"
+                class="hidden"
+                accept="image/*,video/*"
+                multiple
+              />
+            </div>
+            <div id="attachment-previews"></div>
+            <p
+              id="attachment-error"
+              class="text-xs text-red-600 mt-1 h-4 invisible"
+            ></p>
+          </div>
+
+          <div
+            id="ticket-modal-error"
+            class="text-sm text-red-600 invisible"
+          ></div>
+        </div>
+
+        <div class="px-6 pt-4 pb-6 border-t border-gray-100 space-y-3">
+          <div id="ticket-progress" class="hidden">
+            <div class="h-1 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                id="ticket-progress-bar"
+                class="progress-bar h-full bg-accent rounded-full"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+          <div
+            id="missing-fields-banner"
+            class="hidden rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 mb-4"
+          >
+            <span class="text-sm font-medium text-amber-800 mb-1"
+              >Te faltan datos</span
+            >
+            <p class="text-xs text-amber-700 mb-2">
+              Sin estos campos, al equipo de IT le costará un poco más detectar
+              el problema.
+            </p>
+            <ul
+              id="missing-fields-list"
+              class="text-xs text-amber-700 list-disc pl-5 mb-2 space-y-0.5"
+            ></ul>
+            <button
+              id="missing-fields-complete-btn"
+              type="button"
+              class="text-xs text-amber-700 underline cursor-pointer hover:text-amber-900"
+            >
+              Completar campos
+            </button>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button
+              id="ticket-cancel-btn"
+              type="button"
+              class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              id="ticket-submit-btn"
+              type="button"
+              class="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
+            >
+              Crear ticket
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="camera-overlay"
+      class="hidden fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center"
+    >
+      <video
+        id="camera-viewfinder"
+        autoplay
+        playsinline
+        class="max-w-full max-h-[70vh] rounded-lg"
+      ></video>
+      <canvas id="camera-canvas" class="hidden"></canvas>
+      <div class="flex gap-4 mt-6">
+        <button
+          id="camera-cancel-btn"
+          type="button"
+          class="px-6 py-3 text-white border border-white/30 rounded-full text-sm font-medium cursor-pointer hover:bg-white/10"
+        >
+          Cancelar
+        </button>
+        <button
+          id="camera-capture-btn"
+          type="button"
+          class="px-6 py-3 bg-white text-black rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200"
+        >
+          Capturar
         </button>
       </div>
-    </section>
-  </div>
-
-  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
-
-  <div id="ticket-modal" class="modal-overlay hidden" aria-modal="true" role="dialog">
-    <div class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto overscroll-contain">
-      <div class="flex items-start justify-between px-6 py-4 border-b border-gray-100">
-        <div>
-          <h2 class="text-lg font-semibold text-[var(--color-text)]">Crear Ticket</h2>
-          <p class="text-sm text-gray-400 mt-0.5">Genera un report de bug en ClickUp a partir de este audio.</p>
-        </div>
-        <button id="ticket-close-btn" class="text-gray-400 hover:text-gray-600 text-2xl leading-none cursor-pointer" aria-label="Cerrar">&times;</button>
-      </div>
-
-      <div class="px-6 py-4 space-y-4">
-        <div>
-          <label for="ticket-title" class="block text-sm font-medium text-gray-700 mb-1">Título</label>
-          <input type="text" id="ticket-title" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">App</label>
-          <div id="app-badges" class="flex gap-2">
-            <button type="button" class="badge badge-app cursor-pointer" data-app="alfred">Alfred Smart</button>
-            <button type="button" class="badge badge-app cursor-pointer" data-app="nn">Núñez i Navarro</button>
-            <button type="button" class="badge badge-app cursor-pointer" data-app="lavidda">Lavidda</button>
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Plataforma</label>
-          <div id="platform-badges" class="flex gap-2">
-            <button type="button" class="badge badge-platform cursor-pointer" data-platform="iOS">iOS</button>
-            <button type="button" class="badge badge-platform cursor-pointer" data-platform="Android">Android</button>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label for="ticket-app-version" class="block text-sm font-medium text-gray-700 mb-1">Version de la app</label>
-            <input type="text" id="ticket-app-version" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent" placeholder="1.2.3">
-          </div>
-          <div>
-            <label for="ticket-asset-id" class="block text-sm font-medium text-gray-700 mb-1">Asset ID</label>
-            <input type="text" id="ticket-asset-id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
-          </div>
-        </div>
-
-        <div>
-          <label for="ticket-description" class="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
-          <textarea id="ticket-description" rows="8" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"></textarea>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Adjuntos</label>
-          <div class="flex gap-2 mb-2">
-            <button id="attach-file-btn" type="button" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Añadir archivo</button>
-            <button id="attach-camera-btn" type="button" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Hacer foto</button>
-            <input type="file" id="attach-file-input" class="hidden" accept="image/*,video/*" multiple>
-          </div>
-          <div id="attachment-previews"></div>
-          <p id="attachment-error" class="text-xs text-red-600 mt-1 h-4 invisible"></p>
-        </div>
-
-        <div id="ticket-modal-error" class="text-sm text-red-600 hidden"></div>
-      </div>
-
-      <div class="px-6 pt-4 pb-6 border-t border-gray-100 space-y-3">
-        <div id="ticket-progress" class="hidden">
-          <div class="h-1 bg-gray-200 rounded-full overflow-hidden">
-            <div id="ticket-progress-bar" class="progress-bar h-full bg-accent rounded-full" style="width:0%"></div>
-          </div>
-        </div>
-        <div class="flex justify-end gap-2">
-          <button id="ticket-cancel-btn" type="button" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancelar</button>
-          <button id="ticket-submit-btn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer">Crear Ticket</button>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <div id="warning-modal" class="modal-overlay hidden" aria-modal="true" role="dialog">
-    <div class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4">
-      <div class="px-6 py-5">
-        <div class="flex items-center gap-3 mb-3">
-          <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
-            </svg>
-          </div>
-          <h3 class="text-base font-semibold" style="color:var(--color-text)">Faltan datos del ticket</h3>
-        </div>
-        <p class="text-sm text-gray-500 mb-3">Los campos sin rellenar ralentizan al equipo de IT a la hora de resolver la incidencia:</p>
-        <ul id="warning-missing-list" class="text-sm text-gray-700 list-disc pl-5 mb-4 space-y-1"></ul>
-      </div>
-      <div class="px-6 pb-5 flex gap-2 justify-end">
-        <button id="warning-back-btn" type="button" class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Volver</button>
-        <button id="warning-send-btn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-amber-500 rounded-lg hover:bg-amber-600 cursor-pointer">Enviar de todas maneras</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="camera-overlay" class="hidden fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center">
-    <video id="camera-viewfinder" autoplay playsinline class="max-w-full max-h-[70vh] rounded-lg"></video>
-    <canvas id="camera-canvas" class="hidden"></canvas>
-    <div class="flex gap-4 mt-6">
-      <button id="camera-cancel-btn" type="button" class="px-6 py-3 text-white border border-white/30 rounded-full text-sm font-medium cursor-pointer hover:bg-white/10">Cancelar</button>
-      <button id="camera-capture-btn" type="button" class="px-6 py-3 bg-white text-black rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200">Capturar</button>
-    </div>
-  </div>
-
-  <script type="module" src="js/app.js"></script>
-</body>
+    <script type="module" src="js/app.js"></script>
+  </body>
 </html>

@@ -122,6 +122,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   animation: toast-slide-in 300ms ease;
   transition: opacity 300ms ease;
+  white-space: pre-line;
 }
 
 .toast-fade-out {
@@ -394,8 +395,4 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-#warning-modal {
-  z-index: 55;
 }
