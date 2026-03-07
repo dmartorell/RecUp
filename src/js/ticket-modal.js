@@ -24,6 +24,21 @@ let cameraStream = null;
 const previewsContainer = document.getElementById('attachment-previews');
 const attachmentError = document.getElementById('attachment-error');
 const modalError = document.getElementById('ticket-modal-error');
+const appBadges = document.querySelectorAll('#app-badges .badge-app');
+let selectedApp = '';
+
+appBadges.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('selected')) {
+      btn.classList.remove('selected');
+      selectedApp = '';
+    } else {
+      appBadges.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedApp = btn.dataset.app;
+    }
+  });
+});
 
 let attachments = null;
 let currentCardElement = null;
@@ -42,8 +57,8 @@ function resetProgress() {
 
 function showAttachmentError(msg) {
   attachmentError.textContent = msg;
-  attachmentError.classList.remove('hidden');
-  setTimeout(() => attachmentError.classList.add('hidden'), 4000);
+  attachmentError.classList.remove('invisible');
+  setTimeout(() => attachmentError.classList.add('invisible'), 4000);
 }
 
 function showModalError(msg) {
@@ -73,7 +88,9 @@ function closeModal() {
   submitBtn.textContent = 'Crear Ticket';
   resetProgress();
   hideModalError();
-  attachmentError.classList.add('hidden');
+  attachmentError.classList.add('invisible');
+  appBadges.forEach(b => b.classList.remove('selected'));
+  selectedApp = '';
   currentCardElement = null;
   currentTranscript = '';
   createdTaskId = null;
@@ -89,12 +106,15 @@ export function openTicketModal(cardData) {
 
   titleInput.value = cardData.title || '';
 
-  const bulletsText = (cardData.bullets || []).map(b => '- ' + b).join('\n');
+  const ensurePeriod = s => s && /[.!?]$/.test(s.trim()) ? s.trim() : s.trim() + '.';
+  const capitalize = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  const bulletsText = (cardData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
   descriptionEl.value = bulletsText;
 
   attachments = new AttachmentManager(previewsContainer);
 
   modal.classList.remove('hidden');
+  modal.querySelector('.modal-panel').scrollTop = 0;
 }
 
 attachFileBtn.addEventListener('click', () => fileInput.click());
@@ -115,7 +135,7 @@ async function openCamera() {
     cameraViewfinder.srcObject = cameraStream;
     cameraOverlay.classList.remove('hidden');
   } catch {
-    showAttachmentError('No se pudo acceder a la camara.');
+    showAttachmentError('Cámara sin permisos.');
   }
 }
 
@@ -155,9 +175,6 @@ cameraCancelBtn.addEventListener('click', closeCamera);
 closeBtn.addEventListener('click', closeModal);
 cancelBtn.addEventListener('click', closeModal);
 
-modal.addEventListener('click', (e) => {
-  if (e.target === modal) closeModal();
-});
 
 async function uploadAttachments(taskId, files) {
   const formData = new FormData();
@@ -173,7 +190,7 @@ async function uploadAttachments(taskId, files) {
 submitBtn.addEventListener('click', async () => {
   const name = titleInput.value.trim();
   if (!name) {
-    showModalError('El titulo es obligatorio.');
+    showModalError('El título es obligatorio.');
     return;
   }
 
@@ -184,7 +201,7 @@ submitBtn.addEventListener('click', async () => {
   const bullets = descriptionEl.value;
   let markdownDescription = bullets;
   if (currentTranscript) {
-    markdownDescription += '\n\n---\n\n**Transcripcion completa:**\n\n' + currentTranscript;
+    markdownDescription += '\n\n---\n\n**Transcripción completa:**\n\n' + currentTranscript;
   }
 
   try {

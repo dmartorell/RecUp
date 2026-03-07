@@ -20,23 +20,23 @@
 
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-[#f5f5f5] font-sans text-gray-900 h-screen flex flex-col overflow-hidden">
+<body class="bg-[#f5f5f5] font-sans h-screen flex flex-col overflow-hidden" style="color:var(--color-text)">
 
   <div id="unsupported" style="display:none; position:fixed; inset:0; background:#fff; z-index:9999; justify-content:center; align-items:center; flex-direction:column; padding:2rem; text-align:center;">
     <div style="max-width:420px;">
       <svg style="width:64px; height:64px; margin:0 auto 1.5rem; color:#d1d5db;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
       </svg>
-      <h1 style="font-size:1.5rem; font-weight:600; margin:0 0 0.75rem; color:#111827;">Navegador no compatible</h1>
-      <p style="font-size:1rem; line-height:1.6; color:#666; margin:0 0 1.5rem;">Bugshot necesita APIs que solo estan disponibles en navegadores basados en Chromium. Por favor, usa Chrome o Edge.</p>
+      <h1 style="font-size:1.5rem; font-weight:600; margin:0 0 0.75rem; color:var(--color-text);">Navegador no compatible</h1>
+      <p style="font-size:1rem; line-height:1.6; color:#666; margin:0 0 1.5rem;">Bugshot necesita APIs que solo están disponibles en navegadores basados en Chromium. Por favor, usa Chrome o Edge.</p>
       <a href="https://www.google.com/chrome/" style="display:inline-block; background:#2563eb; color:#fff; padding:0.75rem 1.5rem; border-radius:8px; text-decoration:none; font-weight:500; font-size:0.95rem;">Descargar Chrome</a>
     </div>
   </div>
 
   <div id="app" class="flex flex-col flex-1 overflow-hidden">
     <header class="fixed top-0 left-0 right-0 z-40 border-b border-gray-200/50 backdrop-blur-xl bg-white/20">
-      <div class="mx-auto max-w-3xl px-4 py-4">
-        <h1 class="text-xl font-semibold text-gray-900">Bugshot</h1>
+      <div class="mx-auto max-w-3xl px-6 py-4">
+        <h1 class="text-xl font-semibold text-[var(--color-text)]">Bugshot</h1>
       </div>
     </header>
 
@@ -79,57 +79,68 @@
   <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
   <div id="ticket-modal" class="modal-overlay hidden" aria-modal="true" role="dialog">
-    <div class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-        <h2 class="text-lg font-semibold text-gray-900">Crear Ticket</h2>
+    <div class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto overscroll-contain">
+      <div class="flex items-start justify-between px-6 py-4 border-b border-gray-100">
+        <div>
+          <h2 class="text-lg font-semibold text-[var(--color-text)]">Crear Ticket</h2>
+          <p class="text-sm text-gray-400 mt-0.5">Genera un report de bug en ClickUp a partir de este audio.</p>
+        </div>
         <button id="ticket-close-btn" class="text-gray-400 hover:text-gray-600 text-2xl leading-none cursor-pointer" aria-label="Cerrar">&times;</button>
       </div>
 
-      <div class="px-5 py-4 space-y-4">
+      <div class="px-6 py-4 space-y-4">
         <div>
-          <label for="ticket-title" class="block text-sm font-medium text-gray-700 mb-1">Titulo</label>
-          <input type="text" id="ticket-title" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+          <label for="ticket-title" class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+          <input type="text" id="ticket-title" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
         </div>
         <div>
-          <label for="ticket-description" class="block text-sm font-medium text-gray-700 mb-1">Descripcion</label>
-          <textarea id="ticket-description" readonly rows="4" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-600 resize-none"></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-2">App</label>
+          <div id="app-badges" class="flex gap-2">
+            <button type="button" class="badge badge-app cursor-pointer" data-app="alfred">Alfred Smart</button>
+            <button type="button" class="badge badge-app cursor-pointer" data-app="nn">Núñez i Navarro</button>
+            <button type="button" class="badge badge-app cursor-pointer" data-app="lavidda">Lavidda</button>
+          </div>
+        </div>
+        <div>
+          <label for="ticket-description" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <textarea id="ticket-description" rows="8" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-none"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label for="ticket-reported-by" class="block text-sm font-medium text-gray-700 mb-1">Reportado por</label>
-            <input type="text" id="ticket-reported-by" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+            <input type="text" id="ticket-reported-by" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
           </div>
           <div>
             <label for="ticket-affected-user" class="block text-sm font-medium text-gray-700 mb-1">Usuario afectado</label>
-            <input type="text" id="ticket-affected-user" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+            <input type="text" id="ticket-affected-user" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label for="ticket-project-id" class="block text-sm font-medium text-gray-700 mb-1">Project ID</label>
-            <input type="text" id="ticket-project-id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+            <input type="text" id="ticket-project-id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
           </div>
           <div>
             <label for="ticket-asset-id" class="block text-sm font-medium text-gray-700 mb-1">Asset ID</label>
-            <input type="text" id="ticket-asset-id" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
+            <input type="text" id="ticket-asset-id" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent">
           </div>
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Adjuntos</label>
           <div class="flex gap-2 mb-2">
-            <button id="attach-file-btn" type="button" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Anadir archivo</button>
+            <button id="attach-file-btn" type="button" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Añadir archivo</button>
             <button id="attach-camera-btn" type="button" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Hacer foto</button>
             <input type="file" id="attach-file-input" class="hidden" accept="image/*,video/*" multiple>
           </div>
           <div id="attachment-previews"></div>
-          <p id="attachment-error" class="text-sm text-red-600 mt-1 hidden"></p>
+          <p id="attachment-error" class="text-xs text-red-600 mt-1 h-4 invisible"></p>
         </div>
 
         <div id="ticket-modal-error" class="text-sm text-red-600 hidden"></div>
       </div>
 
-      <div class="px-5 py-4 border-t border-gray-100 space-y-3">
+      <div class="px-6 pt-4 pb-6 border-t border-gray-100 space-y-3">
         <div id="ticket-progress" class="hidden">
           <div class="h-1 bg-gray-200 rounded-full overflow-hidden">
             <div id="ticket-progress-bar" class="progress-bar h-full bg-accent rounded-full" style="width:0%"></div>
