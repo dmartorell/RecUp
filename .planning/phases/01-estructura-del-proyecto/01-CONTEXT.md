@@ -16,7 +16,7 @@ Express sirviendo HTML estatico con feature detection y UI base. El servidor arr
 ### Estilo visual
 - Light clean: fondo claro (#ffffff/#f5f5f5), cards blancas con sombra sutil
 - Tipografia: Inter (Google Fonts)
-- Color de acento: azul #2563eb
+- Color de acento: azul #2a54ae
 - Bordes redondeados 8-12px
 - CSS: Tailwind CDN (sin build step)
 
