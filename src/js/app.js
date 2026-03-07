@@ -81,7 +81,7 @@ async function toggleRecording() {
     const duration = Date.now() - startTime;
 
     stopVisualization();
-    const transcript = stopTranscription();
+    const transcript = await stopTranscription();
     const audioBlob = await stopRecording();
 
     createCard(transcript, audioBlob, duration);

@@ -2,35 +2,39 @@ let finalTranscript = '';
 let isActive = false;
 let recognition = null;
 let errorCallback = null;
+let stopResolve = null;
 
-function initRecognition() {
+function createRecognition() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
-  recognition.continuous = true;
-  recognition.interimResults = true;
-  recognition.lang = 'es-ES';
+  const rec = new SpeechRecognition();
+  rec.continuous = true;
+  rec.interimResults = false;
+  rec.lang = 'es-ES';
 
-  recognition.onresult = (event) => {
+  rec.onresult = (event) => {
     for (let i = event.resultIndex; i < event.results.length; i++) {
       if (event.results[i].isFinal) {
-        finalTranscript += event.results[i][0].transcript;
+        finalTranscript += event.results[i][0].transcript + ' ';
       }
     }
   };
 
-  recognition.onend = () => {
+  rec.onend = () => {
     if (isActive) {
       setTimeout(() => {
         if (isActive) {
           try {
-            recognition.start();
+            rec.start();
           } catch (_) {}
         }
       }, 300);
+    } else if (stopResolve) {
+      stopResolve(finalTranscript.trim());
+      stopResolve = null;
     }
   };
 
-  recognition.onerror = (event) => {
+  rec.onerror = (event) => {
     if ((event.error === 'no-speech' || event.error === 'aborted') && isActive) {
       return;
     }
@@ -38,6 +42,8 @@ function initRecognition() {
       errorCallback(event.error);
     }
   };
+
+  return rec;
 }
 
 function startTranscription(onError) {
@@ -45,23 +51,20 @@ function startTranscription(onError) {
   isActive = true;
   errorCallback = onError || null;
 
-  if (!recognition) {
-    initRecognition();
-  }
-
+  recognition = createRecognition();
   recognition.start();
 }
 
 function stopTranscription() {
   isActive = false;
-  if (recognition) {
+  return new Promise((resolve) => {
+    if (!recognition) {
+      resolve(finalTranscript.trim());
+      return;
+    }
+    stopResolve = resolve;
     recognition.stop();
-  }
-  return finalTranscript;
+  });
 }
 
-function getTranscript() {
-  return finalTranscript;
-}
-
-export { startTranscription, stopTranscription, getTranscript };
+export { startTranscription, stopTranscription };
