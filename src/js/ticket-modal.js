@@ -1,0 +1,257 @@
+import { AttachmentManager } from './attachments.js';
+
+const modal = document.getElementById('ticket-modal');
+const titleInput = document.getElementById('ticket-title');
+const descriptionEl = document.getElementById('ticket-description');
+const reportedByInput = document.getElementById('ticket-reported-by');
+const affectedUserInput = document.getElementById('ticket-affected-user');
+const projectIdInput = document.getElementById('ticket-project-id');
+const assetIdInput = document.getElementById('ticket-asset-id');
+const submitBtn = document.getElementById('ticket-submit-btn');
+const cancelBtn = document.getElementById('ticket-cancel-btn');
+const closeBtn = document.getElementById('ticket-close-btn');
+const progressContainer = document.getElementById('ticket-progress');
+const progressBar = document.getElementById('ticket-progress-bar');
+const attachFileBtn = document.getElementById('attach-file-btn');
+const attachCameraBtn = document.getElementById('attach-camera-btn');
+const fileInput = document.getElementById('attach-file-input');
+const cameraInput = document.getElementById('attach-camera-input');
+const previewsContainer = document.getElementById('attachment-previews');
+const attachmentError = document.getElementById('attachment-error');
+const modalError = document.getElementById('ticket-modal-error');
+
+let attachments = null;
+let currentCardElement = null;
+let currentTranscript = '';
+let createdTaskId = null;
+
+function setProgress(percent) {
+  progressContainer.classList.remove('hidden');
+  progressBar.style.width = percent + '%';
+}
+
+function resetProgress() {
+  progressContainer.classList.add('hidden');
+  progressBar.style.width = '0%';
+}
+
+function showAttachmentError(msg) {
+  attachmentError.textContent = msg;
+  attachmentError.classList.remove('hidden');
+  setTimeout(() => attachmentError.classList.add('hidden'), 4000);
+}
+
+function showModalError(msg) {
+  modalError.textContent = msg;
+  modalError.classList.remove('hidden');
+}
+
+function hideModalError() {
+  modalError.classList.add('hidden');
+  modalError.textContent = '';
+}
+
+function closeModal() {
+  modal.classList.add('hidden');
+  if (attachments) {
+    attachments.clear();
+    attachments = null;
+  }
+  titleInput.value = '';
+  descriptionEl.value = '';
+  reportedByInput.value = '';
+  affectedUserInput.value = '';
+  projectIdInput.value = '';
+  assetIdInput.value = '';
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Crear Ticket';
+  resetProgress();
+  hideModalError();
+  attachmentError.classList.add('hidden');
+  currentCardElement = null;
+  currentTranscript = '';
+  createdTaskId = null;
+
+  const retryBtn = modal.querySelector('.btn-retry-attachments');
+  if (retryBtn) retryBtn.remove();
+}
+
+export function openTicketModal(cardData) {
+  currentCardElement = cardData.cardElement;
+  currentTranscript = cardData.transcript || '';
+  createdTaskId = null;
+
+  titleInput.value = cardData.title || '';
+
+  const bulletsText = (cardData.bullets || []).map(b => '- ' + b).join('\n');
+  descriptionEl.value = bulletsText;
+
+  attachments = new AttachmentManager(previewsContainer);
+
+  modal.classList.remove('hidden');
+}
+
+attachFileBtn.addEventListener('click', () => fileInput.click());
+attachCameraBtn.addEventListener('click', () => cameraInput.click());
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) {
+    const err = attachments.addFiles(fileInput.files);
+    if (err) showAttachmentError(err);
+    fileInput.value = '';
+  }
+});
+
+cameraInput.addEventListener('change', () => {
+  if (cameraInput.files.length) {
+    const err = attachments.addFiles(cameraInput.files);
+    if (err) showAttachmentError(err);
+    cameraInput.value = '';
+  }
+});
+
+closeBtn.addEventListener('click', closeModal);
+cancelBtn.addEventListener('click', closeModal);
+
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeModal();
+});
+
+async function uploadAttachments(taskId, files) {
+  const formData = new FormData();
+  formData.append('taskId', taskId);
+  files.forEach(f => formData.append('attachment', f));
+
+  const res = await fetch('/api/attachment', { method: 'POST', body: formData });
+  const data = await res.json();
+  if (!res.ok) throw { partial: data.uploaded > 0, data };
+  return data;
+}
+
+submitBtn.addEventListener('click', async () => {
+  const name = titleInput.value.trim();
+  if (!name) {
+    showModalError('El titulo es obligatorio.');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  hideModalError();
+  setProgress(10);
+
+  const bullets = descriptionEl.value;
+  let markdownDescription = bullets;
+  if (currentTranscript) {
+    markdownDescription += '\n\n---\n\n**Transcripcion completa:**\n\n' + currentTranscript;
+  }
+
+  try {
+    const ticketRes = await fetch('/api/ticket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        markdown_description: markdownDescription,
+        reportedBy: reportedByInput.value.trim(),
+        affectedUser: affectedUserInput.value.trim(),
+        projectId: projectIdInput.value.trim(),
+        assetId: assetIdInput.value.trim()
+      })
+    });
+
+    if (!ticketRes.ok) {
+      const err = await ticketRes.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al crear el ticket');
+    }
+
+    const ticket = await ticketRes.json();
+    createdTaskId = ticket.id;
+    setProgress(50);
+
+    const files = attachments ? attachments.getFiles() : [];
+    if (files.length > 0) {
+      try {
+        await uploadAttachments(ticket.id, files);
+        setProgress(90);
+      } catch (attErr) {
+        setProgress(90);
+        markCardAsSent(ticket.url);
+        showModalError('Ticket creado pero algunos adjuntos fallaron.');
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn-retry-attachments text-sm px-3 py-1.5 border border-accent text-accent rounded-lg hover:bg-accent/5 cursor-pointer mt-2';
+        retryBtn.textContent = 'Reintentar adjuntos';
+        retryBtn.addEventListener('click', async () => {
+          retryBtn.disabled = true;
+          hideModalError();
+          setProgress(60);
+          try {
+            await uploadAttachments(createdTaskId, attachments.getFiles());
+            setProgress(100);
+            setTimeout(() => {
+              closeModal();
+              showToast('Adjuntos subidos correctamente.');
+            }, 400);
+          } catch {
+            setProgress(90);
+            retryBtn.disabled = false;
+            showModalError('Los adjuntos siguen fallando. Intenta de nuevo.');
+          }
+        });
+        modalError.after(retryBtn);
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Crear Ticket';
+        return;
+      }
+    }
+
+    setProgress(100);
+    markCardAsSent(ticket.url);
+
+    setTimeout(() => {
+      closeModal();
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `Ticket creado. <a href="${ticket.url}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline;">Ver en ClickUp</a>`;
+      document.getElementById('toast-container').appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('toast-fade-out');
+        toast.addEventListener('transitionend', () => toast.remove());
+      }, 6000);
+    }, 400);
+
+  } catch (err) {
+    showModalError(err.message || 'Error inesperado');
+    submitBtn.disabled = false;
+    resetProgress();
+  }
+});
+
+function markCardAsSent(ticketUrl) {
+  if (!currentCardElement) return;
+
+  const badge = currentCardElement.querySelector('.js-status-badge');
+  if (badge) {
+    badge.textContent = 'Enviada';
+    badge.className = 'badge badge-sent js-status-badge';
+  }
+
+  const footer = currentCardElement.querySelector('.card-footer');
+  if (footer) {
+    footer.innerHTML = `
+      <a href="${ticketUrl}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket en ClickUp</a>
+    `;
+  }
+}
+
+function showToast(message) {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  document.getElementById('toast-container').appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-fade-out');
+    toast.addEventListener('transitionend', () => toast.remove());
+  }, 4000);
+}
