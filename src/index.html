@@ -1,5 +1,65 @@
 <!DOCTYPE html>
 <html lang="es">
-<head><meta charset="UTF-8"><title>BugShot</title></head>
-<body><h1>BugShot</h1></body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BugShot</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-accent: #2563eb;
+      --color-accent-hover: #1d4ed8;
+      --font-sans: 'Inter', sans-serif;
+    }
+  </style>
+
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-[#f5f5f5] font-sans text-gray-900 min-h-screen">
+
+  <div id="unsupported" style="display:none; position:fixed; inset:0; background:#fff; z-index:9999; justify-content:center; align-items:center; flex-direction:column; padding:2rem; text-align:center;">
+    <div style="max-width:420px;">
+      <svg style="width:64px; height:64px; margin:0 auto 1.5rem; color:#d1d5db;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+      </svg>
+      <h1 style="font-size:1.5rem; font-weight:600; margin:0 0 0.75rem; color:#111827;">Navegador no compatible</h1>
+      <p style="font-size:1rem; line-height:1.6; color:#666; margin:0 0 1.5rem;">BugShot necesita APIs que solo estan disponibles en navegadores basados en Chromium. Por favor, usa Chrome o Edge.</p>
+      <a href="https://www.google.com/chrome/" style="display:inline-block; background:#2563eb; color:#fff; padding:0.75rem 1.5rem; border-radius:8px; text-decoration:none; font-weight:500; font-size:0.95rem;">Descargar Chrome</a>
+    </div>
+  </div>
+
+  <div id="app">
+    <header class="border-b border-gray-200 bg-white">
+      <div class="mx-auto max-w-3xl px-4 py-4">
+        <h1 class="text-xl font-semibold text-gray-900">BugShot</h1>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-3xl px-4 py-8">
+      <div id="empty-state" class="flex flex-col items-center justify-center py-24">
+        <span class="text-6xl text-gray-300 mb-4">🎙️</span>
+        <p class="text-lg font-medium text-gray-600">No hay grabaciones</p>
+        <p class="text-sm text-gray-400 mt-1">Pulsa un boton para empezar a grabar</p>
+      </div>
+
+      <div id="feed" class="space-y-4"></div>
+    </main>
+
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-50">
+      <button id="btn-audio" class="rounded-full bg-accent px-6 py-3 font-medium text-white shadow-lg hover:bg-accent-hover transition-colors cursor-pointer">
+        Audio
+      </button>
+      <button id="btn-video" class="rounded-full bg-accent px-6 py-3 font-medium text-white shadow-lg hover:bg-accent-hover transition-colors cursor-pointer">
+        Video
+      </button>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
 </html>
