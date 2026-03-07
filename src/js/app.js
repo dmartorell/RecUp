@@ -1,4 +1,4 @@
-import { requestMicAccess, startRecording, stopRecording } from './recorder.js';
+import { requestMicAccess, getStream, startRecording, stopRecording } from './recorder.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
 import { summarize } from './summarizer.js';
 import { MOCK_CARDS } from './mocks.js';
@@ -27,9 +27,14 @@ let isRecording = false;
 let timerInterval = null;
 let startTime = null;
 let micReady = false;
+let analyser = null;
+let animFrameId = null;
 
 const recordBtn = document.getElementById('record-btn');
+const micIcon = document.getElementById('mic-icon');
+const recordingUI = document.getElementById('recording-ui');
 const timerDisplay = document.getElementById('timer');
+const waveformBars = document.querySelectorAll('.waveform-bar');
 const feed = document.getElementById('feed');
 const emptyState = document.getElementById('empty-state');
 const clearAllBtn = document.getElementById('clear-all-btn');
@@ -45,6 +50,20 @@ async function initMic() {
   }
 }
 
+function animateWaveform() {
+  const dataArray = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(dataArray);
+  let peak = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    const v = Math.abs(dataArray[i] - 128);
+    if (v > peak) peak = v;
+  }
+  const normalized = Math.min(1, peak / 15);
+  const height = Math.max(3, normalized * 26);
+  waveformBars.forEach(bar => bar.style.height = height + 'px');
+  animFrameId = requestAnimationFrame(animateWaveform);
+}
+
 async function toggleRecording() {
   if (!micReady) {
     await initMic();
@@ -53,15 +72,20 @@ async function toggleRecording() {
 
   if (!isRecording) {
     isRecording = true;
-    recordBtn.querySelector('svg').classList.add('hidden');
-    timerDisplay.classList.remove('hidden');
-    recordBtn.classList.add('animate-pulse-recording');
-
+    micIcon.classList.add('hidden');
+    recordingUI.classList.remove('hidden');
     startTime = Date.now();
     timerDisplay.textContent = '00:00';
     timerInterval = setInterval(() => {
       timerDisplay.textContent = formatDuration(Date.now() - startTime);
     }, 1000);
+
+    const audioCtx = new AudioContext();
+    const source = audioCtx.createMediaStreamSource(getStream());
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 64;
+    source.connect(analyser);
+    animateWaveform();
 
     startTranscription((error) => {
       showToast('Error de transcripcion: ' + error);
@@ -70,9 +94,10 @@ async function toggleRecording() {
     startRecording();
   } else {
     isRecording = false;
-    timerDisplay.classList.add('hidden');
-    recordBtn.querySelector('svg').classList.remove('hidden');
-    recordBtn.classList.remove('animate-pulse-recording');
+    recordingUI.classList.add('hidden');
+    micIcon.classList.remove('hidden');
+    cancelAnimationFrame(animFrameId);
+    waveformBars.forEach(bar => bar.style.height = '3px');
 
     clearInterval(timerInterval);
     const duration = Date.now() - startTime;

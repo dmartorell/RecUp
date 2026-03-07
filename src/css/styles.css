@@ -2,6 +2,15 @@ html {
   scroll-behavior: smooth;
 }
 
+main {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+main:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
 main::-webkit-scrollbar {
   width: 6px;
 }
@@ -11,16 +20,30 @@ main::-webkit-scrollbar-track {
 }
 
 main::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
+  background: transparent;
   border-radius: 3px;
+  transition: background 0.3s;
 }
 
-main::-webkit-scrollbar-thumb:hover {
+main:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+main:hover::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
 
 body {
   margin: 0;
+}
+
+.waveform-bar {
+  width: 3px;
+  height: 3px;
+  min-height: 3px;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 2px;
+  transition: height 80ms ease;
 }
 
 .card {
@@ -95,22 +118,8 @@ body {
   }
 }
 
-@keyframes pulse-recording {
-  0% {
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4),
-                0 0 0 0 rgba(37, 99, 235, 0.2),
-                0 0 0 0 rgba(37, 99, 235, 0.1);
-  }
-  100% {
-    box-shadow: 0 0 0 15px rgba(37, 99, 235, 0),
-                0 0 0 30px rgba(37, 99, 235, 0),
-                0 0 0 45px rgba(37, 99, 235, 0);
-  }
-}
 
-.animate-pulse-recording {
-  animation: pulse-recording 2s ease-out infinite;
-}
+
 
 .badge {
   display: inline-flex;
