@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 Phase: 4 of 5 (Tickets + Adjuntos) - COMPLETE
 Plan: 2 of 2 in current phase - COMPLETE
 Status: Phase 04 complete
-Last activity: 2026-03-07 - Completed plan 04-02: Modal de ticket con adjuntos
+Last activity: 2026-03-07 - Completed quick task 3: Hacer foto abre camara real con getUserMedia en desktop y movil
 
 Progress: [█████████░] 92%
 
