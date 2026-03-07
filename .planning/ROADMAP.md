@@ -68,10 +68,11 @@ Plans:
   3. El usuario puede adjuntar fotos/videos desde galeria o camara y ver preview antes de enviar
   4. Los archivos adjuntos se suben al ticket creado via /api/attachment y el usuario recibe confirmacion con enlace al ticket
   5. El usuario puede editar titulo y descripcion generados por IA en el modal antes de crear el ticket
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md — Endpoints proxy /api/ticket y /api/attachment para ClickUp API
+- [ ] 04-02-PLAN.md — Modal de creacion de ticket con adjuntos, preview, y flujo completo de envio
 
 ### Phase 5: Video + UX Polish
 **Goal**: El usuario puede grabar video con camara ademas de audio, y la experiencia general es fluida y resistente a errores
@@ -98,5 +99,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Estructura del Proyecto | 1/1 | Complete | 2026-03-07 |
 | 2. Audio + Transcripcion | 1/2 | In progress | - |
 | 3. Resumen IA | 0/1 | Not started | - |
-| 4. Tickets + Adjuntos | 0/? | Not started | - |
+| 4. Tickets + Adjuntos | 0/2 | Not started | - |
 | 5. Video + UX Polish | 0/? | Not started | - |
