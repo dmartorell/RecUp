@@ -1,6 +1,7 @@
 import { requestMicAccess, getStream, startRecording, stopRecording } from './recorder.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
 import { summarize } from './summarizer.js';
+import { openTicketModal } from './ticket-modal.js';
 import { MOCK_CARDS } from './mocks.js';
 
 function isBrowserCompatible() {
@@ -127,9 +128,9 @@ function createCard(transcript, audioBlob, duration) {
           <span class="badge badge-audio">Audio</span>
           <span class="badge badge-duration">${durationStr}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div style="display:flex;align-items:center;gap:16px">
           <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-          <button class="card-delete" aria-label="Eliminar">&times;</button>
+          <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
         </div>
       </div>
       <div class="card-body">
@@ -157,9 +158,9 @@ function createCard(transcript, audioBlob, duration) {
         <span class="badge badge-processing js-status-badge">Processing</span>
         <span class="badge badge-duration">${durationStr}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:16px">
         <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-        <button class="card-delete" aria-label="Eliminar">&times;</button>
+        <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
       </div>
     </div>
     <div class="card-body">
@@ -217,8 +218,19 @@ function runSummarize(card, rawText) {
 
     const footer = document.createElement('div');
     footer.className = 'card-footer';
-    footer.innerHTML = `<button class="btn-create-ticket" disabled>Crear Ticket</button>`;
+    footer.innerHTML = `<button class="btn-create-ticket">Crear Ticket</button>`;
     card.appendChild(footer);
+
+    const ticketBtn = footer.querySelector('.btn-create-ticket');
+    ticketBtn.addEventListener('click', () => {
+      if (card.querySelector('.badge-sent')) return;
+      openTicketModal({
+        title: card.dataset.summaryTitle,
+        transcript: card.dataset.summaryTranscript,
+        bullets: JSON.parse(card.dataset.summaryBullets),
+        cardElement: card
+      });
+    });
 
     card.dataset.summaryTranscript = result.transcript;
     card.dataset.summaryBullets = JSON.stringify(result.bullets);
@@ -303,9 +315,9 @@ function loadMocks() {
             <span class="badge badge-completed">Completed</span>
             <span class="badge badge-duration">${durationStr}</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:16px">
             <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-            <button class="card-delete" aria-label="Eliminar">&times;</button>
+            <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
           </div>
         </div>
         <div class="card-body">
@@ -313,12 +325,23 @@ function loadMocks() {
           <ul class="card-bullets">${mock.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
         </div>
         <div class="card-footer">
-          <button class="btn-create-ticket" disabled>Crear Ticket</button>
+          <button class="btn-create-ticket">Crear Ticket</button>
         </div>
       `;
       card.dataset.summaryTitle = mock.title;
       card.dataset.summaryTranscript = mock.transcript;
       card.dataset.summaryBullets = JSON.stringify(mock.bullets);
+
+      const mockTicketBtn = card.querySelector('.btn-create-ticket');
+      mockTicketBtn.addEventListener('click', () => {
+        if (card.querySelector('.badge-sent')) return;
+        openTicketModal({
+          title: card.dataset.summaryTitle,
+          transcript: card.dataset.summaryTranscript,
+          bullets: JSON.parse(card.dataset.summaryBullets),
+          cardElement: card
+        });
+      });
     } else {
       card.innerHTML = `
         <div class="card-header">
@@ -327,9 +350,9 @@ function loadMocks() {
             <span class="badge badge-completed">Completed</span>
             <span class="badge badge-duration">${durationStr}</span>
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:16px">
             <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-            <button class="card-delete" aria-label="Eliminar">&times;</button>
+            <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
           </div>
         </div>
         <div class="card-body">
@@ -361,4 +384,4 @@ setInterval(() => {
       el.textContent = timeAgo(new Date(card.dataset.createdAt));
     }
   });
-}, 30000);
+}, 60000);
