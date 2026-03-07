@@ -56,7 +56,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md — Endpoint proxy /api/summarize + cards con estados Processing/Completed/Error y resumen IA
+- [x] 03-01-PLAN.md — Endpoint proxy /api/summarize + cards con estados Processing/Completed/Error y resumen IA
 
 ### Phase 4: Tickets + Adjuntos
 **Goal**: El flujo completo audio-to-ticket funciona: el usuario graba, resume, y crea un ticket en ClickUp con evidencia adjunta
@@ -111,7 +111,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Estructura del Proyecto | 1/1 | Complete | 2026-03-07 |
 | 2. Audio + Transcripcion | 2/2 | Complete | 2026-03-08 |
-| 3. Resumen IA | 0/1 | Not started | - |
+| 3. Resumen IA | 1/1 | Complete | 2026-03-08 |
 | 4. Tickets + Adjuntos | 2/2 | Complete | 2026-03-07 |
 | 4.1. Limpieza técnica | 1/1 | Complete | 2026-03-07 |
 | 5. Video + UX Polish | 0/? | Not started | - |
