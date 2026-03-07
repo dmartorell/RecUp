@@ -54,10 +54,10 @@ Plans:
   1. El usuario pulsa "Resumir" y recibe un titulo conciso + bullets estructurados generados por Claude
   2. El endpoint /api/summarize funciona como proxy sin exponer la API key en el frontend
   3. El usuario puede editar tanto el titulo como la descripcion generados antes de continuar
-**Plans**: TBD
+**Plans:** 1 plan
 
 Plans:
-- [ ] 03-01: TBD
+- [ ] 03-01-PLAN.md — Endpoint proxy /api/summarize + cards con estados Processing/Completed/Error y resumen IA
 
 ### Phase 4: Tickets + Adjuntos
 **Goal**: El flujo completo audio-to-ticket funciona: el usuario graba, resume, y crea un ticket en ClickUp con evidencia adjunta
@@ -97,6 +97,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Estructura del Proyecto | 1/1 | Complete | 2026-03-07 |
 | 2. Audio + Transcripcion | 1/2 | In progress | - |
-| 3. Resumen IA | 0/? | Not started | - |
+| 3. Resumen IA | 0/1 | Not started | - |
 | 4. Tickets + Adjuntos | 0/? | Not started | - |
 | 5. Video + UX Polish | 0/? | Not started | - |
