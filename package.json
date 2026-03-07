@@ -8,7 +8,8 @@
     "dev": "bun --watch server/index.js"
   },
   "dependencies": {
+    "dotenv": "^16.4.0",
     "express": "^4.21.0",
-    "dotenv": "^16.4.0"
+    "multer": "^2.1.1"
   }
 }
