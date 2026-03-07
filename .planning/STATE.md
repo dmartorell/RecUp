@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 Phase: 3 of 5 (Resumen IA)
 Plan: 1 of 1 in current phase
 Status: Phase 03 complete
-Last activity: 2026-03-07 — Plan 03-01 executed
+Last activity: 2026-03-07 - Completed quick task 1: UI polish cards
 
 Progress: [████████░░] 80%
 
@@ -81,6 +81,12 @@ None yet.
 
 - Chrome Android: posible conflicto MediaRecorder + SpeechRecognition (no confirmado en versiones recientes)
 - Web Speech API precision en vocabulario tecnico de instalaciones (validar empiricamente en Phase 2)
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | UI polish cards: ocultar titulo, tiempo relativo, duracion junto a tags, estilos transcripcion/bullets, boton grabar azul abajo | 2026-03-07 | 2ceb436 | [1-ui-polish-cards](./quick/1-ui-polish-cards-ocultar-titulo-tiempo-re/) |
 
 ## Session Continuity
 
