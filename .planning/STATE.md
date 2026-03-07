@@ -8,7 +8,7 @@ progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 2 of 5 (Audio + Transcripcion)
-Plan: 1 of 2 in current phase
-Status: Plan 02-01 complete
-Last activity: 2026-03-07 — Plan 02-01 executed
+Plan: 2 of 2 in current phase
+Status: Phase 02 complete (UAT passed)
+Last activity: 2026-03-07 — Plan 02-02 verified (human checkpoint)
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -41,10 +41,10 @@ Progress: [████░░░░░░] 40%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-estructura | 1 | 4min | 4min |
-| 02-audio-transcripcion | 1 | 2min | 2min |
+| 02-audio-transcripcion | 2 | 2min | 1min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 02-01 (2min)
+- Last 5 plans: 01-01 (4min), 02-01 (2min), 02-02 (UAT)
 - Trend: improving
 
 *Updated after each plan completion*
@@ -66,6 +66,8 @@ Recent decisions affecting current work:
 - Modulos JS separados por API del navegador (recorder, transcriber, visualizer)
 - Delay 300ms en auto-reinicio de SpeechRecognition para evitar rate-limiting
 - AudioContext se crea tras click del usuario (autoplay policy)
+- stopTranscription debe ser async (esperar onend antes de leer transcript)
+- Punto final automatico en transcripciones (puntuacion delegada a Claude en fase 3)
 
 ### Pending Todos
 
@@ -79,5 +81,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Phase 02 complete — all plans executed, UAT passed
 Resume file: None
