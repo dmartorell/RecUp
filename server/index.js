@@ -24,6 +24,9 @@ if (!process.env.ANTHROPIC_API_KEY) {
 if (!process.env.CLICKUP_API_KEY || !process.env.CLICKUP_LIST_ID) {
   console.warn('[WARN] CLICKUP_API_KEY o CLICKUP_LIST_ID no configuradas — los endpoints de ClickUp no funcionaran');
 }
+if (!process.env.SLACK_WEBHOOK_URL) {
+  console.warn('[WARN] SLACK_WEBHOOK_URL no configurada — las notificaciones de Slack se omitiran');
+}
 
 app.listen(PORT, () => {
   console.log(`Bugshot running on http://localhost:${PORT}`);

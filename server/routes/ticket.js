@@ -1,6 +1,15 @@
 import { Router } from 'express';
+import { notifySlack } from '../lib/slack.js';
 
 const router = Router();
+
+function extractBullets(markdown) {
+  const before = (markdown || '').split('\n---')[0];
+  return before.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.startsWith('-') || l.startsWith('•') || l.startsWith('*'))
+    .map(l => l.replace(/^[-•*]\s*/, ''));
+}
 
 const CUSTOM_FIELD_IDS = {
   reporter: 'c9fb2e87-b7a9-4646-9292-d74225f4e2d3',
@@ -116,6 +125,8 @@ router.post('/api/ticket', async (req, res) => {
       });
     }
 
+    const bullets = extractBullets(markdown_description);
+    notifySlack(name.trim(), bullets, data.url).catch(() => {});
     return res.json({ id: data.id, url: data.url });
   } catch (err) {
     return res.status(500).json({ error: `Error interno: ${err.message}` });
