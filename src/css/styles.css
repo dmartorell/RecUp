@@ -5,3 +5,103 @@ html {
 body {
   margin: 0;
 }
+
+.waveform-bar {
+  width: 4px;
+  min-height: 4px;
+  height: 4%;
+  background-color: #ef4444;
+  border-radius: 2px;
+  transition: height 100ms ease;
+}
+
+.recording-indicator {
+  transition: opacity 300ms ease;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 200ms ease;
+}
+
+.card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.card-time {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.card-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 4px;
+  transition: color 150ms ease;
+}
+
+.card-delete:hover {
+  color: #4b5563;
+}
+
+.card-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #1f2937;
+  margin: 0;
+}
+
+.toast {
+  background: #1f2937;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: toast-slide-in 300ms ease;
+  transition: opacity 300ms ease;
+}
+
+.toast-fade-out {
+  opacity: 0;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-recording {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-pulse-recording {
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
