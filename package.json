@@ -1,0 +1,14 @@
+{
+  "name": "bugshot",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun server/index.js",
+    "dev": "bun --watch server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "dotenv": "^16.4.0"
+  }
+}
