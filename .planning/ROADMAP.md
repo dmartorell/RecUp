@@ -43,7 +43,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Modulos recorder/transcriber/visualizer + integracion UI con boton toggle y cards feed
+- [x] 02-01-PLAN.md — Modulos recorder/transcriber/visualizer + integracion UI con boton toggle y cards feed
 - [ ] 02-02-PLAN.md — Verificacion humana del flujo completo de grabacion y transcripcion
 
 ### Phase 3: Resumen IA
@@ -96,7 +96,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Estructura del Proyecto | 1/1 | Complete | 2026-03-07 |
-| 2. Audio + Transcripcion | 0/2 | Planning complete | - |
+| 2. Audio + Transcripcion | 1/2 | In progress | - |
 | 3. Resumen IA | 0/? | Not started | - |
 | 4. Tickets + Adjuntos | 0/? | Not started | - |
 | 5. Video + UX Polish | 0/? | Not started | - |

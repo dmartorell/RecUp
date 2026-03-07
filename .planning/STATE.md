@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T00:07:50.426Z"
+last_updated: "2026-03-07T07:01:00Z"
 progress:
-  total_phases: 2
+  total_phases: 5
   completed_phases: 1
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -18,33 +18,34 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** El empleado graba, describe el problema hablando, y con un click tiene un ticket estructurado en ClickUp con toda la evidencia.
-**Current focus:** Phase 1 - Estructura del Proyecto
+**Current focus:** Phase 2 - Audio + Transcripcion
 
 ## Current Position
 
-Phase: 1 of 5 (Estructura del Proyecto)
-Plan: 1 of 1 in current phase
-Status: Phase 1 complete
-Last activity: 2026-03-07 — Plan 01-01 executed
+Phase: 2 of 5 (Audio + Transcripcion)
+Plan: 1 of 2 in current phase
+Status: Plan 02-01 complete
+Last activity: 2026-03-07 — Plan 02-01 executed
 
-Progress: [██░░░░░░░░] 20%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 4min
-- Total execution time: 0.07 hours
+- Total plans completed: 2
+- Average duration: 3min
+- Total execution time: 0.10 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-estructura | 1 | 4min | 4min |
+| 02-audio-transcripcion | 1 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min)
-- Trend: -
+- Last 5 plans: 01-01 (4min), 02-01 (2min)
+- Trend: improving
 
 *Updated after each plan completion*
 
@@ -62,6 +63,9 @@ Recent decisions affecting current work:
 - Tailwind v4 via CDN browser build (sin build step)
 - Feature detection bloqueante con CSS inline para maxima compatibilidad
 - bun como runtime y package manager
+- Modulos JS separados por API del navegador (recorder, transcriber, visualizer)
+- Delay 300ms en auto-reinicio de SpeechRecognition para evitar rate-limiting
+- AudioContext se crea tras click del usuario (autoplay policy)
 
 ### Pending Todos
 
@@ -75,5 +79,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Completed 01-01-PLAN.md
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

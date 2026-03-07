@@ -13,16 +13,16 @@
 
 ### Grabacion
 
-- [ ] **GRAB-01**: Usuario puede grabar audio con MediaRecorder API
+- [x] **GRAB-01**: Usuario puede grabar audio con MediaRecorder API
 - [ ] **GRAB-02**: Usuario puede grabar video (camara) con audio simultaneo
 - [ ] **GRAB-03**: Selector de modo en la UI: solo audio / video+audio
-- [ ] **GRAB-04**: Indicador visual de grabacion activa (duracion, estado)
+- [x] **GRAB-04**: Indicador visual de grabacion activa (duracion, estado)
 
 ### Transcripcion
 
-- [ ] **TRAN-01**: Web Speech API transcribe durante la grabacion (es-ES)
-- [ ] **TRAN-02**: Transcripcion completa se muestra al parar la grabacion
-- [ ] **TRAN-03**: Auto-reinicio de SpeechRecognition en pausas de silencio
+- [x] **TRAN-01**: Web Speech API transcribe durante la grabacion (es-ES)
+- [x] **TRAN-02**: Transcripcion completa se muestra al parar la grabacion
+- [x] **TRAN-03**: Auto-reinicio de SpeechRecognition en pausas de silencio
 
 ### Resumen IA
 
@@ -81,13 +81,13 @@
 | ESTR-01 | Phase 1 | Complete |
 | ESTR-02 | Phase 1 | Complete |
 | ESTR-03 | Phase 1 | Complete |
-| GRAB-01 | Phase 2 | Pending |
+| GRAB-01 | Phase 2 | Complete |
 | GRAB-02 | Phase 5 | Pending |
 | GRAB-03 | Phase 5 | Pending |
-| GRAB-04 | Phase 2 | Pending |
-| TRAN-01 | Phase 2 | Pending |
-| TRAN-02 | Phase 2 | Pending |
-| TRAN-03 | Phase 2 | Pending |
+| GRAB-04 | Phase 2 | Complete |
+| TRAN-01 | Phase 2 | Complete |
+| TRAN-02 | Phase 2 | Complete |
+| TRAN-03 | Phase 2 | Complete |
 | RESU-01 | Phase 3 | Pending |
 | RESU-02 | Phase 3 | Pending |
 | RESU-03 | Phase 3 | Pending |
