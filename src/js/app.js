@@ -16,6 +16,62 @@ if (!isBrowserCompatible()) {
   document.getElementById('unsupported').style.display = 'flex';
 }
 
+const loginScreen = document.getElementById('login-screen');
+const loginBtn = document.getElementById('login-btn');
+const loginEmailInput = document.getElementById('login-email');
+const loginPasswordInput = document.getElementById('login-password');
+const loginError = document.getElementById('login-error');
+const userAvatar = document.getElementById('user-avatar');
+const avatarEmail = document.getElementById('avatar-email');
+
+function getSession() {
+  try { return JSON.parse(localStorage.getItem('bugshot_session')); } catch { return null; }
+}
+
+function showApp(email) {
+  loginScreen.classList.add('hidden');
+  avatarEmail.textContent = email;
+  userAvatar.classList.remove('hidden');
+}
+
+function checkAuth() {
+  const session = getSession();
+  if (session?.email) {
+    showApp(session.email);
+  } else {
+    loginScreen.classList.remove('hidden');
+  }
+}
+
+loginBtn.addEventListener('click', () => {
+  const email = loginEmailInput.value.trim();
+  const password = loginPasswordInput.value;
+  loginError.classList.add('hidden');
+
+  if (!email) {
+    loginError.textContent = 'Introduce tu email.';
+    loginError.classList.remove('hidden');
+    return;
+  }
+  if (password !== '1234') {
+    loginError.textContent = 'Password incorrecto.';
+    loginError.classList.remove('hidden');
+    return;
+  }
+
+  localStorage.setItem('bugshot_session', JSON.stringify({ email }));
+  showApp(email);
+});
+
+loginPasswordInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') loginBtn.click();
+});
+
+userAvatar.addEventListener('click', () => {
+  localStorage.removeItem('bugshot_session');
+  location.reload();
+});
+
 function timeAgo(date) {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return 'justo ahora';
@@ -373,6 +429,7 @@ function loadMocks() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  checkAuth();
   initMic();
   loadMocks();
 });
