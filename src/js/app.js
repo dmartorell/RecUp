@@ -1,7 +1,7 @@
-import { requestMicAccess, getStream, startRecording, stopRecording } from './recorder.js';
+import { requestMicAccess, startRecording, stopRecording } from './recorder.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
-import { initVisualizer, startVisualization, stopVisualization } from './visualizer.js';
 import { summarize } from './summarizer.js';
+import { MOCK_CARDS } from './mocks.js';
 
 function isBrowserCompatible() {
   return !!window.chrome;
@@ -29,16 +29,12 @@ let startTime = null;
 let micReady = false;
 
 const recordBtn = document.getElementById('record-btn');
-const recordingIndicator = document.getElementById('recording-indicator');
 const timerDisplay = document.getElementById('timer');
-const waveform = document.getElementById('waveform');
 const feed = document.getElementById('feed');
 const emptyState = document.getElementById('empty-state');
 const clearAllBtn = document.getElementById('clear-all-btn');
 const toastContainer = document.getElementById('toast-container');
 
-const micIcon = `<svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"/></svg>`;
-const stopIcon = `<svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
 
 async function initMic() {
   try {
@@ -57,21 +53,15 @@ async function toggleRecording() {
 
   if (!isRecording) {
     isRecording = true;
-    recordBtn.innerHTML = stopIcon;
+    recordBtn.querySelector('svg').classList.add('hidden');
+    timerDisplay.classList.remove('hidden');
     recordBtn.classList.add('animate-pulse-recording');
-
-    recordingIndicator.classList.remove('hidden');
-    recordingIndicator.classList.add('opacity-100');
-    recordingIndicator.classList.remove('opacity-0');
 
     startTime = Date.now();
     timerDisplay.textContent = '00:00';
     timerInterval = setInterval(() => {
       timerDisplay.textContent = formatDuration(Date.now() - startTime);
     }, 1000);
-
-    initVisualizer(getStream());
-    startVisualization(waveform);
 
     startTranscription((error) => {
       showToast('Error de transcripcion: ' + error);
@@ -80,19 +70,13 @@ async function toggleRecording() {
     startRecording();
   } else {
     isRecording = false;
-    recordBtn.innerHTML = micIcon;
+    timerDisplay.classList.add('hidden');
+    recordBtn.querySelector('svg').classList.remove('hidden');
     recordBtn.classList.remove('animate-pulse-recording');
-
-    recordingIndicator.classList.remove('opacity-100');
-    recordingIndicator.classList.add('opacity-0');
-    setTimeout(() => {
-      recordingIndicator.classList.add('hidden');
-    }, 300);
 
     clearInterval(timerInterval);
     const duration = Date.now() - startTime;
 
-    stopVisualization();
     const transcript = await stopTranscription();
     const audioBlob = await stopRecording();
 
@@ -145,8 +129,8 @@ function createCard(transcript, audioBlob, duration) {
     <div class="card-header">
       <div class="card-badges">
         <span class="badge badge-audio">Audio</span>
-        <span class="badge badge-duration">${durationStr}</span>
         <span class="badge badge-processing js-status-badge">Processing</span>
+        <span class="badge badge-duration">${durationStr}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
@@ -173,18 +157,29 @@ function createCard(transcript, audioBlob, duration) {
 function runSummarize(card, rawText) {
   summarize(rawText).then((result) => {
     const badge = card.querySelector('.js-status-badge');
-    badge.textContent = 'Completed';
-    badge.className = 'badge badge-completed js-status-badge';
-
     const spinner = card.querySelector('.js-spinner');
     if (spinner) spinner.remove();
 
     const body = card.querySelector('.card-body');
+    const textEl = card.querySelector('.card-text');
+
+    if (!result.is_bug) {
+      badge.textContent = 'Completed';
+      badge.className = 'badge badge-completed js-status-badge';
+
+      const msg = document.createElement('p');
+      msg.className = 'card-no-bug';
+      msg.textContent = 'No hay información suficiente para generar el ticket.';
+      body.appendChild(msg);
+
+      card.dataset.summaryTranscript = rawText;
+      return;
+    }
+
+    badge.textContent = 'Completed';
+    badge.className = 'badge badge-completed js-status-badge';
 
     card.dataset.summaryTitle = result.title;
-
-    const textEl = card.querySelector('.card-text');
-    textEl.textContent = result.transcript;
 
     const bullets = document.createElement('ul');
     bullets.className = 'card-bullets';
@@ -267,7 +262,72 @@ clearAllBtn.addEventListener('click', () => {
   updateEmptyState();
 });
 
-document.addEventListener('DOMContentLoaded', initMic);
+function loadMocks() {
+  MOCK_CARDS.forEach((mock) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    const durationStr = formatDuration(mock.duration);
+    const createdAt = mock.createdAt;
+    card.dataset.createdAt = createdAt.toISOString();
+
+    if (mock.is_bug) {
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-badges">
+            <span class="badge badge-audio">Audio</span>
+            <span class="badge badge-completed">Completed</span>
+            <span class="badge badge-duration">${durationStr}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
+            <button class="card-delete" aria-label="Eliminar">&times;</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-text">${mock.transcript}</p>
+          <ul class="card-bullets">${mock.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+        </div>
+        <div class="card-footer">
+          <button class="btn-create-ticket" disabled>Crear Ticket</button>
+        </div>
+      `;
+      card.dataset.summaryTitle = mock.title;
+      card.dataset.summaryTranscript = mock.transcript;
+      card.dataset.summaryBullets = JSON.stringify(mock.bullets);
+    } else {
+      card.innerHTML = `
+        <div class="card-header">
+          <div class="card-badges">
+            <span class="badge badge-audio">Audio</span>
+            <span class="badge badge-completed">Completed</span>
+            <span class="badge badge-duration">${durationStr}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
+            <button class="card-delete" aria-label="Eliminar">&times;</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="card-text">${mock.rawTranscript}</p>
+          <p class="card-no-bug">No hay información suficiente para generar el ticket.</p>
+        </div>
+      `;
+      card.dataset.summaryTranscript = mock.rawTranscript;
+    }
+
+    card.querySelector('.card-delete').addEventListener('click', () => {
+      card.remove();
+      updateEmptyState();
+    });
+    feed.appendChild(card);
+  });
+  updateEmptyState();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initMic();
+  loadMocks();
+});
 
 setInterval(() => {
   document.querySelectorAll('.js-time-relative').forEach((el) => {

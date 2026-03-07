@@ -2,21 +2,25 @@ html {
   scroll-behavior: smooth;
 }
 
+main::-webkit-scrollbar {
+  width: 6px;
+}
+
+main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+main::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+
+main::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 body {
   margin: 0;
-}
-
-.waveform-bar {
-  width: 4px;
-  min-height: 4px;
-  height: 4%;
-  background-color: #2563eb;
-  border-radius: 2px;
-  transition: height 100ms ease;
-}
-
-.recording-indicator {
-  transition: opacity 300ms ease;
 }
 
 .card {
@@ -39,8 +43,8 @@ body {
 }
 
 .card-time {
-  font-size: 0.875rem;
-  color: #6b7280;
+  font-size: 0.75rem;
+  color: #9ca3af;
 }
 
 .card-delete {
@@ -92,18 +96,20 @@ body {
 }
 
 @keyframes pulse-recording {
-  0%, 100% {
-    transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4),
+                0 0 0 0 rgba(37, 99, 235, 0.2),
+                0 0 0 0 rgba(37, 99, 235, 0.1);
   }
-  50% {
-    transform: scale(1.05);
-    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0);
+  100% {
+    box-shadow: 0 0 0 15px rgba(37, 99, 235, 0),
+                0 0 0 30px rgba(37, 99, 235, 0),
+                0 0 0 45px rgba(37, 99, 235, 0);
   }
 }
 
 .animate-pulse-recording {
-  animation: pulse-recording 1.5s ease-in-out infinite;
+  animation: pulse-recording 2s ease-out infinite;
 }
 
 .badge {
@@ -201,6 +207,13 @@ body {
 .btn-create-ticket:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.card-no-bug {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 8px 0 0 0;
 }
 
 .btn-retry {
