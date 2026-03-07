@@ -55,6 +55,11 @@ Webapp interna para empleados instaladores y de soporte. Permite grabar audio/pa
 Webapp grabadora → transcripción → resumen IA → ticket ClickUp.
 **Valor:** usable por el equipo desde el día 1.
 
+### Fase 1.5 — Notificación automática a Slack al crear ticket
+Cuando BugShot crea un ticket en ClickUp, el servidor llama directamente a Slack API para enviar un mensaje al canal designado con el título, descripción y enlace al ticket.
+**Implementación:** Incoming Webhook de Slack + llamada desde el servidor Express justo después de crear el ticket en ClickUp. Sin webhooks externos ni infraestructura adicional.
+**Valor:** el equipo se entera al instante de cada nuevo ticket sin revisar ClickUp manualmente.
+
 ### Fase 2 — Slack Bot (análisis)
 Command `@Frontend Bot plan {project} {ticketId}` que analiza el ticket y propone qué hacer.
 **Dependencia:** servidor backend (Node.js) para recibir webhooks de Slack.
