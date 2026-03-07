@@ -3,10 +3,8 @@ import { AttachmentManager } from './attachments.js';
 const modal = document.getElementById('ticket-modal');
 const titleInput = document.getElementById('ticket-title');
 const descriptionEl = document.getElementById('ticket-description');
-const reportedByInput = document.getElementById('ticket-reported-by');
-const affectedUserInput = document.getElementById('ticket-affected-user');
-const projectIdInput = document.getElementById('ticket-project-id');
 const assetIdInput = document.getElementById('ticket-asset-id');
+const appVersionInput = document.getElementById('ticket-app-version');
 const submitBtn = document.getElementById('ticket-submit-btn');
 const cancelBtn = document.getElementById('ticket-cancel-btn');
 const closeBtn = document.getElementById('ticket-close-btn');
@@ -25,7 +23,13 @@ const previewsContainer = document.getElementById('attachment-previews');
 const attachmentError = document.getElementById('attachment-error');
 const modalError = document.getElementById('ticket-modal-error');
 const appBadges = document.querySelectorAll('#app-badges .badge-app');
-let selectedApp = '';
+const platformBadges = document.querySelectorAll('#platform-badges .badge-platform');
+const warningModal = document.getElementById('warning-modal');
+const warningMissingList = document.getElementById('warning-missing-list');
+const warningBackBtn = document.getElementById('warning-back-btn');
+const warningSendBtn = document.getElementById('warning-send-btn');
+let selectedApp = 'alfred';
+let selectedPlatform = 'iOS';
 
 appBadges.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -36,6 +40,19 @@ appBadges.forEach(btn => {
       appBadges.forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
       selectedApp = btn.dataset.app;
+    }
+  });
+});
+
+platformBadges.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('selected')) {
+      btn.classList.remove('selected');
+      selectedPlatform = '';
+    } else {
+      platformBadges.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedPlatform = btn.dataset.platform;
     }
   });
 });
@@ -80,17 +97,17 @@ function closeModal() {
   }
   titleInput.value = '';
   descriptionEl.value = '';
-  reportedByInput.value = '';
-  affectedUserInput.value = '';
-  projectIdInput.value = '';
   assetIdInput.value = '';
+  appVersionInput.value = '';
   submitBtn.disabled = false;
   submitBtn.textContent = 'Crear Ticket';
   resetProgress();
   hideModalError();
   attachmentError.classList.add('invisible');
   appBadges.forEach(b => b.classList.remove('selected'));
+  platformBadges.forEach(b => b.classList.remove('selected'));
   selectedApp = '';
+  selectedPlatform = '';
   currentCardElement = null;
   currentTranscript = '';
   createdTaskId = null;
@@ -110,6 +127,11 @@ export function openTicketModal(cardData) {
   const capitalize = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const bulletsText = (cardData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
   descriptionEl.value = bulletsText;
+
+  selectedApp = 'alfred';
+  selectedPlatform = 'iOS';
+  appBadges.forEach(b => b.classList.toggle('selected', b.dataset.app === 'alfred'));
+  platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
 
   attachments = new AttachmentManager(previewsContainer);
 
@@ -135,7 +157,7 @@ async function openCamera() {
     cameraViewfinder.srcObject = cameraStream;
     cameraOverlay.classList.remove('hidden');
   } catch {
-    showAttachmentError('Cámara sin permisos.');
+    showAttachmentError('Camara sin permisos.');
   }
 }
 
@@ -187,13 +209,38 @@ async function uploadAttachments(taskId, files) {
   return data;
 }
 
-submitBtn.addEventListener('click', async () => {
-  const name = titleInput.value.trim();
-  if (!name) {
-    showModalError('El título es obligatorio.');
-    return;
-  }
+function getLoggedEmail() {
+  try {
+    const session = JSON.parse(localStorage.getItem('bugshot_session'));
+    return session?.email || '';
+  } catch { return ''; }
+}
 
+function getMissingFields() {
+  const missing = [];
+  if (!selectedApp) missing.push('App');
+  if (!selectedPlatform) missing.push('Plataforma');
+  if (!appVersionInput.value.trim()) missing.push('Version de la app');
+  if (!assetIdInput.value.trim()) missing.push('Asset ID');
+  return missing;
+}
+
+function showWarningModal(fields) {
+  warningMissingList.innerHTML = '';
+  fields.forEach(f => {
+    const li = document.createElement('li');
+    li.textContent = f;
+    warningMissingList.appendChild(li);
+  });
+  warningModal.classList.remove('hidden');
+}
+
+function hideWarningModal() {
+  warningModal.classList.add('hidden');
+}
+
+async function executeSubmit() {
+  const name = titleInput.value.trim();
   submitBtn.disabled = true;
   hideModalError();
   setProgress(10);
@@ -201,7 +248,7 @@ submitBtn.addEventListener('click', async () => {
   const bullets = descriptionEl.value;
   let markdownDescription = bullets;
   if (currentTranscript) {
-    markdownDescription += '\n\n---\n\n**Transcripción completa:**\n\n' + currentTranscript;
+    markdownDescription += '\n\n---\n\n**Transcripcion completa:**\n\n' + currentTranscript;
   }
 
   try {
@@ -211,10 +258,10 @@ submitBtn.addEventListener('click', async () => {
       body: JSON.stringify({
         name,
         markdown_description: markdownDescription,
-        reportedBy: reportedByInput.value.trim(),
-        affectedUser: affectedUserInput.value.trim(),
-        projectId: projectIdInput.value.trim(),
-        assetId: assetIdInput.value.trim()
+        reporterEmail: getLoggedEmail(),
+        assetId: assetIdInput.value.trim(),
+        platform: selectedPlatform,
+        appVersion: appVersionInput.value.trim()
       })
     });
 
@@ -286,6 +333,29 @@ submitBtn.addEventListener('click', async () => {
     submitBtn.disabled = false;
     resetProgress();
   }
+}
+
+submitBtn.addEventListener('click', () => {
+  const name = titleInput.value.trim();
+  if (!name) {
+    showModalError('El titulo es obligatorio.');
+    return;
+  }
+
+  const missingFields = getMissingFields();
+  if (missingFields.length > 0) {
+    showWarningModal(missingFields);
+    return;
+  }
+
+  executeSubmit();
+});
+
+warningBackBtn.addEventListener('click', hideWarningModal);
+
+warningSendBtn.addEventListener('click', () => {
+  hideWarningModal();
+  executeSubmit();
 });
 
 function markCardAsSent(ticketUrl) {
