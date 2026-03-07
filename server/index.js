@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import summarizeRouter from './routes/summarize.js';
 import ticketRouter from './routes/ticket.js';
+import attachmentRouter from './routes/attachment.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use(express.static(join(__dirname, '..', 'src')));
 app.use(summarizeRouter);
 app.use(ticketRouter);
+app.use(attachmentRouter);
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.warn('[WARN] ANTHROPIC_API_KEY no configurada — el endpoint /api/summarize no funcionara');
