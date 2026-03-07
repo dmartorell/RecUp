@@ -34,7 +34,7 @@ router.post('/api/summarize', async (req, res) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         temperature: 0.3,
         system: SYSTEM_PROMPT,
@@ -63,7 +63,8 @@ router.post('/api/summarize', async (req, res) => {
 
     let parsed;
     try {
-      parsed = JSON.parse(rawText);
+      const cleaned = rawText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
+      parsed = JSON.parse(cleaned);
     } catch {
       return res.status(502).json({
         error: 'Claude devolvio JSON invalido',
