@@ -1,35 +1,56 @@
+:root {
+  --color-text: #374151;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
-main {
+#ticket-modal input:focus,
+#ticket-modal textarea:focus {
+  background-color: #fff;
+}
+
+.modal-panel {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
+}
+
+main,
+.modal-panel {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
 
-main:hover {
+main:hover,
+.modal-panel:hover {
   scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
 }
 
-main::-webkit-scrollbar {
+main::-webkit-scrollbar,
+.modal-panel::-webkit-scrollbar {
   width: 6px;
 }
 
-main::-webkit-scrollbar-track {
+main::-webkit-scrollbar-track,
+.modal-panel::-webkit-scrollbar-track {
   background: transparent;
 }
 
-main::-webkit-scrollbar-thumb {
+main::-webkit-scrollbar-thumb,
+.modal-panel::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.3s;
 }
 
-main:hover::-webkit-scrollbar-thumb {
+main:hover::-webkit-scrollbar-thumb,
+.modal-panel:hover::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.12);
 }
 
-main:hover::-webkit-scrollbar-thumb:hover {
+main:hover::-webkit-scrollbar-thumb:hover,
+.modal-panel:hover::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
 
@@ -132,8 +153,8 @@ body {
 }
 
 .badge-audio {
-  background-color: #dbeafe;
-  color: #1d4ed8;
+  background-color: #f3f4f6;
+  color: #6b7280;
 }
 
 .badge-processing {
@@ -142,18 +163,39 @@ body {
 }
 
 .badge-completed {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: #f3f4f6;
+  color: #6b7280;
 }
 
 .badge-error {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: #f3f4f6;
+  color: #6b7280;
 }
 
 .badge-duration {
   background-color: #f3f4f6;
   color: #6b7280;
+}
+
+.badge-app {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.badge-app.selected[data-app="alfred"] {
+  background-color: #00b4d8;
+  color: #fff;
+}
+
+.badge-app.selected[data-app="nn"] {
+  background-color: #16a34a;
+  color: #fff;
+}
+
+.badge-app.selected[data-app="lavidda"] {
+  background-color: #a78bfa;
+  color: #fff;
 }
 
 .card-badges {
@@ -179,7 +221,7 @@ body {
 .card-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #111827;
+  color: var(--color-text);
   margin: 0 0 4px 0;
 }
 
@@ -286,8 +328,8 @@ body {
 }
 
 .badge-sent {
-  background-color: #d1fae5;
-  color: #065f46;
+  background-color: #f3f4f6;
+  color: #6b7280;
 }
 
 .attachment-grid {
