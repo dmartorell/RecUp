@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 Phase: 4 of 5 (Tickets + Adjuntos) - COMPLETE
 Plan: 2 of 2 in current phase - COMPLETE
 Status: Phase 04 complete
-Last activity: 2026-03-07 - Completed quick task 3: Hacer foto abre camara real con getUserMedia en desktop y movil
+Last activity: 2026-03-07 - Completed quick task 4: Modal advertencia campos faltantes al crear ticket
 
 Progress: [█████████░] 92%
 
@@ -94,9 +94,10 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 1 | UI polish cards: ocultar titulo, tiempo relativo, duracion junto a tags, estilos transcripcion/bullets, boton grabar azul abajo | 2026-03-07 | 2ceb436 | [1-ui-polish-cards](./quick/1-ui-polish-cards-ocultar-titulo-tiempo-re/) |
 | 3 | Hacer foto abre camara real con getUserMedia (desktop y movil) | 2026-03-07 | 500c5a7 | [3-hacer-foto](./quick/3-hacer-foto-abre-camara-real-con-getuserm/) |
+| 4 | Modal advertencia campos faltantes al crear ticket | 2026-03-07 | 78f6518 | [4-modal-advertencia](./quick/4-modal-advertencia-campos-faltantes-al-cr/) |
 
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Quick task 3 complete — getUserMedia camara real
+Stopped at: Quick task 4 complete — modal advertencia campos faltantes
 Resume file: None
