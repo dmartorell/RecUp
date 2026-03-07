@@ -22,15 +22,15 @@ export class AttachmentManager {
 
     for (const file of incoming) {
       if (!ALLOWED_TYPES.some(t => file.type.startsWith(t))) {
-        return `Tipo de archivo no permitido: ${file.name}. Solo imagenes y videos.`;
+        return `Tipo de archivo no permitido: ${file.name}. Solo imágenes y vídeos.`;
       }
       if (file.size > MAX_SIZE_BYTES) {
-        return `${file.name} excede el limite de 10 MB.`;
+        return `${file.name} excede el límite de 10 MB.`;
       }
     }
 
     if (this._files.length + incoming.length > MAX_FILES) {
-      return `Maximo ${MAX_FILES} archivos. Ya tienes ${this._files.length}.`;
+      return `Máximo ${MAX_FILES} archivos. Ya tienes ${this._files.length}.`;
     }
 
     this._files.push(...incoming);

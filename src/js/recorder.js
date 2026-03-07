@@ -8,10 +8,10 @@ async function requestMicAccess() {
     return stream;
   } catch (err) {
     if (err.name === 'NotAllowedError') {
-      throw new Error('Permiso de microfono denegado. Activa el microfono en la barra de direcciones.');
+      throw new Error('Permiso de micrófono denegado. Activa el micrófono en la barra de direcciones.');
     }
     if (err.name === 'NotFoundError') {
-      throw new Error('No se encontro ningun microfono conectado.');
+      throw new Error('No se encontró ningún micrófono conectado.');
     }
     throw err;
   }
