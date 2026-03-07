@@ -10,7 +10,7 @@ body {
   width: 4px;
   min-height: 4px;
   height: 4%;
-  background-color: #ef4444;
+  background-color: #2563eb;
   border-radius: 2px;
   transition: height 100ms ease;
 }
@@ -59,9 +59,9 @@ body {
 }
 
 .card-text {
-  font-size: 1rem;
+  font-size: 0.9rem;
   line-height: 1.6;
-  color: #1f2937;
+  color: #6b7280;
   margin: 0;
 }
 
@@ -94,11 +94,11 @@ body {
 @keyframes pulse-recording {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
   }
   50% {
     transform: scale(1.05);
-    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+    box-shadow: 0 0 0 12px rgba(37, 99, 235, 0);
   }
 }
 
@@ -136,6 +136,11 @@ body {
   color: #991b1b;
 }
 
+.badge-duration {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
 .card-badges {
   display: flex;
   gap: 6px;
@@ -167,7 +172,7 @@ body {
   list-style: disc;
   padding-left: 20px;
   margin: 8px 0 0 0;
-  color: #374151;
+  color: #1f2937;
   font-size: 0.95rem;
   line-height: 1.6;
 }
