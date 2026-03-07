@@ -93,9 +93,10 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | UI polish cards: ocultar titulo, tiempo relativo, duracion junto a tags, estilos transcripcion/bullets, boton grabar azul abajo | 2026-03-07 | 2ceb436 | [1-ui-polish-cards](./quick/1-ui-polish-cards-ocultar-titulo-tiempo-re/) |
+| 3 | Hacer foto abre camara real con getUserMedia (desktop y movil) | 2026-03-07 | 500c5a7 | [3-hacer-foto](./quick/3-hacer-foto-abre-camara-real-con-getuserm/) |
 
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Phase 04 complete — Modal de ticket con adjuntos
+Stopped at: Quick task 3 complete — getUserMedia camara real
 Resume file: None
