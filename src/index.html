@@ -121,7 +121,6 @@
             <button id="attach-file-btn" type="button" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Anadir archivo</button>
             <button id="attach-camera-btn" type="button" class="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Hacer foto</button>
             <input type="file" id="attach-file-input" class="hidden" accept="image/*,video/*" multiple>
-            <input type="file" id="attach-camera-input" class="hidden" accept="image/*" capture="environment">
           </div>
           <div id="attachment-previews"></div>
           <p id="attachment-error" class="text-sm text-red-600 mt-1 hidden"></p>
@@ -141,6 +140,15 @@
           <button id="ticket-submit-btn" type="button" class="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer">Crear Ticket</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div id="camera-overlay" class="hidden fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center">
+    <video id="camera-viewfinder" autoplay playsinline class="max-w-full max-h-[70vh] rounded-lg"></video>
+    <canvas id="camera-canvas" class="hidden"></canvas>
+    <div class="flex gap-4 mt-6">
+      <button id="camera-cancel-btn" type="button" class="px-6 py-3 text-white border border-white/30 rounded-full text-sm font-medium cursor-pointer hover:bg-white/10">Cancelar</button>
+      <button id="camera-capture-btn" type="button" class="px-6 py-3 bg-white text-black rounded-full text-sm font-medium cursor-pointer hover:bg-gray-200">Capturar</button>
     </div>
   </div>
 
