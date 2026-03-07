@@ -49,11 +49,10 @@ Plans:
 ### Phase 3: Resumen IA
 **Goal**: La transcripcion se convierte en un titulo y descripcion estructurada listos para un ticket
 **Depends on**: Phase 2
-**Requirements**: RESU-01, RESU-02, RESU-03
+**Requirements**: RESU-01, RESU-02
 **Success Criteria** (what must be TRUE):
-  1. El usuario pulsa "Resumir" y recibe un titulo conciso + bullets estructurados generados por Claude
+  1. Al parar la grabacion, la card muestra la transcripcion con estado Processing y se actualiza automaticamente con titulo + bullets cuando Claude responde
   2. El endpoint /api/summarize funciona como proxy sin exponer la API key en el frontend
-  3. El usuario puede editar tanto el titulo como la descripcion generados antes de continuar
 **Plans:** 1 plan
 
 Plans:
@@ -62,12 +61,13 @@ Plans:
 ### Phase 4: Tickets + Adjuntos
 **Goal**: El flujo completo audio-to-ticket funciona: el usuario graba, resume, y crea un ticket en ClickUp con evidencia adjunta
 **Depends on**: Phase 3
-**Requirements**: TICK-01, TICK-02, TICK-03, ADJU-01, ADJU-02, ADJU-03
+**Requirements**: TICK-01, TICK-02, TICK-03, ADJU-01, ADJU-02, ADJU-03, RESU-03
 **Success Criteria** (what must be TRUE):
   1. El usuario rellena campos del ticket en un modal (username, projectId, assetId) y crea el ticket en ClickUp
   2. El endpoint /api/ticket crea la tarea en ClickUp sin exponer credenciales en el frontend
   3. El usuario puede adjuntar fotos/videos desde galeria o camara y ver preview antes de enviar
   4. Los archivos adjuntos se suben al ticket creado via /api/attachment y el usuario recibe confirmacion con enlace al ticket
+  5. El usuario puede editar titulo y descripcion generados por IA en el modal antes de crear el ticket
 **Plans**: TBD
 
 Plans:
