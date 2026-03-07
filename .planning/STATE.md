@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-07T14:57:59.661Z"
+last_updated: "2026-03-07T16:41:00Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** El empleado graba, describe el problema hablando, y con un click tiene un ticket estructurado en ClickUp con toda la evidencia.
-**Current focus:** Phase 3 - Resumen IA
+**Current focus:** Phase 4 - Tickets + Adjuntos
 
 ## Current Position
 
-Phase: 3 of 5 (Resumen IA)
-Plan: 1 of 1 in current phase
-Status: Phase 03 complete
-Last activity: 2026-03-07 - Completed quick task 1: UI polish cards
+Phase: 4 of 5 (Tickets + Adjuntos)
+Plan: 2 of 2 in current phase
+Status: Plan 04-01 complete
+Last activity: 2026-03-07 - Completed plan 04-01: ClickUp proxy endpoints
 
-Progress: [████████░░] 80%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 3min
-- Total execution time: 0.13 hours
+- Total plans completed: 4
+- Average duration: 2min
+- Total execution time: 0.15 hours
 
 **By Phase:**
 
@@ -43,9 +43,10 @@ Progress: [████████░░] 80%
 | 01-estructura | 1 | 4min | 4min |
 | 02-audio-transcripcion | 2 | 2min | 1min |
 | 03-resumen-ia | 1 | 2min | 2min |
+| 04-tickets-adjuntos | 1 | 1min | 1min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (4min), 02-01 (2min), 02-02 (UAT), 03-01 (2min)
+- Last 5 plans: 01-01 (4min), 02-01 (2min), 02-02 (UAT), 03-01 (2min), 04-01 (1min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -72,6 +73,8 @@ Recent decisions affecting current work:
 - System prompt con instruccion de JSON puro para parseo fiable de respuestas Claude
 - AbortController con timeout 30s para requests a Claude API
 - Datos del resumen guardados en card.dataset para reutilizar en fase 4
+- Subida secuencial de attachments a ClickUp para evitar rate limiting
+- Metadata (reportedBy, affectedUser, projectId, assetId) concatenada al markdown_description del ticket
 
 ### Pending Todos
 
@@ -91,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-07
-Stopped at: Phase 03 complete — plan 03-01 executed
+Stopped at: Plan 04-01 complete — ClickUp proxy endpoints
 Resume file: None

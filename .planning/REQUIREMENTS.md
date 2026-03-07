@@ -32,7 +32,7 @@
 
 ### Tickets
 
-- [ ] **TICK-01**: Endpoint /api/ticket proxy a ClickUp API para crear tareas
+- [x] **TICK-01**: Endpoint /api/ticket proxy a ClickUp API para crear tareas
 - [ ] **TICK-02**: Modal con campos editables para crear el ticket
 - [ ] **TICK-03**: Confirmacion de exito con enlace al ticket creado
 
@@ -40,7 +40,7 @@
 
 - [ ] **ADJU-01**: Usuario puede adjuntar fotos/videos desde galeria o camara
 - [ ] **ADJU-02**: Preview de archivos adjuntos antes de crear el ticket
-- [ ] **ADJU-03**: Endpoint /api/attachment sube archivos al ticket en ClickUp
+- [x] **ADJU-03**: Endpoint /api/attachment sube archivos al ticket en ClickUp
 
 ### UX Polish
 
@@ -91,12 +91,12 @@
 | RESU-01 | Phase 3 | Complete |
 | RESU-02 | Phase 3 | Complete |
 | RESU-03 | Phase 3 | Pending |
-| TICK-01 | Phase 4 | Pending |
+| TICK-01 | Phase 4 | Complete |
 | TICK-02 | Phase 4 | Pending |
 | TICK-03 | Phase 4 | Pending |
 | ADJU-01 | Phase 4 | Pending |
 | ADJU-02 | Phase 4 | Pending |
-| ADJU-03 | Phase 4 | Pending |
+| ADJU-03 | Phase 4 | Complete |
 | UXPO-01 | Phase 5 | Pending |
 | UXPO-02 | Phase 5 | Pending |
 | UXPO-03 | Phase 5 | Pending |
