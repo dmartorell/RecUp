@@ -12,6 +12,17 @@ if (!isBrowserCompatible()) {
   document.getElementById('unsupported').style.display = 'flex';
 }
 
+function timeAgo(date) {
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return 'justo ahora';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return hours === 1 ? 'hace 1 hora' : `hace ${hours} horas`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? 'hace 1 dia' : `hace ${days} dias`;
+}
+
 let isRecording = false;
 let timerInterval = null;
 let startTime = null;
@@ -95,18 +106,20 @@ function createCard(transcript, audioBlob, duration) {
 
   const rawText = transcript.trim();
   const durationStr = formatDuration(duration);
-  const timestamp = new Date().toLocaleTimeString('es-ES');
+  const createdAt = new Date();
 
   card.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
+  card.dataset.createdAt = createdAt.toISOString();
 
   if (!rawText) {
     card.innerHTML = `
       <div class="card-header">
         <div class="card-badges">
           <span class="badge badge-audio">Audio</span>
+          <span class="badge badge-duration">${durationStr}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span class="card-time">${timestamp} · ${durationStr}</span>
+          <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
           <button class="card-delete" aria-label="Eliminar">&times;</button>
         </div>
       </div>
@@ -132,10 +145,11 @@ function createCard(transcript, audioBlob, duration) {
     <div class="card-header">
       <div class="card-badges">
         <span class="badge badge-audio">Audio</span>
+        <span class="badge badge-duration">${durationStr}</span>
         <span class="badge badge-processing js-status-badge">Processing</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span class="card-time">${timestamp} · ${durationStr}</span>
+        <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
         <button class="card-delete" aria-label="Eliminar">&times;</button>
       </div>
     </div>
@@ -167,10 +181,7 @@ function runSummarize(card, rawText) {
 
     const body = card.querySelector('.card-body');
 
-    const title = document.createElement('h3');
-    title.className = 'card-title';
-    title.textContent = result.title;
-    body.insertBefore(title, body.firstChild);
+    card.dataset.summaryTitle = result.title;
 
     const textEl = card.querySelector('.card-text');
     textEl.textContent = result.transcript;
@@ -189,7 +200,6 @@ function runSummarize(card, rawText) {
     footer.innerHTML = `<button class="btn-create-ticket" disabled>Crear Ticket</button>`;
     card.appendChild(footer);
 
-    card.dataset.summaryTitle = result.title;
     card.dataset.summaryTranscript = result.transcript;
     card.dataset.summaryBullets = JSON.stringify(result.bullets);
   }).catch((err) => {
@@ -258,3 +268,12 @@ clearAllBtn.addEventListener('click', () => {
 });
 
 document.addEventListener('DOMContentLoaded', initMic);
+
+setInterval(() => {
+  document.querySelectorAll('.js-time-relative').forEach((el) => {
+    const card = el.closest('.card');
+    if (card?.dataset.createdAt) {
+      el.textContent = timeAgo(new Date(card.dataset.createdAt));
+    }
+  });
+}, 30000);
