@@ -15,7 +15,12 @@ const progressBar = document.getElementById('ticket-progress-bar');
 const attachFileBtn = document.getElementById('attach-file-btn');
 const attachCameraBtn = document.getElementById('attach-camera-btn');
 const fileInput = document.getElementById('attach-file-input');
-const cameraInput = document.getElementById('attach-camera-input');
+const cameraOverlay = document.getElementById('camera-overlay');
+const cameraViewfinder = document.getElementById('camera-viewfinder');
+const cameraCanvas = document.getElementById('camera-canvas');
+const cameraCaptureBtn = document.getElementById('camera-capture-btn');
+const cameraCancelBtn = document.getElementById('camera-cancel-btn');
+let cameraStream = null;
 const previewsContainer = document.getElementById('attachment-previews');
 const attachmentError = document.getElementById('attachment-error');
 const modalError = document.getElementById('ticket-modal-error');
@@ -52,6 +57,7 @@ function hideModalError() {
 }
 
 function closeModal() {
+  closeCamera();
   modal.classList.add('hidden');
   if (attachments) {
     attachments.clear();
@@ -92,7 +98,6 @@ export function openTicketModal(cardData) {
 }
 
 attachFileBtn.addEventListener('click', () => fileInput.click());
-attachCameraBtn.addEventListener('click', () => cameraInput.click());
 
 fileInput.addEventListener('change', () => {
   if (fileInput.files.length) {
@@ -102,13 +107,50 @@ fileInput.addEventListener('change', () => {
   }
 });
 
-cameraInput.addEventListener('change', () => {
-  if (cameraInput.files.length) {
-    const err = attachments.addFiles(cameraInput.files);
-    if (err) showAttachmentError(err);
-    cameraInput.value = '';
+async function openCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    cameraViewfinder.srcObject = cameraStream;
+    cameraOverlay.classList.remove('hidden');
+  } catch {
+    showAttachmentError('No se pudo acceder a la camara.');
   }
-});
+}
+
+function closeCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  cameraViewfinder.srcObject = null;
+  cameraOverlay.classList.add('hidden');
+}
+
+function capturePhoto() {
+  const video = cameraViewfinder;
+  cameraCanvas.width = video.videoWidth;
+  cameraCanvas.height = video.videoHeight;
+  const ctx = cameraCanvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+  cameraCanvas.toBlob((blob) => {
+    if (!blob) {
+      showAttachmentError('Error al capturar la foto.');
+      closeCamera();
+      return;
+    }
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const file = new File([blob], `foto-${timestamp}.jpg`, { type: 'image/jpeg' });
+    const err = attachments.addFiles([file]);
+    if (err) showAttachmentError(err);
+    closeCamera();
+  }, 'image/jpeg', 0.92);
+}
+
+attachCameraBtn.addEventListener('click', openCamera);
+cameraCaptureBtn.addEventListener('click', capturePhoto);
+cameraCancelBtn.addEventListener('click', closeCamera);
 
 closeBtn.addEventListener('click', closeModal);
 cancelBtn.addEventListener('click', closeModal);
