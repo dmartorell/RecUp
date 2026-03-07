@@ -211,11 +211,20 @@ body {
   font-weight: 500;
   font-size: 0.875rem;
   cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.btn-create-ticket:hover {
+  background-color: #1d4ed8;
 }
 
 .btn-create-ticket:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn-create-ticket:disabled:hover {
+  background-color: #2563eb;
 }
 
 .card-no-bug {
