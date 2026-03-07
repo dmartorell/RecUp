@@ -15,17 +15,16 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-07)
+See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** El empleado graba, describe el problema hablando, y con un click tiene un ticket estructurado en ClickUp con toda la evidencia.
-**Current focus:** Phase 4.1 - Limpieza Técnica (gap closure post-audit)
+**Current focus:** v1.0 complete — planning next milestone (v1.1)
 
 ## Current Position
 
-Phase: 4.1 of 4.1 (Limpieza Técnica) - COMPLETE
-Plan: 1 of 1 in current phase - COMPLETE
-Status: Phase 4.1 complete — deuda técnica cerrada
-Last activity: 2026-03-07 - Completed 4.1-01: dead code eliminado y bug coerción corregido
+Milestone v1.0 COMPLETE — 2026-03-08
+All 5 phases (7 plans) done. Phases archived to milestones/v1.0-phases/.
+Next: /gsd:new-milestone para iniciar v1.1
 
 Progress: [██████████] 100%
 
