@@ -161,7 +161,8 @@ submitBtn.addEventListener('click', async () => {
 
     if (!ticketRes.ok) {
       const err = await ticketRes.json().catch(() => ({}));
-      throw new Error(err.error || 'Error al crear el ticket');
+      const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || 'Error al crear el ticket');
+      throw new Error(msg);
     }
 
     const ticket = await ticketRes.json();
