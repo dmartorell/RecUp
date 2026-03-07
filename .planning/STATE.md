@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Slack Notifications
-status: defining_requirements
+status: roadmap_ready
 last_updated: "2026-03-08"
 progress:
-  total_phases: 0
+  total_phases: 1
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** El empleado graba, describe el problema hablando, y con un click tiene un ticket estructurado en ClickUp con toda la evidencia.
-**Current focus:** v1.1 — Slack Notifications
+**Current focus:** v1.1 — Phase 5: Slack Notifications
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 5 — Slack Notifications
 Plan: —
-Status: Defining requirements
-Last activity: 2026-03-08 — Milestone v1.1 started
+Status: Roadmap ready — awaiting plan
+Last activity: 2026-03-08 — Roadmap v1.1 created
 
 Progress: [░░░░░░░░░░] 0%
 
