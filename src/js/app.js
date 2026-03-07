@@ -92,7 +92,10 @@ function createCard(transcript, audioBlob, duration) {
   const card = document.createElement('div');
   card.className = 'card';
 
-  const text = transcript.trim() || 'No se pudo transcribir este audio';
+  let text = transcript.trim() || 'No se pudo transcribir este audio.';
+  if (text && !text.endsWith('.') && !text.endsWith('?') && !text.endsWith('!')) {
+    text += '.';
+  }
   const durationStr = formatDuration(duration);
   const timestamp = new Date().toLocaleTimeString('es-ES');
 
