@@ -85,7 +85,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 4.1-01-PLAN.md — Eliminar visualizer.js y corregir bug coerción adjuntos
+- [x] 4.1-01-PLAN.md — Eliminar visualizer.js y corregir bug coerción adjuntos
 
 ### Phase 5: Video + UX Polish
 **Goal**: El usuario puede grabar video con camara ademas de audio, y la experiencia general es fluida y resistente a errores
@@ -113,5 +113,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Audio + Transcripcion | 1/2 | In progress | - |
 | 3. Resumen IA | 0/1 | Not started | - |
 | 4. Tickets + Adjuntos | 2/2 | Complete | 2026-03-07 |
-| 4.1. Limpieza técnica | 0/1 | Not started | - |
+| 4.1. Limpieza técnica | 1/1 | Complete | 2026-03-07 |
 | 5. Video + UX Polish | 0/? | Not started | - |
