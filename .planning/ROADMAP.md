@@ -74,6 +74,19 @@ Plans:
 - [x] 04-01-PLAN.md — Endpoints proxy /api/ticket y /api/attachment para ClickUp API
 - [x] 04-02-PLAN.md — Modal de creacion de ticket con adjuntos, preview, y flujo completo de envio
 
+### Phase 4.1: Limpieza técnica (gap closure)
+**Goal**: Eliminar dead code y corregir bug de coerción JS en detección de error parcial de adjuntos
+**Depends on**: Phase 4
+**Requirements**: (ninguna nueva — cierre de deuda técnica)
+**Gap Closure:** Closes tech_debt items from v1.0 audit
+**Success Criteria** (what must be TRUE):
+  1. `src/js/visualizer.js` eliminado del repositorio
+  2. `data.uploaded > 0` corregido a `data.uploaded.length > 0` en attachment.js
+**Plans:** 1 plan
+
+Plans:
+- [ ] 4.1-01-PLAN.md — Eliminar visualizer.js y corregir bug coerción adjuntos
+
 ### Phase 5: Video + UX Polish
 **Goal**: El usuario puede grabar video con camara ademas de audio, y la experiencia general es fluida y resistente a errores
 **Depends on**: Phase 4
@@ -100,4 +113,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Audio + Transcripcion | 1/2 | In progress | - |
 | 3. Resumen IA | 0/1 | Not started | - |
 | 4. Tickets + Adjuntos | 2/2 | Complete | 2026-03-07 |
+| 4.1. Limpieza técnica | 0/1 | Not started | - |
 | 5. Video + UX Polish | 0/? | Not started | - |
