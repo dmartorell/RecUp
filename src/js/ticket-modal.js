@@ -349,7 +349,7 @@ async function executeSubmit() {
       closeModal();
       const toast = document.createElement('div');
       toast.className = 'toast';
-      toast.innerHTML = `Ticket creado. <a href="${ticket.url}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:underline;">Ver en ClickUp</a>`;
+      toast.innerHTML = `Ticket creado. <a href="${ticket.url}" target="_blank" rel="noopener" style="color:#4a9ec5;text-decoration:underline;">Ver en ClickUp</a>`;
       document.getElementById('toast-container').appendChild(toast);
       setTimeout(() => {
         toast.classList.add('toast-fade-out');
@@ -399,14 +399,14 @@ function markCardAsSent(ticketUrl) {
 
   const badge = currentCardElement.querySelector('.js-status-badge');
   if (badge) {
-    badge.textContent = 'Enviada';
+    badge.textContent = 'Enviado';
     badge.className = 'badge badge-sent js-status-badge';
   }
 
   const footer = currentCardElement.querySelector('.card-footer');
   if (footer) {
     footer.innerHTML = `
-      <a href="${ticketUrl}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket en ClickUp</a>
+      <a href="${ticketUrl}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></a>
     `;
   }
 }
