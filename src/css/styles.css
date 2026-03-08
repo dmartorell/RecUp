@@ -220,7 +220,7 @@ body {
   width: 20px;
   height: 20px;
   border: 3px solid #e5e7eb;
-  border-top-color: #2563eb;
+  border-top-color: #245E83;
   border-radius: 50%;
   margin: 12px auto;
   animation: spin 0.8s linear infinite;
@@ -260,7 +260,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background-color: #2563eb;
+  background-color: #245E83;
   color: white;
   padding: 8px 16px;
   border: none;
@@ -272,8 +272,7 @@ body {
 }
 
 .btn-create-ticket:hover {
-  background-color: #1e40af;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  background-color: #0f3550;
 }
 
 .btn-create-ticket:disabled {
@@ -282,7 +281,7 @@ body {
 }
 
 .btn-create-ticket:disabled:hover {
-  background-color: #2563eb;
+  background-color: #245E83;
 }
 
 .card-no-bug {
@@ -340,8 +339,8 @@ body {
 }
 
 .badge-sent {
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: #e0eef5;
+  color: #245E83;
 }
 
 .attachment-grid {

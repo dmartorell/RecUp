@@ -59,8 +59,16 @@ loginBtn.addEventListener('click', () => {
     return;
   }
 
-  localStorage.setItem('bugshot_session', JSON.stringify({ email }));
-  showApp(email);
+  const originalText = loginBtn.textContent;
+  loginBtn.disabled = true;
+  loginBtn.innerHTML = '<svg class="animate-spin h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+
+  setTimeout(() => {
+    localStorage.setItem('bugshot_session', JSON.stringify({ email }));
+    loginBtn.disabled = false;
+    loginBtn.textContent = originalText;
+    showApp(email);
+  }, 1200);
 });
 
 loginPasswordInput.addEventListener('keydown', (e) => {
@@ -211,7 +219,7 @@ function createCard(transcript, audioBlob, duration) {
     <div class="card-header">
       <div class="card-badges">
         <span class="badge badge-audio">Audio</span>
-        <span class="badge badge-processing js-status-badge">Processing</span>
+        <span class="badge badge-processing js-status-badge">Procesando</span>
         <span class="badge badge-duration">${durationStr}</span>
       </div>
       <div style="display:flex;align-items:center;gap:16px">
@@ -246,7 +254,7 @@ function runSummarize(card, rawText) {
     const textEl = card.querySelector('.card-text');
 
     if (!result.is_bug) {
-      badge.textContent = 'Completed';
+      badge.textContent = 'Completado';
       badge.className = 'badge badge-completed js-status-badge';
 
       const msg = document.createElement('p');
@@ -258,7 +266,7 @@ function runSummarize(card, rawText) {
       return;
     }
 
-    badge.textContent = 'Completed';
+    badge.textContent = 'Completado';
     badge.className = 'badge badge-completed js-status-badge';
 
     card.dataset.summaryTitle = result.title;
@@ -303,7 +311,7 @@ function runSummarize(card, rawText) {
     retryBtn.className = 'btn-retry';
     retryBtn.textContent = 'Reintentar';
     retryBtn.addEventListener('click', () => {
-      badge.textContent = 'Processing';
+      badge.textContent = 'Procesando';
       badge.className = 'badge badge-processing js-status-badge';
 
       const newSpinner = document.createElement('div');
@@ -368,7 +376,7 @@ function loadMocks() {
         <div class="card-header">
           <div class="card-badges">
             <span class="badge badge-audio">Audio</span>
-            <span class="badge badge-completed">Completed</span>
+            <span class="badge badge-completed">Completado</span>
             <span class="badge badge-duration">${durationStr}</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px">
@@ -403,7 +411,7 @@ function loadMocks() {
         <div class="card-header">
           <div class="card-badges">
             <span class="badge badge-audio">Audio</span>
-            <span class="badge badge-completed">Completed</span>
+            <span class="badge badge-completed">Completado</span>
             <span class="badge badge-duration">${durationStr}</span>
           </div>
           <div style="display:flex;align-items:center;gap:16px">
@@ -431,7 +439,8 @@ function loadMocks() {
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   initMic();
-  loadMocks();
+  // loadMocks();
+  updateEmptyState();
 });
 
 setInterval(() => {
