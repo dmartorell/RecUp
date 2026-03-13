@@ -198,7 +198,8 @@ body {
 
 .idle-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .btn-send {
@@ -229,6 +230,7 @@ body {
   display: flex;
   justify-content: center;
   padding: 8px 0 4px;
+  /* unused — kept for reference */
 }
 
 .mic-container {
