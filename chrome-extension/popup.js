@@ -180,7 +180,8 @@ els.sendBtn.addEventListener('click', () => {
   const content = els.issueText.value.trim();
   if (!content) return;
 
-  const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content);
+  const email = els.userEmail.textContent || '';
+  const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content) + '&email=' + encodeURIComponent(email);
   chrome.tabs.create({ url });
   window.close();
 });
