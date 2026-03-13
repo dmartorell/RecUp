@@ -450,8 +450,9 @@ function handleExtensionMode() {
   history.replaceState({}, '', location.pathname);
 
   if (!getSession()) {
-    localStorage.setItem('bugshot_session', JSON.stringify({ email: 'extension@bugshot' }));
-    showApp('extension@bugshot');
+    const email = params.get('email') || 'extension@bugshot';
+    localStorage.setItem('bugshot_session', JSON.stringify({ email }));
+    showApp(email);
   }
 
   createCard(content, null, 0);
