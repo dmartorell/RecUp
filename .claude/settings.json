@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/secrets/*)",
+      "Read(**/*credential*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ]
+  },
+  "enabledPlugins": {
+    "ticket-planning@alfred-frontend-marketplace": true,
+    "design-system@alfred-frontend-marketplace": true,
+    "alfred-web-patterns@alfred-frontend-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "alfred-frontend-marketplace": {
+      "source": {
+        "source": "git",
+        "url": "git@bitbucket.org:alfred_befe/alfred-frontend-marketplace.git"
+      }
+    }
+  }
+}

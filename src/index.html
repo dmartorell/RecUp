@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
 
@@ -17,7 +17,7 @@
       @theme {
         --color-accent: #245e83;
         --color-accent-hover: #0f3550;
-        --font-sans: "Inter", sans-serif;
+        --font-sans: "Poppins", "Inter", sans-serif;
       }
     </style>
 
@@ -99,23 +99,33 @@
       </div>
     </div>
 
-    <div id="login-screen" class="hidden fixed inset-0 z-[70] flex">
-      <!-- Panel izquierdo -->
-      <div class="login-left">
-        <img src="img/bug2.png" alt="Bugshot" class="login-illustration" />
-      </div>
-      <!-- Panel derecho -->
-      <div class="login-right">
-        <div class="login-form-box">
-          <h1 class="text-[22px] font-semibold text-[var(--color-accent)] mb-1 text-center">
+    <div id="login-screen" class="hidden fixed inset-0 z-[70] login-screen">
+      <div class="login-card">
+        <!-- Panel izquierdo -->
+        <div class="login-left">
+          <div class="login-left-content">
+            <img src="img/bug.png" alt="Bugshot" class="login-illustration" />
+            <h2 class="login-left-title">Graba, habla y envía en un par de clics</h2>
+            <p class="login-left-desc">Bugshot transcribe tu audio, genera el resumen con IA y crea el ticket en ClickUp listo para que el equipo empiece a investigar.</p>
+          </div>
+        </div>
+        <!-- Panel derecho -->
+        <div class="login-right">
+          <img
+            src="img/alfred-logo.jpg"
+            alt="Alfred Smart"
+            class="w-48 mb-1 mx-auto"
+          />
+          <h1
+            class="text-[20px] font-light text-[var(--color-accent)] mb-8 text-center uppercase tracking-wide"
+          >
             Bugshot
           </h1>
-          <p class="text-sm text-gray-400 mb-6">Inicia sesión</p>
           <div class="space-y-4">
             <div>
               <label
                 for="login-email"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-sm font-light text-gray-400 mb-1"
                 >Email</label
               >
               <input
@@ -128,7 +138,7 @@
             <div>
               <label
                 for="login-password"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-sm font-light text-gray-400 mb-1"
                 >Contraseña</label
               >
               <input
@@ -137,13 +147,18 @@
                 class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
               />
             </div>
-            <p id="login-error" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 invisible">Credenciales incorrectas</p>
+            <p
+              id="login-error"
+              class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 invisible"
+            >
+              Credenciales incorrectas
+            </p>
             <button
               id="login-btn"
               type="button"
-              class="w-full px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
+              class="w-full px-4 py-2 text-sm font-light text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
             >
-              Entrar
+              Login
             </button>
           </div>
         </div>
@@ -157,7 +172,9 @@
         <div
           class="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between"
         >
-          <h1 class="text-xl font-semibold text-[var(--color-accent)] flex items-center gap-2">
+          <h1
+            class="text-xl font-semibold text-[var(--color-accent)] flex items-center gap-2"
+          >
             <img src="img/bug.png" alt="" class="w-14 h-14 object-contain" />
             Bugshot
           </h1>
@@ -192,7 +209,10 @@
           id="empty-state"
           class="hidden flex flex-col items-center justify-center flex-1"
         >
-          <div class="card flex flex-col items-center text-center" style="padding: 96px 128px;">
+          <div
+            class="card flex flex-col items-center text-center"
+            style="padding: 96px 128px"
+          >
             <p class="text-lg font-medium text-gray-600">Sin registros</p>
             <p class="text-sm text-gray-400 mt-1">
               Envía un audio y cuéntanos qué está fallando
@@ -301,7 +321,7 @@
           <div>
             <label
               for="ticket-title"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-light text-gray-400 mb-1"
               >Título</label
             >
             <input
@@ -363,7 +383,7 @@
             <div>
               <label
                 for="ticket-app-version"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-sm font-light text-gray-400 mb-1"
                 >Versión de la app</label
               >
               <input
@@ -376,7 +396,7 @@
             <div>
               <label
                 for="ticket-asset-id"
-                class="block text-sm font-medium text-gray-700 mb-1"
+                class="block text-sm font-light text-gray-400 mb-1"
                 >Asset ID</label
               >
               <input
@@ -390,7 +410,7 @@
           <div>
             <label
               for="ticket-description"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-light text-gray-400 mb-1"
               >Descripción</label
             >
             <textarea
