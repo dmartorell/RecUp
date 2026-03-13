@@ -29,7 +29,7 @@ function showLogin() {
   views.login.classList.remove('hidden');
   els.email.value = '';
   els.password.value = '';
-  els.loginError.classList.add('hidden');
+  els.loginError.classList.remove('visible');
 }
 
 function showIdle(email) {
@@ -118,15 +118,8 @@ function handleLogin() {
   const email = els.email.value.trim();
   const password = els.password.value;
 
-  if (!email) {
-    els.loginError.textContent = 'Introduce tu email.';
-    els.loginError.classList.remove('hidden');
-    return;
-  }
-
-  if (password !== PASSWORD) {
-    els.loginError.textContent = 'Credenciales incorrectas.';
-    els.loginError.classList.remove('hidden');
+  if (!email || password !== PASSWORD) {
+    els.loginError.classList.add('visible');
     return;
   }
 

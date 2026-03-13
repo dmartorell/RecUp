@@ -46,16 +46,10 @@ function checkAuth() {
 loginBtn.addEventListener('click', () => {
   const email = loginEmailInput.value.trim();
   const password = loginPasswordInput.value;
-  loginError.classList.add('hidden');
+  loginError.classList.remove('visible');
 
-  if (!email) {
-    loginError.textContent = 'Introduce tu email.';
-    loginError.classList.remove('hidden');
-    return;
-  }
-  if (password !== '1234') {
-    loginError.textContent = 'Password incorrecto.';
-    loginError.classList.remove('hidden');
+  if (!email || password !== '1234') {
+    loginError.classList.add('visible');
     return;
   }
 

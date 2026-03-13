@@ -158,6 +158,10 @@ body {
   color: #6b7280;
 }
 
+.visible {
+  visibility: visible !important;
+}
+
 .badge-text {
   background-color: #e0f2fe;
   color: #0369a1;
