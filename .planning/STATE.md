@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: Chrome Extension
-status: in-progress
-last_updated: "2026-03-13T16:10:00Z"
+milestone: v1.0
+milestone_name: MVP
+status: unknown
+last_updated: "2026-03-13T15:57:04.906Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 5
+  completed_plans: 4
 ---
 
 # Project State
@@ -48,6 +48,8 @@ Recent decisions affecting current work:
 - extension@bugshot como sesión temporal cuando llega bugshot_token sin sesión local previa
 - Clase .btn-send separada de .btn-primary en popup Idle — evita herencia de width:100% del login
 - bugshot_token leído desde chrome.storage.local al enviar, con fallback 'local'
+- [Phase 01-extensi-n-chrome-para-bugshot]: transcriber.js usa window.* exports en lugar de ES modules (scripts clásicos en extensión Chrome)
+- [Phase 01-extensi-n-chrome-para-bugshot]: No envío automático al parar grabación — transcript va al textarea para revisión del usuario
 
 ### Pending Todos
 
