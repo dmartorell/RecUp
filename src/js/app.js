@@ -53,7 +53,7 @@ loginBtn.addEventListener('click', () => {
   const password = loginPasswordInput.value;
   loginError.classList.remove('visible');
 
-  if (!email || password !== '1234') {
+  if (!email || password !== 'Alfred77') {
     loginError.classList.add('visible');
     return;
   }
@@ -184,13 +184,14 @@ function createCard(transcript, audioBlob, duration) {
   const durationStr = formatDuration(duration);
   const createdAt = new Date();
 
-  if (audioBlob) {
+  const hasAudio = !!audioBlob;
+  if (audioBlob && audioBlob instanceof Blob) {
     card.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
   }
   card.dataset.createdAt = createdAt.toISOString();
 
-  const typeBadgeClass = audioBlob ? 'badge-audio' : 'badge-text';
-  const typeBadgeLabel = audioBlob ? 'Audio' : 'Texto';
+  const typeBadgeClass = hasAudio ? 'badge-audio' : 'badge-text';
+  const typeBadgeLabel = hasAudio ? 'Audio' : 'Texto';
 
   if (!rawText) {
     card.innerHTML = `
@@ -447,6 +448,8 @@ function handleExtensionMode() {
   const content = params.get('content');
   if (!content) return;
 
+  const source = params.get('source') || 'text';
+
   history.replaceState({}, '', location.pathname);
 
   if (!getSession()) {
@@ -455,7 +458,7 @@ function handleExtensionMode() {
     showApp(email);
   }
 
-  createCard(content, null, 0);
+  createCard(content, source === 'audio' ? 'ext-audio' : null, 0);
 }
 
 document.addEventListener('DOMContentLoaded', () => {

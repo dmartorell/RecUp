@@ -1,4 +1,4 @@
-const PASSWORD = '1234';
+const PASSWORD = 'Alfred77';
 const BUGSHOT_URL = 'http://localhost:3000';
 
 let mediaStream = null;
@@ -7,6 +7,7 @@ let analyser = null;
 let waveformAnimId = null;
 let timerInterval = null;
 let recordingStartTime = null;
+let usedAudio = false;
 
 const views = {
   login: document.getElementById('view-login'),
@@ -134,6 +135,7 @@ async function stopRecording() {
   if (transcript) {
     els.issueText.value = transcript;
     els.issueText.dispatchEvent(new Event('input'));
+    usedAudio = true;
   }
 
   mediaStream = null;
@@ -174,6 +176,9 @@ els.password.addEventListener('keydown', (e) => {
 
 els.issueText.addEventListener('input', () => {
   els.sendBtn.disabled = els.issueText.value.trim().length === 0;
+  if (usedAudio && els.issueText.value.trim().length === 0) {
+    usedAudio = false;
+  }
 });
 
 els.sendBtn.addEventListener('click', () => {
@@ -181,7 +186,9 @@ els.sendBtn.addEventListener('click', () => {
   if (!content) return;
 
   const email = els.userEmail.textContent || '';
-  const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content) + '&email=' + encodeURIComponent(email);
+  const source = usedAudio ? 'audio' : 'text';
+  const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content) + '&email=' + encodeURIComponent(email) + '&source=' + source;
+  usedAudio = false;
 
   chrome.tabs.query({ url: BUGSHOT_URL + '/*' }, (tabs) => {
     if (tabs.length > 0) {

@@ -8,7 +8,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="preload"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=block"
+      as="style"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=block"
       rel="stylesheet"
     />
 
@@ -99,14 +104,20 @@
       </div>
     </div>
 
-    <div id="login-screen" class="hidden fixed inset-0 z-[70] login-screen">
+    <div id="login-screen" class="hidden fixed inset-0 z-[70]">
       <div class="login-card">
         <!-- Panel izquierdo -->
         <div class="login-left">
           <div class="login-left-content">
             <img src="img/bug.png" alt="Bugshot" class="login-illustration" />
-            <h2 class="login-left-title">Graba, habla y envía en un par de clics</h2>
-            <p class="login-left-desc">Bugshot transcribe tu audio, genera el resumen con IA y crea el ticket en ClickUp listo para que el equipo empiece a investigar.</p>
+            <h2 class="login-left-title">
+              Graba, habla y envía en un par de clics
+            </h2>
+            <p class="login-left-desc">
+              Cuéntanos qué está fallando. Bugshot transcribe tu audio, genera
+              el resumen y crea el ticket en ClickUp listo para que el equipo
+              empiece a investigar.
+            </p>
           </div>
         </div>
         <!-- Panel derecho -->
@@ -173,7 +184,7 @@
           class="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between"
         >
           <h1
-            class="text-xl font-semibold text-[var(--color-accent)] flex items-center gap-2"
+            class="text-xl font-light text-[var(--color-accent)] flex items-center gap-2 uppercase tracking-wide"
           >
             <img src="img/bug.png" alt="" class="w-14 h-14 object-contain" />
             Bugshot
