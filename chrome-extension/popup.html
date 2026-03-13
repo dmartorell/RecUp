@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="popup.css">
-  <script src="transcriber.js"></script>
 </head>
 <body>
 
@@ -60,23 +59,13 @@
         <button id="send-btn" class="btn-send" disabled>Enviar →</button>
       </div>
       <div class="recording-section">
-        <div id="mic-idle" class="mic-container">
+        <div class="mic-container">
           <button id="mic-btn" class="btn-mic" title="Grabar audio">
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 016 0v8.25a3 3 0 01-3 3z"/>
             </svg>
           </button>
         </div>
-        <div id="mic-recording" class="recording-container hidden">
-          <div id="waveform" class="waveform"></div>
-          <button id="stop-btn" class="btn-stop">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
-              <rect x="4" y="4" width="16" height="16" rx="2"/>
-            </svg>
-            <span id="timer-display">00:00</span>
-          </button>
-        </div>
-        <p id="mic-error" class="mic-error hidden"></p>
       </div>
     </div>
   </div>
