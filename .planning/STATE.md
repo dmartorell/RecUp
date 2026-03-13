@@ -26,7 +26,7 @@ Phase: 01-extensi-n-chrome-para-bugshot
 Current Plan: 05 (de 5)
 Last activity: 2026-03-13 — Plan 01-04 completado (handleExtensionMode en app.js, integración webapp-extensión)
 
-Progress: [██░░░░░░░░] 25%
+Progress: [████████░░] 80%
 
 ## Accumulated Context
 
@@ -44,6 +44,8 @@ Recent decisions affecting current work:
 - Auth local client-side (password '1234') en extensión — no hay /api/login real en v1
 - Token guardado como string 'local' en chrome.storage.local (placeholder para v2 con JWT)
 - Micrófono no declarado en manifest (getUserMedia en runtime, plan 03)
+- createCard(null, null, 0) para modo extensión — badge-text distingue cards sin audio
+- extension@bugshot como sesión temporal cuando llega bugshot_token sin sesión local previa
 
 ### Pending Todos
 
