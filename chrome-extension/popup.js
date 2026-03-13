@@ -1,7 +1,9 @@
 const PASSWORD = '1234';
 const BUGSHOT_URL = 'http://localhost:3000';
 
-let transcriptionRunning = false;
+let mediaStream = null;
+let audioContext = null;
+let analyser = null;
 let waveformAnimId = null;
 let timerInterval = null;
 let recordingStartTime = null;
@@ -58,40 +60,52 @@ function updateTimer() {
 }
 
 function animateWaveform() {
-  if (!transcriptionRunning) return;
+  if (!analyser) return;
   const bars = document.querySelectorAll('.waveform-bar');
-  const baseHeights = [8, 20, 32, 20, 8];
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(dataArray);
+  const step = Math.floor(dataArray.length / bars.length);
   bars.forEach((bar, i) => {
-    const h = Math.max(4, baseHeights[i] + (Math.random() - 0.5) * 24);
-    bar.style.height = Math.round(h) + 'px';
+    const value = dataArray[i * step] || 0;
+    bar.style.height = Math.max(4, Math.round((value / 255) * 40)) + 'px';
   });
-  waveformAnimId = setTimeout(animateWaveform, 120);
+  waveformAnimId = requestAnimationFrame(animateWaveform);
 }
 
-function startRecording() {
+async function startRecording() {
   document.getElementById('mic-error').classList.add('hidden');
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (err) {
+    const errEl = document.getElementById('mic-error');
+    errEl.textContent = err.name === 'NotAllowedError'
+      ? 'Permiso de micrófono denegado.'
+      : `Error micrófono: ${err.name}`;
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  audioContext = new AudioContext();
+  analyser = audioContext.createAnalyser();
+  analyser.fftSize = 256;
+  audioContext.createMediaStreamSource(mediaStream).connect(analyser);
+
   document.getElementById('mic-idle').classList.add('hidden');
   document.getElementById('mic-recording').classList.remove('hidden');
 
-  transcriptionRunning = true;
   recordingStartTime = Date.now();
   timerInterval = setInterval(updateTimer, 1000);
   animateWaveform();
 
-  window.startTranscription((err) => {
-    if (err) {
-      const errEl = document.getElementById('mic-error');
-      errEl.textContent = `Error: ${err}`;
-      errEl.classList.remove('hidden');
-      stopRecording();
-    }
-  });
+  window.startTranscription(() => {});
 }
 
 async function stopRecording() {
-  transcriptionRunning = false;
+  cancelAnimationFrame(waveformAnimId);
   clearInterval(timerInterval);
-  clearTimeout(waveformAnimId);
+
+  if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+  if (audioContext) audioContext.close();
 
   document.getElementById('mic-idle').classList.remove('hidden');
   document.getElementById('mic-recording').classList.add('hidden');
@@ -102,6 +116,10 @@ async function stopRecording() {
     els.issueText.value = transcript;
     els.issueText.dispatchEvent(new Event('input'));
   }
+
+  mediaStream = null;
+  audioContext = null;
+  analyser = null;
 }
 
 function handleLogin() {
