@@ -1,13 +1,6 @@
 const PASSWORD = '1234';
 const BUGSHOT_URL = 'http://localhost:3000';
 
-let mediaStream = null;
-let audioContext = null;
-let analyser = null;
-let waveformAnimId = null;
-let timerInterval = null;
-let recordingStartTime = null;
-
 const views = {
   login: document.getElementById('view-login'),
   idle: document.getElementById('view-idle'),
@@ -38,97 +31,6 @@ function showIdle(email) {
   els.userEmail.textContent = email;
   els.issueText.value = '';
   els.sendBtn.disabled = true;
-  initWaveformBars();
-}
-
-function initWaveformBars() {
-  const waveformEl = document.getElementById('waveform');
-  if (waveformEl.children.length > 0) return;
-  const NUM_BARS = 5;
-  for (let i = 0; i < NUM_BARS; i++) {
-    const bar = document.createElement('div');
-    bar.className = 'waveform-bar';
-    bar.style.height = '4px';
-    waveformEl.appendChild(bar);
-  }
-}
-
-function updateTimer() {
-  const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
-  const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
-  const ss = String(elapsed % 60).padStart(2, '0');
-  document.getElementById('timer-display').textContent = mm + ':' + ss;
-}
-
-function animateWaveform() {
-  if (!analyser) return;
-  const bars = document.querySelectorAll('.waveform-bar');
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(dataArray);
-  const step = Math.floor(dataArray.length / bars.length);
-  bars.forEach((bar, i) => {
-    const value = dataArray[i * step] || 0;
-    const height = Math.max(4, Math.round((value / 255) * 40));
-    bar.style.height = height + 'px';
-  });
-  waveformAnimId = requestAnimationFrame(animateWaveform);
-}
-
-async function startRecording() {
-  document.getElementById('mic-error').classList.add('hidden');
-  try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (_) {
-    const errEl = document.getElementById('mic-error');
-    errEl.textContent = 'Acceso al micrófono denegado.';
-    errEl.classList.remove('hidden');
-    return;
-  }
-
-  audioContext = new AudioContext();
-  analyser = audioContext.createAnalyser();
-  analyser.fftSize = 256;
-  const source = audioContext.createMediaStreamSource(mediaStream);
-  source.connect(analyser);
-
-  document.getElementById('mic-idle').classList.add('hidden');
-  document.getElementById('mic-recording').classList.remove('hidden');
-
-  recordingStartTime = Date.now();
-  timerInterval = setInterval(updateTimer, 1000);
-
-  animateWaveform();
-
-  window.startTranscription((err) => {});
-}
-
-async function stopRecording() {
-  clearInterval(timerInterval);
-  cancelAnimationFrame(waveformAnimId);
-
-  if (mediaStream) {
-    mediaStream.getTracks().forEach(t => t.stop());
-  }
-  if (audioContext) {
-    audioContext.close();
-  }
-
-  document.getElementById('mic-idle').classList.remove('hidden');
-  document.getElementById('mic-recording').classList.add('hidden');
-
-  document.querySelectorAll('.waveform-bar').forEach(bar => {
-    bar.style.height = '4px';
-  });
-
-  const transcript = await window.stopTranscription();
-  if (transcript) {
-    els.issueText.value = transcript;
-    els.issueText.dispatchEvent(new Event('input'));
-  }
-
-  mediaStream = null;
-  audioContext = null;
-  analyser = null;
 }
 
 function handleLogin() {
@@ -178,8 +80,16 @@ els.sendBtn.addEventListener('click', () => {
   window.close();
 });
 
-document.getElementById('mic-btn').addEventListener('click', startRecording);
-document.getElementById('stop-btn').addEventListener('click', stopRecording);
+document.getElementById('mic-btn').addEventListener('click', () => {
+  chrome.windows.create({
+    url: chrome.runtime.getURL('recorder.html'),
+    type: 'popup',
+    width: 380,
+    height: 340,
+    focused: true,
+  });
+  window.close();
+});
 
 chrome.storage.local.get(['bugshot_token', 'bugshot_email'], (result) => {
   if (result.bugshot_token && result.bugshot_email) {
