@@ -43,6 +43,10 @@ function checkAuth() {
   }
 }
 
+[loginEmailInput, loginPasswordInput].forEach(input => {
+  input.addEventListener('focus', () => loginError.classList.remove('visible'));
+});
+
 loginBtn.addEventListener('click', () => {
   const email = loginEmailInput.value.trim();
   const password = loginPasswordInput.value;
