@@ -84,6 +84,7 @@ async function startRecording() {
   document.getElementById('mic-idle').classList.add('hidden');
   document.getElementById('mic-recording').classList.remove('hidden');
 
+  document.getElementById('timer-display').textContent = '00:00';
   recordingStartTime = Date.now();
   timerInterval = setInterval(updateTimer, 1000);
   animateWaveform();
