@@ -254,7 +254,6 @@ body {
 
 .btn-mic:hover {
   background: var(--accent-hover);
-  transform: scale(1.05);
 }
 
 .recording-container {
