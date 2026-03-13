@@ -154,21 +154,17 @@ body {
 
 .btn-logout {
   background: none;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
-  padding: 5px 9px;
-  color: #6b7280;
+  border: none;
   cursor: pointer;
+  color: #9ca3af;
+  padding: 4px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: background 0.15s, color 0.15s;
-  flex-shrink: 0;
+  transition: color 150ms ease;
 }
 
 .btn-logout:hover {
-  background: #f3f4f6;
-  color: var(--text);
+  color: #4b5563;
 }
 
 .idle-body {
