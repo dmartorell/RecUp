@@ -101,6 +101,11 @@ body {
   border: 1px solid #fecaca;
   border-radius: 6px;
   padding: 8px 12px;
+  visibility: hidden;
+}
+
+.error-msg.visible {
+  visibility: visible;
 }
 
 .btn-primary {
