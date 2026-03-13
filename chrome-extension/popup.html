@@ -66,11 +66,14 @@
         </div>
         <div id="mic-recording" class="recording-container hidden">
           <button id="stop-btn" class="btn-stop">
-            <div class="waveform">
-              <div class="waveform-bar"></div>
-              <div class="waveform-bar"></div>
-            </div>
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24">
+              <rect x="4" y="4" width="16" height="16" rx="2"/>
+            </svg>
           </button>
+          <div class="waveform">
+            <div class="waveform-bar"></div>
+            <div class="waveform-bar"></div>
+          </div>
           <span id="timer-display" class="timer-display">00:00</span>
         </div>
         <button id="send-btn" class="btn-send" disabled>Enviar →</button>
