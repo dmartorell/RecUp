@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bugshot",
   "version": "1.0.0",
-  "description": "Genera tickets de incidencias en Clickup usando audio o texto desde el navegador. Requiere permiso de micrófono.",
+  "description": "Genera tickets de incidencias en Clickup usando audio o texto. El micrófono solo se activa al pulsar grabar.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

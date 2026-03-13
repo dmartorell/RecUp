@@ -182,8 +182,16 @@ els.sendBtn.addEventListener('click', () => {
 
   const email = els.userEmail.textContent || '';
   const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content) + '&email=' + encodeURIComponent(email);
-  chrome.tabs.create({ url });
-  window.close();
+
+  chrome.tabs.query({ url: BUGSHOT_URL + '/*' }, (tabs) => {
+    if (tabs.length > 0) {
+      chrome.tabs.update(tabs[0].id, { url, active: true });
+      chrome.windows.update(tabs[0].windowId, { focused: true });
+    } else {
+      chrome.tabs.create({ url });
+    }
+    window.close();
+  });
 });
 
 document.getElementById('mic-btn').addEventListener('click', startRecording);
