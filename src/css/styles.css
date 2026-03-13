@@ -165,8 +165,8 @@ body {
 }
 
 .badge-audio {
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: #e0f2fe;
+  color: #0369a1;
 }
 
 .visible {
@@ -174,8 +174,8 @@ body {
 }
 
 .badge-text {
-  background-color: #e0f2fe;
-  color: #0369a1;
+  background-color: #dcfce7;
+  color: #16a34a;
 }
 
 .badge-processing {
@@ -511,7 +511,7 @@ body {
   }
   .login-right {
     flex: 1;
-    padding: 24px 20px;
+    padding: 32px 48px;
   }
   .login-left-title {
     font-size: 1rem;
