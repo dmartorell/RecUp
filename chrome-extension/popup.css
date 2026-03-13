@@ -151,7 +151,7 @@ body {
   background: none;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  padding: 5px;
+  padding: 5px 9px;
   color: #6b7280;
   cursor: pointer;
   display: flex;
