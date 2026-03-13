@@ -99,49 +99,53 @@
       </div>
     </div>
 
-    <div
-      id="login-screen"
-      class="hidden fixed inset-0 z-[70] bg-[#f5f5f5] flex items-center justify-center"
-    >
-      <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm mx-4 p-8">
-        <h1 class="text-[22px] font-semibold text-[var(--color-accent)] mb-1 text-center">
-          Bugshot
-        </h1>
-        <p class="text-sm text-gray-400 mb-6">Inicia sesión</p>
-        <div class="space-y-4">
-          <div>
-            <label
-              for="login-email"
-              class="block text-sm font-medium text-gray-700 mb-1"
-              >Email</label
+    <div id="login-screen" class="hidden fixed inset-0 z-[70] flex">
+      <!-- Panel izquierdo -->
+      <div class="login-left">
+        <img src="img/bug2.png" alt="Bugshot" class="login-illustration" />
+      </div>
+      <!-- Panel derecho -->
+      <div class="login-right">
+        <div class="login-form-box">
+          <h1 class="text-[22px] font-semibold text-[var(--color-accent)] mb-1 text-center">
+            Bugshot
+          </h1>
+          <p class="text-sm text-gray-400 mb-6">Inicia sesión</p>
+          <div class="space-y-4">
+            <div>
+              <label
+                for="login-email"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Email</label
+              >
+              <input
+                type="email"
+                id="login-email"
+                class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                placeholder="tu@alfredsmart.com"
+              />
+            </div>
+            <div>
+              <label
+                for="login-password"
+                class="block text-sm font-medium text-gray-700 mb-1"
+                >Contraseña</label
+              >
+              <input
+                type="password"
+                id="login-password"
+                class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+              />
+            </div>
+            <p id="login-error" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 invisible">Credenciales incorrectas</p>
+            <button
+              id="login-btn"
+              type="button"
+              class="w-full px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
             >
-            <input
-              type="email"
-              id="login-email"
-              class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-              placeholder="tu@alfredsmart.com"
-            />
+              Entrar
+            </button>
           </div>
-          <div>
-            <label
-              for="login-password"
-              class="block text-sm font-medium text-gray-700 mb-1"
-              >Contraseña</label
-            >
-            <input
-              type="password"
-              id="login-password"
-              class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
-            />
-          </div>
-          <p id="login-error" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 invisible">Credenciales incorrectas</p>
-          <button
-            id="login-btn"
-            type="button"
-            class="w-full px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
-          >
-            Entrar
-          </button>
         </div>
       </div>
     </div>
@@ -153,7 +157,8 @@
         <div
           class="mx-auto max-w-3xl px-6 py-4 flex items-center justify-between"
         >
-          <h1 class="text-xl font-semibold text-[var(--color-text)]">
+          <h1 class="text-xl font-semibold text-[var(--color-accent)] flex items-center gap-2">
+            <img src="img/bug.png" alt="" class="w-14 h-14 object-contain" />
             Bugshot
           </h1>
           <div
@@ -187,11 +192,12 @@
           id="empty-state"
           class="hidden flex flex-col items-center justify-center flex-1"
         >
-          <img src="img/bug.png" alt="Bug Alfred" class="w-[220px] mb-4" />
-          <p class="text-lg font-medium text-gray-600">Sin registros</p>
-          <p class="text-sm text-gray-400 mt-1">
-            Envía un audio y cuéntanos qué está fallando
-          </p>
+          <div class="card flex flex-col items-center text-center" style="padding: 96px 128px;">
+            <p class="text-lg font-medium text-gray-600">Sin registros</p>
+            <p class="text-sm text-gray-400 mt-1">
+              Envía un audio y cuéntanos qué está fallando
+            </p>
+          </div>
         </div>
 
         <div id="feed" class="space-y-4"></div>
