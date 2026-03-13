@@ -173,13 +173,9 @@ els.sendBtn.addEventListener('click', () => {
   const content = els.issueText.value.trim();
   if (!content) return;
 
-  chrome.storage.local.get(['bugshot_token'], (result) => {
-    const token = result.bugshot_token || 'local';
-    chrome.storage.session.set({ bugshot_content: content, bugshot_token: token }, () => {
-      chrome.tabs.create({ url: BUGSHOT_URL + '/?mode=extension' });
-      window.close();
-    });
-  });
+  const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content);
+  chrome.tabs.create({ url });
+  window.close();
 });
 
 document.getElementById('mic-btn').addEventListener('click', startRecording);

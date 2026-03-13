@@ -444,30 +444,26 @@ function loadMocks() {
 function handleExtensionMode() {
   const params = new URLSearchParams(location.search);
   if (params.get('mode') !== 'extension') return;
-  if (typeof chrome === 'undefined' || !chrome.storage) return;
 
-  chrome.storage.session.get(['bugshot_content', 'bugshot_token'], (data) => {
-    if (!data.bugshot_content) return;
+  const content = params.get('content');
+  if (!content) return;
 
-    history.replaceState({}, '', location.pathname);
+  history.replaceState({}, '', location.pathname);
 
-    if (data.bugshot_token && !getSession()) {
-      localStorage.setItem('bugshot_session', JSON.stringify({ email: 'extension@bugshot' }));
-      showApp('extension@bugshot');
-    }
+  if (!getSession()) {
+    localStorage.setItem('bugshot_session', JSON.stringify({ email: 'extension@bugshot' }));
+    showApp('extension@bugshot');
+  }
 
-    createCard(data.bugshot_content, null, 0);
-
-    chrome.storage.session.remove(['bugshot_content', 'bugshot_token']);
-  });
+  createCard(content, null, 0);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  handleExtensionMode();
   checkAuth();
   initMic();
   // loadMocks();
   updateEmptyState();
-  handleExtensionMode();
 });
 
 setInterval(() => {
