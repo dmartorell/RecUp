@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: unknown
-last_updated: "2026-03-13T15:57:04.906Z"
+last_updated: "2026-03-13T15:59:02.823Z"
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 01-extensi-n-chrome-para-bugshot
 Current Plan: 05 (de 5)
-Last activity: 2026-03-13 — Plan 01-02 completado (textarea + botón Enviar en vista Idle, flujo chrome.storage.session)
+Last activity: 2026-03-13 — Plan 01-05 en progreso — iconos PNG generados, esperando verificación E2E manual
 
 Progress: [██████████] 100%
 
@@ -50,6 +50,7 @@ Recent decisions affecting current work:
 - bugshot_token leído desde chrome.storage.local al enviar, con fallback 'local'
 - [Phase 01-extensi-n-chrome-para-bugshot]: transcriber.js usa window.* exports en lugar de ES modules (scripts clásicos en extensión Chrome)
 - [Phase 01-extensi-n-chrome-para-bugshot]: No envío automático al parar grabación — transcript va al textarea para revisión del usuario
+- [Phase 01-extensi-n-chrome-para-bugshot]: sips elegido sobre ImageMagick/sharp para generar iconos PNG — disponible en macOS sin instalación
 
 ### Pending Todos
 

@@ -20,7 +20,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Estructura del Proyecto | 3/5 | In Progress|  | 2026-03-07 |
+| 1. Estructura del Proyecto | 5/5 | Complete   | 2026-03-13 | 2026-03-07 |
 | 2. Audio + Transcripcion | v1.0 | 2/2 | Complete | 2026-03-08 |
 | 3. Resumen IA | v1.0 | 1/1 | Complete | 2026-03-08 |
 | 4. Tickets + Adjuntos | v1.0 | 2/2 | Complete | 2026-03-07 |
@@ -31,7 +31,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 **Goal:** Extensión Chrome (Manifest V3) que permite reportar bugs desde cualquier pestaña, pasando contenido de texto o audio a la webapp via chrome.storage.session
 **Requirements**: EXT-SCAFFOLD, EXT-LOGIN, EXT-TEXT-INPUT, EXT-AUDIO, EXT-WEBAPP-INTEGRATION, EXT-POLISH
 **Depends on:** Phase 0
-**Plans:** 3/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 01-01: Scaffolding + Login (manifest, popup.html, chrome.storage.local auth) — completed 2026-03-13
