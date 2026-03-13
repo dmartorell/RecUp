@@ -261,21 +261,6 @@ body {
   gap: 12px;
 }
 
-.waveform {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  height: 56px;
-}
-
-.waveform-bar {
-  width: 4px;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: height 0.05s;
-  min-height: 4px;
-}
-
 .btn-stop {
   width: 56px;
   height: 56px;
@@ -285,18 +270,37 @@ body {
   color: white;
   cursor: pointer;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   transition: background 0.15s;
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
+  flex-shrink: 0;
 }
 
 .btn-stop:hover {
   background: var(--accent-hover);
+}
+
+.waveform {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+}
+
+.waveform-bar {
+  width: 3px;
+  height: 3px;
+  min-height: 3px;
+  background-color: rgba(255, 255, 255, 0.85);
+  border-radius: 9999px;
+  transition: height 0.05s;
+}
+
+.timer-display {
+  font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', monospace;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1;
 }
 
 .mic-error {
