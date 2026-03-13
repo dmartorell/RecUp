@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Bugshot",
   "version": "1.0.0",
-  "description": "Reporta bugs desde cualquier pestaña",
+  "description": "Reporta incidencias desde cualquier pestaña",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
