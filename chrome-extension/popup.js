@@ -10,6 +10,7 @@ let recordingStartTime = null;
 
 const views = {
   login: document.getElementById('view-login'),
+  micPrompt: document.getElementById('view-mic-prompt'),
   idle: document.getElementById('view-idle'),
 };
 
@@ -24,20 +25,46 @@ const els = {
   sendBtn: document.getElementById('send-btn'),
 };
 
+function hideAllViews() {
+  Object.values(views).forEach(v => v.classList.add('hidden'));
+}
+
 function showLogin() {
-  views.idle.classList.add('hidden');
+  hideAllViews();
   views.login.classList.remove('hidden');
   els.email.value = '';
   els.password.value = '';
   els.loginError.classList.remove('visible');
 }
 
+function showMicPrompt(denied = false) {
+  hideAllViews();
+  views.micPrompt.classList.remove('hidden');
+  document.getElementById('mic-denied-msg').classList.toggle('hidden', !denied);
+  document.getElementById('btn-grant-mic').classList.toggle('hidden', denied);
+}
+
 function showIdle(email) {
-  views.login.classList.add('hidden');
+  hideAllViews();
   views.idle.classList.remove('hidden');
   els.userEmail.textContent = email;
   els.issueText.value = '';
   els.sendBtn.disabled = true;
+}
+
+async function checkMicPermission(email) {
+  try {
+    const result = await navigator.permissions.query({ name: 'microphone' });
+    if (result.state === 'granted') {
+      showIdle(email);
+    } else if (result.state === 'denied') {
+      showMicPrompt(true);
+    } else {
+      showMicPrompt(false);
+    }
+  } catch {
+    showIdle(email);
+  }
 }
 
 function updateTimer() {
@@ -124,7 +151,7 @@ function handleLogin() {
   }
 
   chrome.storage.local.set({ bugshot_token: 'local', bugshot_email: email }, () => {
-    showIdle(email);
+    checkMicPermission(email);
   });
 }
 
@@ -161,9 +188,21 @@ els.sendBtn.addEventListener('click', () => {
 document.getElementById('mic-btn').addEventListener('click', startRecording);
 document.getElementById('stop-btn').addEventListener('click', stopRecording);
 
+document.getElementById('btn-grant-mic').addEventListener('click', async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+    chrome.storage.local.get(['bugshot_email'], (result) => {
+      showIdle(result.bugshot_email || '');
+    });
+  } catch {
+    showMicPrompt(true);
+  }
+});
+
 chrome.storage.local.get(['bugshot_token', 'bugshot_email'], (result) => {
   if (result.bugshot_token && result.bugshot_email) {
-    showIdle(result.bugshot_email);
+    checkMicPermission(result.bugshot_email);
   } else {
     showLogin();
   }
