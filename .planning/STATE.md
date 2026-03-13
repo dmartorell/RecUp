@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Chrome Extension
 status: in-progress
-last_updated: "2026-03-13T15:50:12Z"
+last_updated: "2026-03-13T16:10:00Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,9 +24,9 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 01-extensi-n-chrome-para-bugshot
 Current Plan: 05 (de 5)
-Last activity: 2026-03-13 — Plan 01-04 completado (handleExtensionMode en app.js, integración webapp-extensión)
+Last activity: 2026-03-13 — Plan 01-02 completado (textarea + botón Enviar en vista Idle, flujo chrome.storage.session)
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Accumulated Context
 
@@ -46,6 +46,8 @@ Recent decisions affecting current work:
 - Micrófono no declarado en manifest (getUserMedia en runtime, plan 03)
 - createCard(null, null, 0) para modo extensión — badge-text distingue cards sin audio
 - extension@bugshot como sesión temporal cuando llega bugshot_token sin sesión local previa
+- Clase .btn-send separada de .btn-primary en popup Idle — evita herencia de width:100% del login
+- bugshot_token leído desde chrome.storage.local al enviar, con fallback 'local'
 
 ### Pending Todos
 
