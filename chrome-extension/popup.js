@@ -137,6 +137,10 @@ function handleLogout() {
 els.btnLogin.addEventListener('click', handleLogin);
 els.btnLogout.addEventListener('click', handleLogout);
 
+[els.email, els.password].forEach(input => {
+  input.addEventListener('focus', () => els.loginError.classList.remove('visible'));
+});
+
 els.password.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleLogin();
 });
