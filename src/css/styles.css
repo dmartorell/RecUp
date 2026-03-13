@@ -18,32 +18,32 @@ html {
 
 main,
 .modal-panel,
-.login-screen {
+#login-screen {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 }
 
 main:hover,
 .modal-panel:hover,
-.login-screen:hover {
+#login-screen:hover {
   scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
 }
 
 main::-webkit-scrollbar,
 .modal-panel::-webkit-scrollbar,
-.login-screen::-webkit-scrollbar {
+#login-screen::-webkit-scrollbar {
   width: 6px;
 }
 
 main::-webkit-scrollbar-track,
 .modal-panel::-webkit-scrollbar-track,
-.login-screen::-webkit-scrollbar-track {
+#login-screen::-webkit-scrollbar-track {
   background: transparent;
 }
 
 main::-webkit-scrollbar-thumb,
 .modal-panel::-webkit-scrollbar-thumb,
-.login-screen::-webkit-scrollbar-thumb {
+#login-screen::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.3s;
@@ -51,13 +51,13 @@ main::-webkit-scrollbar-thumb,
 
 main:hover::-webkit-scrollbar-thumb,
 .modal-panel:hover::-webkit-scrollbar-thumb,
-.login-screen:hover::-webkit-scrollbar-thumb {
+#login-screen:hover::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.12);
 }
 
 main:hover::-webkit-scrollbar-thumb:hover,
 .modal-panel:hover::-webkit-scrollbar-thumb:hover,
-.login-screen:hover::-webkit-scrollbar-thumb:hover {
+#login-screen:hover::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
 }
 
@@ -417,12 +417,15 @@ body {
 }
 
 /* Login two-column layout */
-.login-screen {
-  display: flex;
+#login-screen {
   align-items: center;
   justify-content: center;
   background: #ffffff;
   padding: 24px;
+}
+
+#login-screen:not(.hidden) {
+  display: flex;
 }
 
 .login-card {
@@ -490,11 +493,11 @@ body {
 
 /* Responsive: stack on mobile */
 @media (max-width: 767px) {
-  .login-screen {
+  #login-screen {
     overflow-y: auto;
     padding: 16px;
   }
-  .login-screen {
+  #login-screen {
     padding: 24px 16px;
   }
   .login-card {
