@@ -38,18 +38,6 @@ function showIdle(email) {
   els.userEmail.textContent = email;
   els.issueText.value = '';
   els.sendBtn.disabled = true;
-  initWaveformBars();
-}
-
-function initWaveformBars() {
-  const waveformEl = document.getElementById('waveform');
-  if (waveformEl.children.length > 0) return;
-  for (let i = 0; i < 5; i++) {
-    const bar = document.createElement('div');
-    bar.className = 'waveform-bar';
-    bar.style.height = '4px';
-    waveformEl.appendChild(bar);
-  }
 }
 
 function updateTimer() {
@@ -112,7 +100,7 @@ async function stopRecording() {
 
   document.getElementById('mic-idle').classList.remove('hidden');
   document.getElementById('mic-recording').classList.add('hidden');
-  document.querySelectorAll('.waveform-bar').forEach(bar => { bar.style.height = '4px'; });
+  document.querySelectorAll('.waveform-bar').forEach(bar => { bar.style.height = '3px'; });
 
   const transcript = await window.stopTranscription();
   if (transcript) {
