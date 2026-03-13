@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: unknown
-last_updated: "2026-03-13T15:59:02.823Z"
+last_updated: "2026-03-13T16:31:50.546Z"
 progress:
   total_phases: 1
   completed_phases: 1
@@ -51,6 +51,8 @@ Recent decisions affecting current work:
 - [Phase 01-extensi-n-chrome-para-bugshot]: transcriber.js usa window.* exports en lugar de ES modules (scripts clásicos en extensión Chrome)
 - [Phase 01-extensi-n-chrome-para-bugshot]: No envío automático al parar grabación — transcript va al textarea para revisión del usuario
 - [Phase 01-extensi-n-chrome-para-bugshot]: sips elegido sobre ImageMagick/sharp para generar iconos PNG — disponible en macOS sin instalación
+- [Phase 01-extensi-n-chrome-para-bugshot]: Datos popup->webapp via URL query params — chrome.storage.session no accesible desde páginas web normales
+- [Phase 01-extensi-n-chrome-para-bugshot]: Permiso microphone declarado en manifest.json MV3 para getUserMedia en popup
 
 ### Pending Todos
 
