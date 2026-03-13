@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 01-extensi-n-chrome-para-bugshot
 Current Plan: 05 (de 5)
-Last activity: 2026-03-13 — Plan 01-05 en progreso — iconos PNG generados, esperando verificación E2E manual
+Last activity: 2026-03-13 - Completed quick task 5: Rediseñar login: layout dos columnas con imagen bug.png alineada, responsivo en móvil
 
 Progress: [██████████] 100%
 
@@ -65,3 +65,9 @@ None.
 ### Blockers/Concerns
 
 None.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 5 | Rediseñar login: layout dos columnas con imagen bug.png alineada, responsivo en móvil | 2026-03-13 | — | [5-redise-ar-login-layout-dos-columnas-con-](./quick/5-redise-ar-login-layout-dos-columnas-con-/) |
