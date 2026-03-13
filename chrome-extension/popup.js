@@ -61,13 +61,16 @@ function updateTimer() {
 
 function animateWaveform() {
   if (!analyser) return;
-  const bars = document.querySelectorAll('.waveform-bar');
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
-  analyser.getByteFrequencyData(dataArray);
-  const step = Math.floor(dataArray.length / bars.length);
-  bars.forEach((bar, i) => {
-    const value = dataArray[i * step] || 0;
-    bar.style.height = Math.max(4, Math.round((value / 255) * 40)) + 'px';
+  const dataArray = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(dataArray);
+  let peak = 0;
+  for (let i = 0; i < dataArray.length; i++) {
+    const v = Math.abs(dataArray[i] - 128);
+    if (v > peak) peak = v;
+  }
+  const height = Math.max(3, Math.min(1, peak / 15) * 26);
+  document.querySelectorAll('.waveform-bar').forEach(bar => {
+    bar.style.height = height + 'px';
   });
   waveformAnimId = requestAnimationFrame(animateWaveform);
 }
@@ -87,7 +90,7 @@ async function startRecording() {
 
   audioContext = new AudioContext();
   analyser = audioContext.createAnalyser();
-  analyser.fftSize = 256;
+  analyser.fftSize = 64;
   audioContext.createMediaStreamSource(mediaStream).connect(analyser);
 
   document.getElementById('mic-idle').classList.add('hidden');
