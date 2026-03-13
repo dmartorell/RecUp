@@ -11,6 +11,6 @@
       "128": "icons/icon128.png"
     }
   },
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "microphone"],
   "host_permissions": ["<all_urls>"]
 }
