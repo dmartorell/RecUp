@@ -239,8 +239,8 @@ body {
 }
 
 .btn-mic {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--accent);
   border: none;
@@ -263,8 +263,8 @@ body {
 }
 
 .btn-stop {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: var(--accent);
   border: none;
