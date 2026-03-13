@@ -151,13 +151,14 @@ body {
   background: none;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-family: inherit;
+  padding: 5px;
   color: #6b7280;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.15s, color 0.15s;
-  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-logout:hover {
