@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bugshot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <!-- Vista: Login -->
+  <div id="view-login">
+    <div class="card">
+      <div class="logo-area">
+        <h1 class="app-title">Bugshot</h1>
+        <p class="app-subtitle">Reporta bugs desde cualquier pestaña</p>
+      </div>
+
+      <div class="form-group">
+        <label for="login-email" class="form-label">Email</label>
+        <input
+          type="email"
+          id="login-email"
+          class="form-input"
+          placeholder="tu@empresa.com"
+          autocomplete="email"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="login-password" class="form-label">Contraseña</label>
+        <input
+          type="password"
+          id="login-password"
+          class="form-input"
+          placeholder="••••••••"
+          autocomplete="current-password"
+        >
+      </div>
+
+      <div id="login-error" class="error-msg hidden">Credenciales incorrectas.</div>
+
+      <button id="btn-login" class="btn-primary">Entrar</button>
+    </div>
+  </div>
+
+  <!-- Vista: Idle -->
+  <div id="view-idle" class="hidden">
+    <header class="app-header">
+      <span id="user-email" class="user-email"></span>
+      <button id="btn-logout" class="btn-logout">Salir</button>
+    </header>
+    <div class="idle-body">
+      <!-- Se rellenará en el plan 02 -->
+    </div>
+  </div>
+
+  <script src="popup.js" defer></script>
+</body>
+</html>
