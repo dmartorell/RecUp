@@ -30,6 +30,7 @@ function getSession() {
 
 function showApp(email) {
   loginScreen.classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
   avatarEmail.textContent = email;
   userAvatar.classList.remove('hidden');
 }
