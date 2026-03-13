@@ -158,6 +158,11 @@ body {
   color: #6b7280;
 }
 
+.badge-text {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+
 .badge-processing {
   background-color: #fef3c7;
   color: #92400e;

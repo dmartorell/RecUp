@@ -185,14 +185,19 @@ function createCard(transcript, audioBlob, duration) {
   const durationStr = formatDuration(duration);
   const createdAt = new Date();
 
-  card.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
+  if (audioBlob) {
+    card.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
+  }
   card.dataset.createdAt = createdAt.toISOString();
+
+  const typeBadgeClass = audioBlob ? 'badge-audio' : 'badge-text';
+  const typeBadgeLabel = audioBlob ? 'Audio' : 'Texto';
 
   if (!rawText) {
     card.innerHTML = `
       <div class="card-header">
         <div class="card-badges">
-          <span class="badge badge-audio">Audio</span>
+          <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
           <span class="badge badge-duration">${durationStr}</span>
         </div>
         <div style="display:flex;align-items:center;gap:16px">
@@ -218,7 +223,7 @@ function createCard(transcript, audioBlob, duration) {
   card.innerHTML = `
     <div class="card-header">
       <div class="card-badges">
-        <span class="badge badge-audio">Audio</span>
+        <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
         <span class="badge badge-processing js-status-badge">Procesando</span>
         <span class="badge badge-duration">${durationStr}</span>
       </div>
@@ -436,11 +441,33 @@ function loadMocks() {
   updateEmptyState();
 }
 
+function handleExtensionMode() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('mode') !== 'extension') return;
+  if (typeof chrome === 'undefined' || !chrome.storage) return;
+
+  chrome.storage.session.get(['bugshot_content', 'bugshot_token'], (data) => {
+    if (!data.bugshot_content) return;
+
+    history.replaceState({}, '', location.pathname);
+
+    if (data.bugshot_token && !getSession()) {
+      localStorage.setItem('bugshot_session', JSON.stringify({ email: 'extension@bugshot' }));
+      showApp('extension@bugshot');
+    }
+
+    createCard(data.bugshot_content, null, 0);
+
+    chrome.storage.session.remove(['bugshot_content', 'bugshot_token']);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   checkAuth();
   initMic();
   // loadMocks();
   updateEmptyState();
+  handleExtensionMode();
 });
 
 setInterval(() => {
