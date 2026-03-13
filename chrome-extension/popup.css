@@ -305,8 +305,8 @@ body {
 
 .timer-display {
   font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', monospace;
-  font-size: 14px;
-  color: var(--text);
+  font-size: 12px;
+  color: var(--accent);
   line-height: 1;
 }
 
