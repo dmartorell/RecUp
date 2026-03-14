@@ -2,7 +2,7 @@
   --accent: #245E83;
   --accent-hover: #0f3550;
   --text: #374151;
-  --bg: #f5f5f5;
+  --bg: #3a3a3a;
   --panel-bg: #ffffff;
   --radius: 12px;
   --shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -31,6 +31,13 @@ body {
 
 #view-login {
   padding: 20px;
+}
+
+.app-header-title {
+  font-size: 16px;
+  font-weight: 300;
+  color: #ffffff;
+  letter-spacing: 0.08em;
 }
 
 .panel {
@@ -114,9 +121,9 @@ body {
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 300;
   font-family: inherit;
   cursor: pointer;
   width: 100%;
@@ -138,15 +145,15 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: var(--panel-bg);
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--accent);
+  border-bottom: none;
   box-shadow: var(--shadow);
 }
 
 .user-email {
   font-size: 12px;
   font-weight: 400;
-  color: #9ca3af;
+  color: #ffffff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -157,7 +164,7 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: rgba(255, 255, 255, 0.75);
   padding: 4px;
   display: flex;
   align-items: center;
@@ -165,7 +172,7 @@ body {
 }
 
 .btn-logout:hover {
-  color: #4b5563;
+  color: #ffffff;
 }
 
 .idle-body {
@@ -245,7 +252,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.1s;
 }
 
 .btn-mic:hover {
@@ -262,14 +268,13 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--accent-hover);
   border: none;
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
   flex-shrink: 0;
 }
 
@@ -295,8 +300,8 @@ body {
 
 .timer-display {
   font-family: 'ui-monospace', 'SFMono-Regular', 'Menlo', monospace;
-  font-size: 12px;
-  color: var(--accent);
+  font-size: 14px;
+  color: #ffffff;
   line-height: 1;
 }
 
