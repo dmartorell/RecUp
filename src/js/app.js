@@ -270,6 +270,7 @@ async function toggleRecording() {
     });
 
     startRecording();
+    scrollFeedToTop();
     recordBtn.classList.remove('bg-accent');
     recordBtn.classList.add('bg-accent-hover');
   } else {
@@ -329,7 +330,6 @@ function createIncident(transcript, audioBlob, duration) {
       updateEmptyState();
     });
     feed.prepend(incident);
-    scrollFeedToTop();
     updateEmptyState();
     return;
   }
@@ -367,7 +367,6 @@ function createIncident(transcript, audioBlob, duration) {
   });
 
   feed.prepend(incident);
-  scrollFeedToTop();
   updateEmptyState();
 
   const sourceType = hasAudio ? 'audio' : 'text';
