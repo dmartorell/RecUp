@@ -233,10 +233,11 @@ function createCard(transcript, audioBlob, duration) {
       </div>
     </div>
     <div class="card-body">
-      <p class="card-text">${displayText}</p>
+      <p class="card-text"></p>
       <div class="card-spinner js-spinner"></div>
     </div>
   `;
+  card.querySelector('.card-text').textContent = displayText;
 
   card.querySelector('.card-delete').addEventListener('click', () => {
     card.remove();
@@ -390,13 +391,20 @@ function loadMocks() {
           </div>
         </div>
         <div class="card-body">
-          <p class="card-text">${capitalize(mock.transcript)}</p>
-          <ul class="card-bullets">${mock.bullets.map(b => `<li>${ensurePeriod(capitalize(b))}</li>`).join('')}</ul>
+          <p class="card-text"></p>
+          <ul class="card-bullets"></ul>
         </div>
         <div class="card-footer">
           <button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button>
         </div>
       `;
+      card.querySelector('.card-text').textContent = capitalize(mock.transcript);
+      const bulletsList = card.querySelector('.card-bullets');
+      mock.bullets.forEach(b => {
+        const li = document.createElement('li');
+        li.textContent = ensurePeriod(capitalize(b));
+        bulletsList.appendChild(li);
+      });
       card.dataset.summaryTitle = mock.title;
       card.dataset.summaryTranscript = mock.transcript;
       card.dataset.summaryBullets = JSON.stringify(mock.bullets);
@@ -425,10 +433,11 @@ function loadMocks() {
           </div>
         </div>
         <div class="card-body">
-          <p class="card-text">${capitalize(mock.rawTranscript)}</p>
+          <p class="card-text"></p>
           <p class="card-no-bug">No hay información suficiente para generar el ticket.</p>
         </div>
       `;
+      card.querySelector('.card-text').textContent = capitalize(mock.rawTranscript);
       card.dataset.summaryTranscript = mock.rawTranscript;
     }
 

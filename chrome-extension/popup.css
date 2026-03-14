@@ -229,13 +229,6 @@ body {
 
 /* --- Recording section --- */
 
-.recording-section {
-  display: flex;
-  justify-content: center;
-  padding: 8px 0 4px;
-  /* unused — kept for reference */
-}
-
 .mic-container {
   display: flex;
   justify-content: center;
