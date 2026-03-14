@@ -53,6 +53,9 @@ function setLoginMode(register) {
   loginToggleLink.textContent = register ? 'Ya tengo cuenta' : '¿No tienes cuenta? Regístrate';
   loginError.classList.remove('visible');
   loginError.classList.add('invisible');
+  loginEmailInput.value = '';
+  loginPasswordInput.value = '';
+  loginNameInput.value = '';
 }
 
 loginToggleLink.addEventListener('click', (e) => {
