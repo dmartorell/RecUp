@@ -122,7 +122,16 @@ async function startRecording() {
   audioContext.createMediaStreamSource(mediaStream).connect(analyser);
 
   document.getElementById('mic-idle').classList.add('hidden');
+  const stopBtn = document.getElementById('stop-btn');
+  stopBtn.style.transition = 'none';
+  stopBtn.style.background = 'var(--accent-hover)';
   document.getElementById('mic-recording').classList.remove('hidden');
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      stopBtn.style.transition = '';
+      stopBtn.style.background = '';
+    });
+  });
 
   document.getElementById('timer-display').textContent = '00:00';
   recordingStartTime = Date.now();
@@ -142,8 +151,11 @@ async function stopRecording() {
   if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
   if (audioContext) audioContext.close();
 
+  const micBtn = document.getElementById('mic-btn');
+  micBtn.style.transition = 'none';
   document.getElementById('mic-idle').classList.remove('hidden');
   document.getElementById('mic-recording').classList.add('hidden');
+  requestAnimationFrame(() => { micBtn.style.transition = ''; });
   document.querySelectorAll('.waveform-bar').forEach(bar => { bar.style.height = '3px'; });
 
   const transcript = await window.stopTranscription();
