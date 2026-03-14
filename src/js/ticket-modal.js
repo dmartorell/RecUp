@@ -49,7 +49,7 @@ platformBadges.forEach(btn => {
 });
 
 let attachments = null;
-let currentCardElement = null;
+let currentIncidentElement = null;
 let currentTranscript = '';
 let createdTaskId = null;
 let onTicketCreatedCallback = null;
@@ -100,7 +100,7 @@ function closeModal() {
   platformBadges.forEach(b => b.classList.remove('selected'));
   selectedApp = '';
   selectedPlatform = '';
-  currentCardElement = null;
+  currentIncidentElement = null;
   currentTranscript = '';
   createdTaskId = null;
   onTicketCreatedCallback = null;
@@ -111,17 +111,17 @@ function closeModal() {
   if (retryBtn) retryBtn.remove();
 }
 
-export function openTicketModal(cardData) {
-  currentCardElement = cardData.cardElement;
-  currentTranscript = cardData.transcript || '';
+export function openTicketModal(incidentData) {
+  currentIncidentElement = incidentData.incidentElement;
+  currentTranscript = incidentData.transcript || '';
   createdTaskId = null;
-  onTicketCreatedCallback = cardData.onTicketCreated || null;
+  onTicketCreatedCallback = incidentData.onTicketCreated || null;
 
-  titleInput.value = cardData.title || '';
+  titleInput.value = incidentData.title || '';
 
   const ensurePeriod = s => s && /[.!?]$/.test(s.trim()) ? s.trim() : s.trim() + '.';
   const capitalize = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-  const bulletsText = (cardData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
+  const bulletsText = (incidentData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
   descriptionEl.value = bulletsText;
 
   selectedApp = 'alfred';
@@ -227,7 +227,7 @@ async function uploadAttachments(taskId, files) {
 function getLoggedEmail() {
   try {
     const session = JSON.parse(localStorage.getItem('bugshot_session'));
-    return session?.email || '';
+    return session?.user?.email || '';
   } catch { return ''; }
 }
 
@@ -401,15 +401,15 @@ function markCardAsSent(ticketUrl, taskId) {
   if (onTicketCreatedCallback && taskId) {
     onTicketCreatedCallback(taskId, ticketUrl).catch(() => {});
   }
-  if (!currentCardElement) return;
+  if (!currentIncidentElement) return;
 
-  const badge = currentCardElement.querySelector('.js-status-badge');
+  const badge = currentIncidentElement.querySelector('.js-status-badge');
   if (badge) {
     badge.textContent = 'Enviado';
     badge.className = 'badge badge-sent js-status-badge';
   }
 
-  const footer = currentCardElement.querySelector('.card-footer');
+  const footer = currentIncidentElement.querySelector('.incident-footer');
   if (footer) {
     footer.innerHTML = `
       <a href="${ticketUrl}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></a>

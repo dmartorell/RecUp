@@ -39,7 +39,7 @@ db.exec(`
     expires_at TEXT NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS cards (
+  CREATE TABLE IF NOT EXISTS incidents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL REFERENCES users(id),
     transcript TEXT,
@@ -53,7 +53,7 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now'))
   );
 
-  CREATE INDEX IF NOT EXISTS idx_cards_user_id ON cards(user_id);
+  CREATE INDEX IF NOT EXISTS idx_incidents_user_id ON incidents(user_id);
 `);
 
 export default db;
