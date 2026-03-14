@@ -1,4 +1,3 @@
-const PASSWORD = 'Alfred77';
 const BUGSHOT_URL = 'http://localhost:3000';
 
 let mediaStream = null;
@@ -35,6 +34,7 @@ function showLogin() {
   views.login.classList.remove('hidden');
   els.email.value = '';
   els.password.value = '';
+  els.loginError.textContent = 'Credenciales incorrectas';
   els.loginError.classList.remove('visible');
 }
 
@@ -143,18 +143,45 @@ async function stopRecording() {
   analyser = null;
 }
 
-function handleLogin() {
+async function handleLogin() {
   const email = els.email.value.trim();
   const password = els.password.value;
 
-  if (!email || password !== PASSWORD) {
+  if (!email || !password) {
+    els.loginError.textContent = 'Introduce email y contraseña';
     els.loginError.classList.add('visible');
     return;
   }
 
-  chrome.storage.local.set({ bugshot_token: 'local', bugshot_email: email }, () => {
-    checkMicPermission(email);
-  });
+  els.btnLogin.disabled = true;
+  els.btnLogin.textContent = 'Entrando...';
+  els.loginError.classList.remove('visible');
+
+  try {
+    const res = await fetch(`${BUGSHOT_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const json = await res.json();
+
+    if (json.success) {
+      chrome.storage.local.set(
+        { bugshot_token: json.data.token, bugshot_email: json.data.user.email },
+        () => checkMicPermission(json.data.user.email)
+      );
+    } else {
+      els.loginError.textContent = json.error || 'Credenciales incorrectas';
+      els.loginError.classList.add('visible');
+    }
+  } catch {
+    els.loginError.textContent = 'Error de conexión';
+    els.loginError.classList.add('visible');
+  } finally {
+    els.btnLogin.disabled = false;
+    els.btnLogin.textContent = 'Login';
+  }
 }
 
 function handleLogout() {
@@ -185,20 +212,32 @@ els.sendBtn.addEventListener('click', () => {
   const content = els.issueText.value.trim();
   if (!content) return;
 
-  const email = els.userEmail.textContent || '';
-  const source = usedAudio ? 'audio' : 'text';
-  const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content) + '&email=' + encodeURIComponent(email) + '&source=' + source;
-  usedAudio = false;
+  chrome.storage.local.get(['bugshot_token', 'bugshot_email'], (stored) => {
+    const email = stored.bugshot_email || els.userEmail.textContent || '';
+    const token = stored.bugshot_token || '';
+    const source = usedAudio ? 'audio' : 'text';
+    const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content)
+      + '&email=' + encodeURIComponent(email)
+      + '&source=' + source
+      + '&token=' + encodeURIComponent(token);
+    usedAudio = false;
 
-  chrome.tabs.query({ url: BUGSHOT_URL + '/*' }, (tabs) => {
-    if (tabs.length > 0) {
-      chrome.tabs.update(tabs[0].id, { url, active: true });
-      chrome.windows.update(tabs[0].windowId, { focused: true });
-    } else {
-      chrome.tabs.create({ url });
-    }
-    window.close();
+    chrome.tabs.query({ url: BUGSHOT_URL + '/*' }, (tabs) => {
+      if (tabs.length > 0) {
+        chrome.tabs.update(tabs[0].id, { url, active: true });
+        chrome.windows.update(tabs[0].windowId, { focused: true });
+      } else {
+        chrome.tabs.create({ url });
+      }
+      window.close();
+    });
   });
+});
+
+document.getElementById('btn-register').addEventListener('click', (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: `${BUGSHOT_URL}/#register` });
+  window.close();
 });
 
 document.getElementById('mic-btn').addEventListener('click', startRecording);
@@ -216,9 +255,24 @@ document.getElementById('btn-grant-mic').addEventListener('click', async () => {
   }
 });
 
+async function validateToken(token, email) {
+  try {
+    const res = await fetch(`${BUGSHOT_URL}/api/cards?limit=1`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (res.status === 401) {
+      chrome.storage.local.remove(['bugshot_token', 'bugshot_email'], () => showLogin());
+    } else {
+      checkMicPermission(email);
+    }
+  } catch {
+    checkMicPermission(email);
+  }
+}
+
 chrome.storage.local.get(['bugshot_token', 'bugshot_email'], (result) => {
   if (result.bugshot_token && result.bugshot_email) {
-    checkMicPermission(result.bugshot_email);
+    validateToken(result.bugshot_token, result.bugshot_email);
   } else {
     showLogin();
   }
