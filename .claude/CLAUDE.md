@@ -10,14 +10,8 @@ Este directorio es un espacio de pruebas de IA: experimentación con skills, age
 
 Coding standards are provided via the `coding-standards` skill (shared-references plugin).
 
-## Code Generation Rules
-
-After completing all code changes, run `yarn eslint --fix`.
-Skip manual typecheck in conversation — CI catches TS errors.
-
 ## Rules
 
-- Always run `yarn eslint --fix` after code changes
 - Follow coding standards in `coding-standards` skill (shared-references plugin)
 - For commit message use the skill `commit-changes` (shared-references plugin)
 
