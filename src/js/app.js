@@ -206,11 +206,35 @@ const feed = document.getElementById('feed');
 const emptyState = document.getElementById('empty-state');
 const clearAllBtn = document.getElementById('clear-all-btn');
 const toastContainer = document.getElementById('toast-container');
+const textInputBtn = document.getElementById('text-input-btn');
+const textInputModal = document.getElementById('text-input-modal');
+const textInputArea = document.getElementById('text-input-area');
+const textInputSubmit = document.getElementById('text-input-submit');
+const textInputCancel = document.getElementById('text-input-cancel');
 const confirmModal = document.getElementById('confirm-modal');
 const confirmTitle = document.getElementById('confirm-modal-title');
 const confirmMessage = document.getElementById('confirm-modal-message');
 const confirmOk = document.getElementById('confirm-modal-ok');
 const confirmCancel = document.getElementById('confirm-modal-cancel');
+
+function setPageInteractive(enabled) {
+  const targets = [
+    textInputBtn,
+    clearAllBtn,
+    userAvatar,
+    ...feed.querySelectorAll('button, a'),
+  ];
+  targets.forEach(el => {
+    if (!el) return;
+    if (enabled) {
+      el.style.pointerEvents = '';
+      el.style.opacity = '';
+    } else {
+      el.style.pointerEvents = 'none';
+      el.style.opacity = '0.4';
+    }
+  });
+}
 
 function showConfirmModal(title, message, onConfirm) {
   confirmTitle.textContent = title;
@@ -221,6 +245,43 @@ function showConfirmModal(title, message, onConfirm) {
   confirmOk.onclick = () => { cleanup(); onConfirm(); };
 }
 
+
+function updateTextSubmitState() {
+  textInputSubmit.disabled = textInputArea.value.trim().length < 4;
+}
+
+function openTextInputModal() {
+  textInputModal.classList.remove('hidden');
+  textInputArea.value = '';
+  updateTextSubmitState();
+  setTimeout(() => textInputArea.focus(), 50);
+}
+
+function closeTextInputModal() {
+  textInputModal.classList.add('hidden');
+  textInputArea.value = '';
+}
+
+textInputBtn.addEventListener('click', openTextInputModal);
+textInputCancel.addEventListener('click', closeTextInputModal);
+textInputArea.addEventListener('input', updateTextSubmitState);
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!textInputModal.classList.contains('hidden')) {
+    closeTextInputModal();
+  } else if (!confirmModal.classList.contains('hidden')) {
+    confirmModal.classList.add('hidden');
+  }
+});
+
+textInputSubmit.addEventListener('click', () => {
+  const text = textInputArea.value.trim();
+  if (!text) return;
+  closeTextInputModal();
+  scrollFeedToTop();
+  createIncident(text, null, 0);
+});
 
 async function initMic() {
   try {
@@ -253,6 +314,7 @@ async function toggleRecording() {
 
   if (!isRecording) {
     isRecording = true;
+    textInputBtn.classList.add('hidden');
     micIcon.classList.add('hidden');
     recordingUI.classList.remove('hidden');
     startTime = Date.now();
@@ -276,8 +338,11 @@ async function toggleRecording() {
     scrollFeedToTop();
     recordBtn.classList.remove('bg-accent');
     recordBtn.classList.add('bg-accent-hover');
+    setPageInteractive(false);
   } else {
     isRecording = false;
+    setPageInteractive(true);
+    textInputBtn.classList.remove('hidden');
     recordingUI.classList.add('hidden');
     micIcon.classList.remove('hidden');
     recordBtn.classList.remove('bg-accent-hover');
