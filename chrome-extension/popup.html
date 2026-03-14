@@ -1,117 +1,195 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bugshot</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="popup.css">
-  <script src="transcriber.js"></script>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bugshot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="popup.css" />
+    <script src="transcriber.js"></script>
+  </head>
+  <body>
+    <!-- Vista: Login -->
+    <div id="view-login">
+      <div class="panel">
 
-  <!-- Vista: Login -->
-  <div id="view-login">
-    <div class="panel">
-      <div class="logo-area">
-        <h1 class="app-title">Bugshot</h1>
-        <p class="app-subtitle">Cuéntanos qué está fallando</p>
-      </div>
-
-      <div class="form-group">
-        <label for="login-email" class="form-label">Email</label>
-        <input
-          type="email"
-          id="login-email"
-          class="form-input"
-          placeholder="tu@alfredsmart.com"
-          autocomplete="email"
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="login-password" class="form-label">Contraseña</label>
-        <div class="password-wrapper">
+        <div class="form-group">
+          <label for="login-email" class="form-label">Email</label>
           <input
-            type="password"
-            id="login-password"
+            type="email"
+            id="login-email"
             class="form-input"
-            autocomplete="off"
+            placeholder="tu@alfredsmart.com"
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="login-password" class="form-label">Contraseña</label>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              id="login-password"
+              class="form-input"
+              autocomplete="off"
+            />
+            <button
+              type="button"
+              id="toggle-password-btn"
+              class="btn-toggle-password"
+              aria-label="Mostrar contraseña"
+            >
+              <svg
+                id="eye-icon"
+                width="18"
+                height="18"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                />
+              </svg>
+              <svg
+                id="eye-off-icon"
+                class="hidden"
+                width="18"
+                height="18"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12c1.292 4.338 5.31 7.5 10.066 7.5.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="login-error" class="error-msg">Credenciales incorrectas</div>
+
+        <button id="btn-login" class="btn-primary">Entrar</button>
+
+        <p class="register-link">
+          ¿No tienes cuenta? <a id="btn-register" href="#">Regístrate</a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Vista: Permiso Micrófono -->
+    <div id="view-mic-prompt" class="hidden">
+      <div class="panel">
+        <div class="logo-area">
+          <svg
+            class="mic-prompt-icon"
+            width="28"
+            height="28"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="1.5"
           >
-          <button type="button" id="toggle-password-btn" class="btn-toggle-password" aria-label="Mostrar contraseña">
-            <svg id="eye-icon" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-            </svg>
-            <svg id="eye-off-icon" class="hidden" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12c1.292 4.338 5.31 7.5 10.066 7.5.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"/>
-            </svg>
-          </button>
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"
+            />
+          </svg>
+          <h2 class="mic-prompt-title">Permiso de micrófono</h2>
         </div>
+        <p id="mic-prompt-desc" class="mic-prompt-desc">
+          Bugshot necesita acceso al micrófono para grabar incidencias de voz.
+        </p>
+        <button id="btn-grant-mic" class="btn-primary">
+          Activar micrófono
+        </button>
+        <p id="mic-denied-msg" class="mic-denied-msg hidden">
+          El permiso está bloqueado. Haz clic derecho en el icono de la
+          extensión → <strong>Permisos web</strong> →
+          <strong>Micrófono</strong> → <strong>Permitir</strong>
+        </p>
       </div>
-
-      <div id="login-error" class="error-msg">Credenciales incorrectas</div>
-
-      <button id="btn-login" class="btn-primary">Entrar</button>
-
-      <p class="register-link">¿No tienes cuenta? <a id="btn-register" href="#">Regístrate</a></p>
     </div>
-  </div>
 
-  <!-- Vista: Permiso Micrófono -->
-  <div id="view-mic-prompt" class="hidden">
-    <div class="panel">
-      <div class="logo-area">
-        <svg class="mic-prompt-icon" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"/>
-        </svg>
-        <h2 class="mic-prompt-title">Permiso de micrófono</h2>
-      </div>
-      <p id="mic-prompt-desc" class="mic-prompt-desc">Bugshot necesita acceso al micrófono para grabar incidencias de voz.</p>
-      <button id="btn-grant-mic" class="btn-primary">Activar micrófono</button>
-      <p id="mic-denied-msg" class="mic-denied-msg hidden">
-        El permiso está bloqueado. Haz clic derecho en el icono de la extensión → <strong>Permisos web</strong> → <strong>Micrófono</strong> → <strong>Permitir</strong>
-      </p>
-    </div>
-  </div>
-
-  <!-- Vista: Idle -->
-  <div id="view-idle" class="hidden">
-    <header class="app-header">
-      <span id="user-email" class="user-email"></span>
-      <button id="btn-logout" class="btn-logout" title="Cerrar sesión">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9"/>
-        </svg>
-      </button>
-    </header>
-    <div class="idle-body">
-      <textarea id="issue-text" placeholder="Describe la incidencia..." rows="6"></textarea>
-      <div class="idle-actions">
-        <div id="mic-idle" class="mic-container">
-          <button id="mic-btn" class="btn-mic" title="Grabar audio">
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"/>
-            </svg>
-          </button>
+    <!-- Vista: Idle -->
+    <div id="view-idle" class="hidden">
+      <header class="app-header">
+        <span id="user-email" class="user-email"></span>
+        <button id="btn-logout" class="btn-logout" title="Cerrar sesión">
+          <svg
+            width="20"
+            height="20"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9"
+            />
+          </svg>
+        </button>
+      </header>
+      <div class="idle-body">
+        <textarea
+          id="issue-text"
+          placeholder="Describe la incidencia..."
+          rows="6"
+        ></textarea>
+        <div class="idle-actions">
+          <div id="mic-idle" class="mic-container">
+            <button id="mic-btn" class="btn-mic" title="Grabar audio">
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z"
+                />
+              </svg>
+            </button>
+          </div>
+          <div id="mic-recording" class="recording-container hidden">
+            <button id="stop-btn" class="btn-stop">
+              <div class="waveform">
+                <div class="waveform-bar"></div>
+                <div class="waveform-bar"></div>
+              </div>
+            </button>
+            <span id="timer-display" class="timer-display">00:00</span>
+          </div>
+          <button id="send-btn" class="btn-send" disabled>Enviar</button>
         </div>
-        <div id="mic-recording" class="recording-container hidden">
-          <button id="stop-btn" class="btn-stop">
-            <div class="waveform">
-              <div class="waveform-bar"></div>
-              <div class="waveform-bar"></div>
-            </div>
-          </button>
-          <span id="timer-display" class="timer-display">00:00</span>
-        </div>
-        <button id="send-btn" class="btn-send" disabled>Enviar</button>
+        <p id="mic-error" class="mic-error hidden"></p>
       </div>
-      <p id="mic-error" class="mic-error hidden"></p>
     </div>
-  </div>
 
-  <script src="popup.js" defer></script>
-</body>
+    <script src="popup.js" defer></script>
+  </body>
 </html>

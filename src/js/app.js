@@ -265,10 +265,14 @@ async function toggleRecording() {
     });
 
     startRecording();
+    recordBtn.classList.remove('bg-accent');
+    recordBtn.classList.add('bg-accent-hover');
   } else {
     isRecording = false;
     recordingUI.classList.add('hidden');
     micIcon.classList.remove('hidden');
+    recordBtn.classList.remove('bg-accent-hover');
+    recordBtn.classList.add('bg-accent');
     cancelAnimationFrame(animFrameId);
     waveformBars.forEach(bar => bar.style.height = '3px');
 
