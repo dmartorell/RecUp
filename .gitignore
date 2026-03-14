@@ -2,6 +2,8 @@ node_modules/
 .env
 .env.*
 bun.lockb
+data/
+dbLogs/*.log
 
 # Planificación interna y documentación privada
 .planning/
