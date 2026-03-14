@@ -35,10 +35,10 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 Plans:
 - [x] 01-01: Scaffolding + Login (manifest, popup.html, chrome.storage.local auth) — completed 2026-03-13
-- [ ] 01-02: Input de texto (textarea + botón Enviar + chrome.storage.session flow)
-- [ ] 01-03: Grabación de audio (mic, waveform AnalyserNode, transcriber.js)
+- [x] 01-02: Input de texto (textarea + botón Enviar + chrome.storage.session flow)
+- [x] 01-03: Grabación de audio (mic, waveform AnalyserNode, transcriber.js)
 - [x] 01-04: Integración en la webapp (handleExtensionMode en app.js)
-- [ ] 01-05: Polish + distribución (iconos 16/48/128px + verificación E2E)
+- [x] 01-05: Polish + distribución (iconos 16/48/128px + verificación E2E)
 
 ### Phase 2: Base de datos simple para gestión de usuarios y asociación de cards
 
@@ -49,6 +49,6 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Backend: SQLite schema, auth API (login/register), cards CRUD, seed script — completed 2026-03-14
-- [ ] 02-02-PLAN.md — Webapp: login/registro contra API real, cards persistidas en DB, feed desde API
-- [ ] 02-03-PLAN.md — Extension Chrome: login via API real, token real en flujo
-- [ ] 02-04-PLAN.md — Gap closure: eliminar fallback 'local' en handleExtensionMode
+- [x] 02-02-PLAN.md — Webapp: login/registro contra API real, cards persistidas en DB, feed desde API
+- [x] 02-03-PLAN.md — Extension Chrome: login via API real, token real en flujo
+- [x] 02-04-PLAN.md — Gap closure: eliminar fallback 'local' en handleExtensionMode
