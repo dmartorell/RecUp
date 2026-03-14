@@ -211,6 +211,10 @@ const textInputModal = document.getElementById('text-input-modal');
 const textInputArea = document.getElementById('text-input-area');
 const textInputSubmit = document.getElementById('text-input-submit');
 const textInputCancel = document.getElementById('text-input-cancel');
+const modeToggleBtn = document.getElementById('mode-toggle-btn');
+const modeIconKeyboard = document.getElementById('mode-icon-keyboard');
+const modeIconMic = document.getElementById('mode-icon-mic');
+let inputMode = localStorage.getItem('bugshot_input_mode') || 'mic';
 const confirmModal = document.getElementById('confirm-modal');
 const confirmTitle = document.getElementById('confirm-modal-title');
 const confirmMessage = document.getElementById('confirm-modal-message');
@@ -219,7 +223,7 @@ const confirmCancel = document.getElementById('confirm-modal-cancel');
 
 function setPageInteractive(enabled) {
   const targets = [
-    textInputBtn,
+    modeToggleBtn,
     clearAllBtn,
     userAvatar,
     ...feed.querySelectorAll('button, a'),
@@ -265,6 +269,30 @@ function closeTextInputModal() {
 textInputBtn.addEventListener('click', openTextInputModal);
 textInputCancel.addEventListener('click', closeTextInputModal);
 textInputArea.addEventListener('input', updateTextSubmitState);
+
+function applyInputMode(mode) {
+  inputMode = mode;
+  if (mode === 'keyboard') {
+    recordBtn.classList.add('hidden');
+    textInputBtn.classList.remove('hidden');
+    modeIconKeyboard.classList.add('hidden');
+    modeIconMic.classList.remove('hidden');
+  } else {
+    textInputBtn.classList.add('hidden');
+    recordBtn.classList.remove('hidden');
+    modeIconMic.classList.add('hidden');
+    modeIconKeyboard.classList.remove('hidden');
+  }
+}
+
+function toggleInputMode() {
+  if (isRecording) return;
+  const newMode = inputMode === 'mic' ? 'keyboard' : 'mic';
+  applyInputMode(newMode);
+  localStorage.setItem('bugshot_input_mode', newMode);
+}
+
+modeToggleBtn.addEventListener('click', toggleInputMode);
 
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
@@ -314,7 +342,7 @@ async function toggleRecording() {
 
   if (!isRecording) {
     isRecording = true;
-    textInputBtn.classList.add('hidden');
+    modeToggleBtn.classList.add('pointer-events-none', 'opacity-40');
     micIcon.classList.add('hidden');
     recordingUI.classList.remove('hidden');
     startTime = Date.now();
@@ -342,7 +370,7 @@ async function toggleRecording() {
   } else {
     isRecording = false;
     setPageInteractive(true);
-    textInputBtn.classList.remove('hidden');
+    modeToggleBtn.classList.remove('pointer-events-none', 'opacity-40');
     recordingUI.classList.add('hidden');
     micIcon.classList.remove('hidden');
     recordBtn.classList.remove('bg-accent-hover');
@@ -817,6 +845,7 @@ function adoptExtensionSession() {
 document.addEventListener('DOMContentLoaded', async () => {
   adoptExtensionSession();
   handleHashRegister();
+  if (inputMode !== 'mic') applyInputMode(inputMode);
   const authed = checkAuth();
   if (authed) {
     await loadIncidents();
