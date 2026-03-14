@@ -1,5 +1,5 @@
 const MAX_FILES = 5;
-const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/', 'video/'];
 
 export class AttachmentManager {
@@ -25,7 +25,7 @@ export class AttachmentManager {
         return `Tipo de archivo no permitido: ${file.name}. Solo imágenes y vídeos.`;
       }
       if (file.size > MAX_SIZE_BYTES) {
-        return `${file.name} excede el límite de 10 MB.`;
+        return `${file.name} excede el límite de 50 MB.`;
       }
     }
 
