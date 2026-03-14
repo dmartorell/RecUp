@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "start": "bun server/index.js",
-    "dev": "bun --watch server/index.js"
+    "dev": "bun --watch server/index.js",
+    "seed-users": "bun scripts/seed-users.js"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
