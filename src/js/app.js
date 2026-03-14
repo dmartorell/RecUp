@@ -6,6 +6,11 @@ import { openTicketModal } from './ticket-modal.js';
 function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
 function ensurePeriod(str) { return /[.?!]$/.test(str) ? str : str + '.'; }
 
+function scrollFeedToTop() {
+  const mainEl = document.querySelector('main');
+  if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function isBrowserCompatible() {
   return !!window.chrome;
 }
@@ -324,6 +329,7 @@ function createIncident(transcript, audioBlob, duration) {
       updateEmptyState();
     });
     feed.prepend(incident);
+    scrollFeedToTop();
     updateEmptyState();
     return;
   }
@@ -361,6 +367,7 @@ function createIncident(transcript, audioBlob, duration) {
   });
 
   feed.prepend(incident);
+  scrollFeedToTop();
   updateEmptyState();
 
   const sourceType = hasAudio ? 'audio' : 'text';
