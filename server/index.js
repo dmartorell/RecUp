@@ -7,7 +7,7 @@ import summarizeRouter from './routes/summarize.js';
 import ticketRouter from './routes/ticket.js';
 import attachmentRouter from './routes/attachment.js';
 import authRouter from './routes/auth.js';
-import cardsRouter from './routes/cards.js';
+import incidentsRouter from './routes/incidents.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,7 +21,7 @@ app.use(authRouter);
 app.use(summarizeRouter);
 app.use(ticketRouter);
 app.use(attachmentRouter);
-app.use(cardsRouter);
+app.use(incidentsRouter);
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.warn('[WARN] ANTHROPIC_API_KEY no configurada — el endpoint /api/summarize no funcionara');

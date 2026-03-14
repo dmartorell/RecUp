@@ -7,6 +7,7 @@ let waveformAnimId = null;
 let timerInterval = null;
 let recordingStartTime = null;
 let usedAudio = false;
+let lastRecordingDuration = 0;
 
 const views = {
   login: document.getElementById('view-login'),
@@ -24,6 +25,17 @@ const els = {
   issueText: document.getElementById('issue-text'),
   sendBtn: document.getElementById('send-btn'),
 };
+
+const togglePasswordBtn = document.getElementById('toggle-password-btn');
+const eyeIcon = document.getElementById('eye-icon');
+const eyeOffIcon = document.getElementById('eye-off-icon');
+
+togglePasswordBtn.addEventListener('click', () => {
+  const isPassword = els.password.type === 'password';
+  els.password.type = isPassword ? 'text' : 'password';
+  eyeIcon.classList.toggle('hidden', isPassword);
+  eyeOffIcon.classList.toggle('hidden', !isPassword);
+});
 
 function hideAllViews() {
   Object.values(views).forEach(v => v.classList.add('hidden'));
@@ -124,6 +136,9 @@ async function stopRecording() {
   cancelAnimationFrame(waveformAnimId);
   clearInterval(timerInterval);
 
+  lastRecordingDuration = recordingStartTime ? Date.now() - recordingStartTime : 0;
+  recordingStartTime = null;
+
   if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
   if (audioContext) audioContext.close();
 
@@ -180,7 +195,7 @@ async function handleLogin() {
     els.loginError.classList.add('visible');
   } finally {
     els.btnLogin.disabled = false;
-    els.btnLogin.textContent = 'Login';
+    els.btnLogin.textContent = 'Entrar';
   }
 }
 
@@ -212,32 +227,69 @@ els.sendBtn.addEventListener('click', () => {
   const content = els.issueText.value.trim();
   if (!content) return;
 
-  chrome.storage.local.get(['bugshot_token', 'bugshot_email'], (stored) => {
-    const email = stored.bugshot_email || els.userEmail.textContent || '';
+  chrome.storage.local.get(['bugshot_token', 'bugshot_email'], async (stored) => {
     const token = stored.bugshot_token || '';
-    const source = usedAudio ? 'audio' : 'text';
-    const url = BUGSHOT_URL + '/?mode=extension&content=' + encodeURIComponent(content)
-      + '&email=' + encodeURIComponent(email)
-      + '&source=' + source
-      + '&token=' + encodeURIComponent(token);
+    const sourceType = usedAudio ? 'audio' : 'text';
+    const durationMs = usedAudio ? lastRecordingDuration : 0;
     usedAudio = false;
+    lastRecordingDuration = 0;
 
-    chrome.tabs.query({ url: BUGSHOT_URL + '/*' }, (tabs) => {
-      if (tabs.length > 0) {
-        chrome.tabs.update(tabs[0].id, { url, active: true });
-        chrome.windows.update(tabs[0].windowId, { focused: true });
-      } else {
-        chrome.tabs.create({ url });
-      }
-      window.close();
-    });
+    els.sendBtn.disabled = true;
+    const originalText = els.sendBtn.textContent;
+    els.sendBtn.textContent = 'Enviando...';
+
+    try {
+      const res = await fetch(`${BUGSHOT_URL}/api/incidents`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transcript: content,
+          status: 'procesando',
+          source_type: sourceType,
+          duration_ms: durationMs,
+        }),
+      });
+
+      if (!res.ok) throw new Error('Error al crear incidencia');
+      const data = await res.json();
+      const incidentId = data.data?.incident?.id;
+
+      const email = stored.bugshot_email || '';
+      const url = BUGSHOT_URL + '/?highlight=' + (incidentId || '') + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email);
+      chrome.tabs.query({ url: BUGSHOT_URL + '/*' }, (tabs) => {
+        if (tabs.length > 0) {
+          chrome.tabs.update(tabs[0].id, { url, active: true });
+          chrome.windows.update(tabs[0].windowId, { focused: true });
+        } else {
+          chrome.tabs.create({ url });
+        }
+        window.close();
+      });
+    } catch {
+      els.sendBtn.disabled = false;
+      els.sendBtn.textContent = originalText;
+      const errEl = document.getElementById('mic-error');
+      errEl.textContent = 'Error al enviar. Intenta de nuevo.';
+      errEl.classList.remove('hidden');
+    }
   });
 });
 
 document.getElementById('btn-register').addEventListener('click', (e) => {
   e.preventDefault();
-  chrome.tabs.create({ url: `${BUGSHOT_URL}/#register` });
-  window.close();
+  const registerUrl = `${BUGSHOT_URL}/#register`;
+  chrome.tabs.query({ url: `${BUGSHOT_URL}/*` }, (tabs) => {
+    if (tabs.length > 0) {
+      chrome.tabs.update(tabs[0].id, { url: registerUrl, active: true });
+      chrome.windows.update(tabs[0].windowId, { focused: true });
+    } else {
+      chrome.tabs.create({ url: registerUrl });
+    }
+    window.close();
+  });
 });
 
 document.getElementById('mic-btn').addEventListener('click', startRecording);
@@ -257,7 +309,7 @@ document.getElementById('btn-grant-mic').addEventListener('click', async () => {
 
 async function validateToken(token, email) {
   try {
-    const res = await fetch(`${BUGSHOT_URL}/api/cards?limit=1`, {
+    const res = await fetch(`${BUGSHOT_URL}/api/incidents?limit=1`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (res.status === 401) {

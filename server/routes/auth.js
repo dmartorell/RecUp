@@ -13,10 +13,10 @@ router.post('/api/auth/register', async (req, res) => {
     return res.status(400).json({ success: false, error: 'Nombre invalido (1-100 caracteres)' });
   }
   if (!email || !EMAIL_RE.test(email)) {
-    return res.status(400).json({ success: false, error: 'Email invalido' });
+    return res.status(400).json({ success: false, error: 'Email inválido' });
   }
   if (!password || password.length < 6) {
-    return res.status(400).json({ success: false, error: 'Password debe tener minimo 6 caracteres' });
+    return res.status(400).json({ success: false, error: 'Contraseña: mínimo 6 caracteres' });
   }
 
   const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN;
@@ -61,12 +61,12 @@ router.post('/api/auth/login', async (req, res) => {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
 
     if (!user) {
-      return res.status(401).json({ success: false, error: 'Credenciales invalidas' });
+      return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
     }
 
     const valid = await Bun.password.verify(password, user.password);
     if (!valid) {
-      return res.status(401).json({ success: false, error: 'Credenciales invalidas' });
+      return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
     }
 
     const token = createSession(user.id);

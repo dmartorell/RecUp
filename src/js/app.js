@@ -26,13 +26,26 @@ const loginError = document.getElementById('login-error');
 const userAvatar = document.getElementById('user-avatar');
 const avatarEmail = document.getElementById('avatar-email');
 
+const togglePasswordBtn = document.getElementById('toggle-password-btn');
+const eyeIcon = document.getElementById('eye-icon');
+const eyeOffIcon = document.getElementById('eye-off-icon');
+
+togglePasswordBtn.addEventListener('click', () => {
+  const isPassword = loginPasswordInput.type === 'password';
+  loginPasswordInput.type = isPassword ? 'text' : 'password';
+  eyeIcon.classList.toggle('hidden', isPassword);
+  eyeOffIcon.classList.toggle('hidden', !isPassword);
+});
+
 let isRegisterMode = false;
 
 function setLoginMode(register) {
   isRegisterMode = register;
-  loginNameField.classList.toggle('hidden', !register);
+  loginNameField.classList.toggle('invisible', !register);
+  loginNameField.classList.toggle('order-last', !register);
+  loginNameField.classList.toggle('order-first', register);
   loginBtn.textContent = register ? 'Registrarse' : 'Entrar';
-  loginToggleLink.textContent = register ? 'Ya tengo cuenta' : 'No tienes cuenta? Registrate';
+  loginToggleLink.textContent = register ? 'Ya tengo cuenta' : '¿No tienes cuenta? Regístrate';
   loginError.classList.remove('visible');
   loginError.classList.add('invisible');
 }
@@ -58,6 +71,7 @@ function showApp(email) {
   loginScreen.classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
   avatarEmail.textContent = email;
+  avatarEmail.style.display = '';
   userAvatar.classList.remove('hidden');
 }
 
@@ -65,10 +79,10 @@ function checkAuth() {
   const session = getSession();
   if (session?.token && session?.user) {
     showApp(session.user.email);
-    loadCards();
-  } else {
-    loginScreen.classList.remove('hidden');
+    return true;
   }
+  loginScreen.classList.remove('hidden');
+  return false;
 }
 
 function showLoginError(msg) {
@@ -91,7 +105,7 @@ loginBtn.addEventListener('click', async () => {
   loginError.classList.add('invisible');
 
   if (!email || !password) {
-    showLoginError('Email y contraseña son obligatorios.');
+    showLoginError('Email y contraseña son obligatorios');
     return;
   }
 
@@ -134,7 +148,9 @@ loginBtn.addEventListener('click', async () => {
     loginBtn.disabled = false;
     loginBtn.textContent = originalText;
     showApp(data.data.user.email);
-    loadCards();
+    await loadIncidents();
+    resumePendingIncidents();
+    initMic();
   } catch {
     showLoginError('Error de red. Intenta de nuevo.');
     loginBtn.disabled = false;
@@ -150,6 +166,10 @@ userAvatar.addEventListener('click', () => {
   localStorage.removeItem('bugshot_session');
   location.reload();
 });
+
+function parseUTC(ts) {
+  return new Date(ts.endsWith('Z') ? ts : ts + 'Z');
+}
 
 function timeAgo(date) {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -178,6 +198,20 @@ const feed = document.getElementById('feed');
 const emptyState = document.getElementById('empty-state');
 const clearAllBtn = document.getElementById('clear-all-btn');
 const toastContainer = document.getElementById('toast-container');
+const confirmModal = document.getElementById('confirm-modal');
+const confirmTitle = document.getElementById('confirm-modal-title');
+const confirmMessage = document.getElementById('confirm-modal-message');
+const confirmOk = document.getElementById('confirm-modal-ok');
+const confirmCancel = document.getElementById('confirm-modal-cancel');
+
+function showConfirmModal(title, message, onConfirm) {
+  confirmTitle.textContent = title;
+  confirmMessage.textContent = message;
+  confirmModal.classList.remove('hidden');
+  const cleanup = () => confirmModal.classList.add('hidden');
+  confirmCancel.onclick = cleanup;
+  confirmOk.onclick = () => { cleanup(); onConfirm(); };
+}
 
 
 async function initMic() {
@@ -244,13 +278,13 @@ async function toggleRecording() {
     const transcript = await stopTranscription();
     const audioBlob = await stopRecording();
 
-    createCard(transcript, audioBlob, duration);
+    createIncident(transcript, audioBlob, duration);
   }
 }
 
-function createCard(transcript, audioBlob, duration) {
-  const card = document.createElement('div');
-  card.className = 'card';
+function createIncident(transcript, audioBlob, duration) {
+  const incident = document.createElement('div');
+  incident.className = 'incident';
 
   const rawText = transcript.trim();
   const durationStr = formatDuration(duration);
@@ -258,106 +292,106 @@ function createCard(transcript, audioBlob, duration) {
 
   const hasAudio = !!audioBlob;
   if (audioBlob && audioBlob instanceof Blob) {
-    card.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
+    incident.dataset.audioBlobUrl = URL.createObjectURL(audioBlob);
   }
-  card.dataset.createdAt = createdAt.toISOString();
+  incident.dataset.createdAt = createdAt.toISOString();
 
   const typeBadgeClass = hasAudio ? 'badge-audio' : 'badge-text';
   const typeBadgeLabel = hasAudio ? 'Audio' : 'Texto';
 
   if (!rawText) {
-    card.innerHTML = `
-      <div class="card-header">
-        <div class="card-badges">
+    incident.innerHTML = `
+      <div class="incident-header">
+        <div class="incident-badges">
           <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
-          <span class="badge badge-duration">${durationStr}</span>
+          ${hasAudio ? `<span class="badge badge-duration">${durationStr}</span>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:16px">
-          <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-          <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+          <span class="incident-time js-time-relative">${timeAgo(createdAt)}</span>
+          <button class="incident-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
         </div>
       </div>
-      <div class="card-body">
-        <p class="card-text">No se detecto voz. Intenta grabar de nuevo.</p>
+      <div class="incident-body">
+        <p class="incident-text">No se detecto voz. Intenta grabar de nuevo.</p>
       </div>
     `;
-    card.querySelector('.card-delete').addEventListener('click', () => {
-      card.remove();
+    incident.querySelector('.incident-delete').addEventListener('click', () => {
+      incident.remove();
       updateEmptyState();
     });
-    feed.prepend(card);
+    feed.prepend(incident);
     updateEmptyState();
     return;
   }
 
   let displayText = ensurePeriod(capitalize(rawText));
 
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="card-badges">
+  incident.innerHTML = `
+    <div class="incident-header">
+      <div class="incident-badges">
         <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
         <span class="badge badge-processing js-status-badge">Procesando</span>
-        <span class="badge badge-duration">${durationStr}</span>
+        ${hasAudio ? `<span class="badge badge-duration">${durationStr}</span>` : ''}
       </div>
       <div style="display:flex;align-items:center;gap:16px">
-        <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-        <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+        <span class="incident-time js-time-relative">${timeAgo(createdAt)}</span>
+        <button class="incident-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
       </div>
     </div>
-    <div class="card-body">
-      <p class="card-text"></p>
-      <div class="card-spinner js-spinner"></div>
+    <div class="incident-body">
+      <p class="incident-text"></p>
+      <div class="incident-spinner js-spinner"></div>
     </div>
   `;
-  card.querySelector('.card-text').textContent = displayText;
+  incident.querySelector('.incident-text').textContent = displayText;
 
-  card.querySelector('.card-delete').addEventListener('click', async () => {
-    const cardId = card.dataset.cardId;
-    if (cardId) {
+  incident.querySelector('.incident-delete').addEventListener('click', async () => {
+    const incidentId = incident.dataset.incidentId;
+    if (incidentId) {
       try {
-        await fetch(`/api/cards/${cardId}`, { method: 'DELETE', headers: authHeaders() });
+        await fetch(`/api/incidents/${incidentId}`, { method: 'DELETE', headers: authHeaders() });
       } catch { /* degradacion graceful */ }
     }
-    card.remove();
+    incident.remove();
     updateEmptyState();
   });
 
-  feed.prepend(card);
+  feed.prepend(incident);
   updateEmptyState();
 
   const sourceType = hasAudio ? 'audio' : 'text';
-  runSummarize(card, rawText, sourceType, duration);
+  runSummarize(incident, rawText, sourceType, duration);
 }
 
-async function persistCard(payload) {
+async function persistIncident(payload) {
   try {
-    const res = await fetch('/api/cards', {
+    const res = await fetch('/api/incidents', {
       method: 'POST',
       headers: authHeaders(),
       body: JSON.stringify(payload)
     });
     if (!res.ok) return null;
     const data = await res.json();
-    return data.data?.card?.id || null;
+    return data.data?.incident?.id || null;
   } catch {
     return null;
   }
 }
 
-function attachTicketButton(card, footer) {
+function attachTicketButton(incident, footer) {
   const ticketBtn = footer.querySelector('.btn-create-ticket');
   ticketBtn.addEventListener('click', async () => {
-    if (card.querySelector('.badge-sent')) return;
+    if (incident.querySelector('.badge-sent')) return;
     openTicketModal({
-      title: card.dataset.summaryTitle,
-      transcript: card.dataset.summaryTranscript,
-      bullets: JSON.parse(card.dataset.summaryBullets),
-      cardElement: card,
+      title: incident.dataset.summaryTitle,
+      transcript: incident.dataset.summaryTranscript,
+      bullets: JSON.parse(incident.dataset.summaryBullets),
+      incidentElement: incident,
       onTicketCreated: async (taskId, taskUrl) => {
-        const cardId = card.dataset.cardId;
-        if (cardId) {
+        const incidentId = incident.dataset.incidentId;
+        if (incidentId) {
           try {
-            await fetch(`/api/cards/${cardId}`, {
+            await fetch(`/api/incidents/${incidentId}`, {
               method: 'PATCH',
               headers: authHeaders(),
               body: JSON.stringify({ clickup_task_id: taskId, clickup_task_url: taskUrl, status: 'completado' })
@@ -369,42 +403,56 @@ function attachTicketButton(card, footer) {
   });
 }
 
-function runSummarize(card, rawText, sourceType, durationMs) {
+async function saveIncidentResult(incident, payload, sourceType, durationMs) {
+  const existingId = incident.dataset.incidentId;
+  if (existingId) {
+    try {
+      await fetch(`/api/incidents/${existingId}`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+    } catch { /* degradacion graceful */ }
+  } else {
+    const incidentId = await persistIncident({
+      ...payload,
+      source_type: sourceType || 'audio',
+      duration_ms: durationMs || 0,
+    });
+    if (incidentId) incident.dataset.incidentId = incidentId;
+  }
+}
+
+function runSummarize(incident, rawText, sourceType, durationMs) {
   summarize(rawText).then(async (result) => {
-    const badge = card.querySelector('.js-status-badge');
-    const spinner = card.querySelector('.js-spinner');
+    const badge = incident.querySelector('.js-status-badge');
+    const spinner = incident.querySelector('.js-spinner');
     if (spinner) spinner.remove();
 
-    const body = card.querySelector('.card-body');
+    const body = incident.querySelector('.incident-body');
 
     if (!result.is_bug) {
       badge.textContent = 'Completado';
       badge.className = 'badge badge-completed js-status-badge';
 
       const msg = document.createElement('p');
-      msg.className = 'card-no-bug';
+      msg.className = 'incident-no-bug';
       msg.textContent = 'No hay información suficiente para generar el ticket.';
       body.appendChild(msg);
 
-      card.dataset.summaryTranscript = rawText;
+      incident.dataset.summaryTranscript = rawText;
 
-      const cardId = await persistCard({
-        transcript: rawText,
-        status: 'completado',
-        source_type: sourceType || 'audio',
-        duration_ms: durationMs || 0
-      });
-      if (cardId) card.dataset.cardId = cardId;
+      await saveIncidentResult(incident, { transcript: rawText, status: 'completado' }, sourceType, durationMs);
       return;
     }
 
     badge.textContent = 'Completado';
     badge.className = 'badge badge-completed js-status-badge';
 
-    card.dataset.summaryTitle = result.title;
+    incident.dataset.summaryTitle = result.title;
 
     const bullets = document.createElement('ul');
-    bullets.className = 'card-bullets';
+    bullets.className = 'incident-bullets';
     result.bullets.forEach((b) => {
       const li = document.createElement('li');
       li.textContent = ensurePeriod(capitalize(b));
@@ -413,34 +461,31 @@ function runSummarize(card, rawText, sourceType, durationMs) {
     body.appendChild(bullets);
 
     const footer = document.createElement('div');
-    footer.className = 'card-footer';
+    footer.className = 'incident-footer';
     footer.innerHTML = `<button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button>`;
-    card.appendChild(footer);
+    incident.appendChild(footer);
 
-    card.dataset.summaryTranscript = result.transcript;
-    card.dataset.summaryBullets = JSON.stringify(result.bullets);
+    incident.dataset.summaryTranscript = result.transcript;
+    incident.dataset.summaryBullets = JSON.stringify(result.bullets);
 
-    attachTicketButton(card, footer);
+    attachTicketButton(incident, footer);
 
-    const cardId = await persistCard({
+    await saveIncidentResult(incident, {
       transcript: rawText,
       title: result.title,
       bullets: JSON.stringify(result.bullets),
       status: 'completado',
-      source_type: sourceType || 'audio',
-      duration_ms: durationMs || 0
-    });
-    if (cardId) card.dataset.cardId = cardId;
+    }, sourceType, durationMs);
 
   }).catch((err) => {
-    const badge = card.querySelector('.js-status-badge');
+    const badge = incident.querySelector('.js-status-badge');
     badge.textContent = 'Error';
     badge.className = 'badge badge-error js-status-badge';
 
-    const spinner = card.querySelector('.js-spinner');
+    const spinner = incident.querySelector('.js-spinner');
     if (spinner) spinner.remove();
 
-    const body = card.querySelector('.card-body');
+    const body = incident.querySelector('.incident-body');
     const retryBtn = document.createElement('button');
     retryBtn.className = 'btn-retry';
     retryBtn.textContent = 'Reintentar';
@@ -449,11 +494,11 @@ function runSummarize(card, rawText, sourceType, durationMs) {
       badge.className = 'badge badge-processing js-status-badge';
 
       const newSpinner = document.createElement('div');
-      newSpinner.className = 'card-spinner js-spinner';
+      newSpinner.className = 'incident-spinner js-spinner';
       body.appendChild(newSpinner);
 
       retryBtn.remove();
-      runSummarize(card, rawText, sourceType, durationMs);
+      runSummarize(incident, rawText, sourceType, durationMs);
     });
     body.appendChild(retryBtn);
 
@@ -492,127 +537,140 @@ function formatDuration(ms) {
 
 recordBtn.addEventListener('click', toggleRecording);
 
-clearAllBtn.addEventListener('click', async () => {
-  const cards = feed.querySelectorAll('.card[data-card-id]');
-  const deletePromises = Array.from(cards).map(c =>
-    fetch(`/api/cards/${c.dataset.cardId}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
-  );
-  await Promise.all(deletePromises);
-  feed.innerHTML = '';
-  updateEmptyState();
+clearAllBtn.addEventListener('click', () => {
+  showConfirmModal('¿Borrar todas las incidencias?', 'Esta acción no se puede deshacer', async () => {
+    const incidents = feed.querySelectorAll('.incident[data-incident-id]');
+    const deletePromises = Array.from(incidents).map(i =>
+      fetch(`/api/incidents/${i.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
+    );
+    await Promise.all(deletePromises);
+    feed.innerHTML = '';
+    updateEmptyState();
+  });
 });
 
-let cardsOffset = 0;
-const CARDS_LIMIT = 20;
+let incidentsOffset = 0;
+const INCIDENTS_LIMIT = 20;
 
-function renderCardFromDB(dbCard) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.dataset.cardId = dbCard.id;
-  card.dataset.createdAt = dbCard.created_at;
+function renderIncidentFromDB(dbIncident) {
+  const incident = document.createElement('div');
+  incident.className = 'incident';
+  incident.dataset.incidentId = dbIncident.id;
+  incident.dataset.createdAt = dbIncident.created_at;
 
-  const createdAt = new Date(dbCard.created_at);
-  const durationStr = formatDuration(dbCard.duration_ms || 0);
-  const sourceType = dbCard.source_type || 'audio';
+  const createdAt = parseUTC(dbIncident.created_at);
+  const durationStr = formatDuration(dbIncident.duration_ms || 0);
+  const sourceType = dbIncident.source_type || 'audio';
   const typeBadgeClass = sourceType === 'audio' ? 'badge-audio' : 'badge-text';
   const typeBadgeLabel = sourceType === 'audio' ? 'Audio' : 'Texto';
-  const statusBadgeClass = dbCard.status === 'error' ? 'badge-error' : 'badge-completed';
-  const statusLabel = dbCard.status === 'error' ? 'Error' : 'Completado';
 
-  const hasBullets = dbCard.bullets && dbCard.title;
-  const displayText = capitalize(dbCard.transcript || '');
+  const isPending = dbIncident.status === 'procesando';
+  const statusBadgeClass = isPending ? 'badge-processing' : (dbIncident.status === 'error' ? 'badge-error' : 'badge-completed');
+  const statusLabel = isPending ? 'Procesando' : (dbIncident.status === 'error' ? 'Error' : 'Completado');
+
+  const hasBullets = dbIncident.bullets && dbIncident.title;
+  const displayText = capitalize(dbIncident.transcript || '');
+
+  if (isPending) {
+    incident.dataset.transcript = dbIncident.transcript || '';
+    incident.dataset.sourceType = sourceType;
+    incident.dataset.durationMs = dbIncident.duration_ms || 0;
+  }
 
   let bulletsHTML = '';
   let footerHTML = '';
   let noBugHTML = '';
+  let spinnerHTML = '';
 
-  if (hasBullets) {
-    let parsedBullets = [];
-    try { parsedBullets = JSON.parse(dbCard.bullets); } catch { parsedBullets = []; }
-    bulletsHTML = `<ul class="card-bullets">${parsedBullets.map(b => `<li>${ensurePeriod(capitalize(b))}</li>`).join('')}</ul>`;
-    footerHTML = `<div class="card-footer"><button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button></div>`;
+  if (isPending) {
+    spinnerHTML = '<div class="incident-spinner js-spinner"></div>';
+  } else if (hasBullets) {
+    const parsedBullets = Array.isArray(dbIncident.bullets) ? dbIncident.bullets : (() => { try { return JSON.parse(dbIncident.bullets); } catch { return []; } })();
+    bulletsHTML = `<ul class="incident-bullets">${parsedBullets.map(b => `<li>${ensurePeriod(capitalize(b))}</li>`).join('')}</ul>`;
+    footerHTML = `<div class="incident-footer"><button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button></div>`;
 
-    card.dataset.summaryTitle = dbCard.title;
-    card.dataset.summaryTranscript = dbCard.transcript;
-    card.dataset.summaryBullets = dbCard.bullets;
+    incident.dataset.summaryTitle = dbIncident.title;
+    incident.dataset.summaryTranscript = dbIncident.transcript;
+    incident.dataset.summaryBullets = JSON.stringify(dbIncident.bullets);
   } else {
-    noBugHTML = `<p class="card-no-bug">No hay información suficiente para generar el ticket.</p>`;
-    card.dataset.summaryTranscript = dbCard.transcript;
+    noBugHTML = `<p class="incident-no-bug">No hay información suficiente para generar el ticket.</p>`;
+    incident.dataset.summaryTranscript = dbIncident.transcript;
   }
 
-  let ticketLinkHTML = '';
-  if (dbCard.clickup_task_url) {
-    footerHTML = `<div class="card-footer"><a href="${dbCard.clickup_task_url}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></a></div>`;
+  if (dbIncident.clickup_task_url) {
+    footerHTML = `<div class="incident-footer"><a href="${dbIncident.clickup_task_url}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></a></div>`;
   }
 
-  const sentBadge = dbCard.clickup_task_id
+  const sentBadge = dbIncident.clickup_task_id
     ? `<span class="badge badge-sent js-status-badge">Enviado</span>`
     : `<span class="badge ${statusBadgeClass} js-status-badge">${statusLabel}</span>`;
 
-  card.innerHTML = `
-    <div class="card-header">
-      <div class="card-badges">
+  incident.innerHTML = `
+    <div class="incident-header">
+      <div class="incident-badges">
         <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
         ${sentBadge}
-        <span class="badge badge-duration">${durationStr}</span>
+        ${sourceType !== 'text' && dbIncident.duration_ms ? `<span class="badge badge-duration">${durationStr}</span>` : ''}
       </div>
       <div style="display:flex;align-items:center;gap:16px">
-        <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-        <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+        <span class="incident-time js-time-relative">${timeAgo(createdAt)}</span>
+        <button class="incident-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0 -7.5 0"/></svg></button>
       </div>
     </div>
-    <div class="card-body">
-      <p class="card-text"></p>
+    <div class="incident-body">
+      <p class="incident-text"></p>
       ${bulletsHTML}
       ${noBugHTML}
+      ${spinnerHTML}
     </div>
     ${footerHTML}
   `;
-  card.querySelector('.card-text').textContent = displayText;
+  incident.querySelector('.incident-text').textContent = displayText;
 
-  if (hasBullets && !dbCard.clickup_task_url) {
-    const footer = card.querySelector('.card-footer');
-    if (footer) attachTicketButton(card, footer);
+  if (hasBullets && !dbIncident.clickup_task_url) {
+    const footer = incident.querySelector('.incident-footer');
+    if (footer) attachTicketButton(incident, footer);
   }
 
-  card.querySelector('.card-delete').addEventListener('click', async () => {
+  incident.querySelector('.incident-delete').addEventListener('click', async () => {
     try {
-      await fetch(`/api/cards/${card.dataset.cardId}`, { method: 'DELETE', headers: authHeaders() });
+      await fetch(`/api/incidents/${incident.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() });
     } catch { /* degradacion graceful */ }
-    card.remove();
+    incident.remove();
     updateEmptyState();
   });
 
-  return card;
+  return incident;
 }
 
-async function loadCards(append = false) {
+async function loadIncidents(append = false) {
   if (!append) {
-    cardsOffset = 0;
+    incidentsOffset = 0;
+    emptyState.classList.add('hidden');
     feed.innerHTML = '';
   }
   try {
-    const res = await fetch(`/api/cards?limit=${CARDS_LIMIT}&offset=${cardsOffset}`, { headers: authHeaders() });
+    const res = await fetch(`/api/incidents?limit=${INCIDENTS_LIMIT}&offset=${incidentsOffset}`, { headers: authHeaders() });
     if (!res.ok) return;
     const data = await res.json();
-    const cards = data.data?.cards || [];
+    const incidents = data.data?.incidents || [];
     const total = data.data?.total || 0;
 
-    cards.forEach(dbCard => {
-      feed.appendChild(renderCardFromDB(dbCard));
+    incidents.forEach(dbIncident => {
+      feed.appendChild(renderIncidentFromDB(dbIncident));
     });
 
-    cardsOffset += cards.length;
+    incidentsOffset += incidents.length;
 
     const existingBtn = document.getElementById('load-more-btn');
     if (existingBtn) existingBtn.remove();
 
-    if (cardsOffset < total) {
+    if (incidentsOffset < total) {
       const loadMoreBtn = document.createElement('button');
       loadMoreBtn.id = 'load-more-btn';
       loadMoreBtn.className = 'w-full py-2 text-sm text-gray-400 hover:text-accent cursor-pointer';
       loadMoreBtn.textContent = 'Cargar más';
-      loadMoreBtn.addEventListener('click', () => loadCards(true));
+      loadMoreBtn.addEventListener('click', () => loadIncidents(true));
       feed.appendChild(loadMoreBtn);
     }
 
@@ -624,42 +682,78 @@ async function loadCards(append = false) {
 
 function handleExtensionMode() {
   const params = new URLSearchParams(location.search);
-  if (params.get('mode') !== 'extension') return;
+  const highlightId = params.get('highlight');
 
-  const content = params.get('content');
-  if (!content) return;
-
-  const source = params.get('source') || 'text';
-
-  history.replaceState({}, '', location.pathname);
-
-  const token = params.get('token');
-  if (!token) {
-    loginScreen.classList.remove('hidden');
-    return;
+  if (highlightId) {
+    history.replaceState({}, '', location.pathname);
+    const target = feed.querySelector(`.incident[data-incident-id="${highlightId}"]`);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('incident-highlight');
+      setTimeout(() => target.classList.remove('incident-highlight'), 3000);
+    }
   }
-
-  const session = getSession();
-  if (!session?.token) {
-    localStorage.setItem('bugshot_session', JSON.stringify({ token, user: { id: null, name: 'Extension', email: params.get('email') || 'extension@bugshot' } }));
-    showApp(params.get('email') || 'extension@bugshot');
-  }
-
-  createCard(content, source === 'audio' ? 'ext-audio' : null, 0);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  handleExtensionMode();
-  checkAuth();
-  initMic();
+function resumePendingIncidents() {
+  const pendingIncidents = feed.querySelectorAll('.incident');
+  pendingIncidents.forEach(incident => {
+    const badge = incident.querySelector('.js-status-badge');
+    if (!badge || badge.textContent.trim() !== 'Procesando') return;
+    const transcript = incident.dataset.transcript;
+    if (!transcript) return;
+    const sourceType = incident.dataset.sourceType || 'text';
+    const durationMs = parseInt(incident.dataset.durationMs) || 0;
+    runSummarize(incident, transcript, sourceType, durationMs);
+  });
+}
+
+function handleHashRegister() {
+  if (location.hash === '#register') {
+    history.replaceState({}, '', location.pathname);
+    const session = getSession();
+    if (!session?.token) {
+      setLoginMode(true);
+      loginScreen.classList.remove('hidden');
+    }
+  }
+}
+
+window.addEventListener('hashchange', handleHashRegister);
+
+function adoptExtensionSession() {
+  const params = new URLSearchParams(location.search);
+  const token = params.get('token');
+  const email = params.get('email');
+  if (token && email && !getSession()?.token) {
+    localStorage.setItem('bugshot_session', JSON.stringify({ token, user: { email } }));
+  }
+  if (token || email) {
+    params.delete('token');
+    params.delete('email');
+    const qs = params.toString();
+    history.replaceState({}, '', location.pathname + (qs ? '?' + qs : ''));
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  adoptExtensionSession();
+  handleHashRegister();
+  const authed = checkAuth();
+  if (authed) {
+    await loadIncidents();
+    handleExtensionMode();
+    resumePendingIncidents();
+    initMic();
+  }
   updateEmptyState();
 });
 
 setInterval(() => {
   document.querySelectorAll('.js-time-relative').forEach((el) => {
-    const card = el.closest('.card');
-    if (card?.dataset.createdAt) {
-      el.textContent = timeAgo(new Date(card.dataset.createdAt));
+    const incident = el.closest('.incident');
+    if (incident?.dataset.createdAt) {
+      el.textContent = timeAgo(parseUTC(incident.dataset.createdAt));
     }
   });
 }, 60000);
