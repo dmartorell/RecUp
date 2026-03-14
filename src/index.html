@@ -133,6 +133,19 @@
             Bugshot
           </h1>
           <div class="space-y-4">
+            <div id="login-name-field" class="hidden">
+              <label
+                for="login-name"
+                class="block text-sm font-light text-gray-400 mb-1"
+                >Nombre</label
+              >
+              <input
+                type="text"
+                id="login-name"
+                class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+                placeholder="Tu nombre"
+              />
+            </div>
             <div>
               <label
                 for="login-email"
@@ -169,8 +182,11 @@
               type="button"
               class="w-full px-4 py-2 text-sm font-light text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
             >
-              Login
+              Entrar
             </button>
+            <p class="text-sm text-center text-gray-400">
+              <a id="login-toggle-link" href="#" class="text-accent hover:underline">No tienes cuenta? Registrate</a>
+            </p>
           </div>
         </div>
       </div>
