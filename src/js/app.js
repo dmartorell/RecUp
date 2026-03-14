@@ -633,9 +633,14 @@ function handleExtensionMode() {
 
   history.replaceState({}, '', location.pathname);
 
+  const token = params.get('token');
+  if (!token) {
+    loginScreen.classList.remove('hidden');
+    return;
+  }
+
   const session = getSession();
   if (!session?.token) {
-    const token = params.get('token') || 'local';
     localStorage.setItem('bugshot_session', JSON.stringify({ token, user: { id: null, name: 'Extension', email: params.get('email') || 'extension@bugshot' } }));
     showApp(params.get('email') || 'extension@bugshot');
   }
