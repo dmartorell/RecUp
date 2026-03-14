@@ -2,7 +2,6 @@ import { requestMicAccess, getStream, startRecording, stopRecording } from './re
 import { startTranscription, stopTranscription } from './transcriber.js';
 import { summarize } from './summarizer.js';
 import { openTicketModal } from './ticket-modal.js';
-import { MOCK_CARDS } from './mocks.js';
 
 function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
 function ensurePeriod(str) { return /[.?!]$/.test(str) ? str : str + '.'; }
@@ -20,12 +19,39 @@ const loginScreen = document.getElementById('login-screen');
 const loginBtn = document.getElementById('login-btn');
 const loginEmailInput = document.getElementById('login-email');
 const loginPasswordInput = document.getElementById('login-password');
+const loginNameInput = document.getElementById('login-name');
+const loginNameField = document.getElementById('login-name-field');
+const loginToggleLink = document.getElementById('login-toggle-link');
 const loginError = document.getElementById('login-error');
 const userAvatar = document.getElementById('user-avatar');
 const avatarEmail = document.getElementById('avatar-email');
 
+let isRegisterMode = false;
+
+function setLoginMode(register) {
+  isRegisterMode = register;
+  loginNameField.classList.toggle('hidden', !register);
+  loginBtn.textContent = register ? 'Registrarse' : 'Entrar';
+  loginToggleLink.textContent = register ? 'Ya tengo cuenta' : 'No tienes cuenta? Registrate';
+  loginError.classList.remove('visible');
+  loginError.classList.add('invisible');
+}
+
+loginToggleLink.addEventListener('click', (e) => {
+  e.preventDefault();
+  setLoginMode(!isRegisterMode);
+});
+
 function getSession() {
   try { return JSON.parse(localStorage.getItem('bugshot_session')); } catch { return null; }
+}
+
+function authHeaders() {
+  const session = getSession();
+  return {
+    'Authorization': 'Bearer ' + (session?.token || ''),
+    'Content-Type': 'application/json'
+  };
 }
 
 function showApp(email) {
@@ -37,24 +63,35 @@ function showApp(email) {
 
 function checkAuth() {
   const session = getSession();
-  if (session?.email) {
-    showApp(session.email);
+  if (session?.token && session?.user) {
+    showApp(session.user.email);
+    loadCards();
   } else {
     loginScreen.classList.remove('hidden');
   }
 }
 
-[loginEmailInput, loginPasswordInput].forEach(input => {
-  input.addEventListener('focus', () => loginError.classList.remove('visible'));
+function showLoginError(msg) {
+  loginError.textContent = msg || 'Credenciales incorrectas';
+  loginError.classList.remove('invisible');
+  loginError.classList.add('visible');
+}
+
+[loginEmailInput, loginPasswordInput, loginNameInput].forEach(input => {
+  if (input) input.addEventListener('focus', () => {
+    loginError.classList.remove('visible');
+    loginError.classList.add('invisible');
+  });
 });
 
-loginBtn.addEventListener('click', () => {
+loginBtn.addEventListener('click', async () => {
   const email = loginEmailInput.value.trim();
   const password = loginPasswordInput.value;
   loginError.classList.remove('visible');
+  loginError.classList.add('invisible');
 
-  if (!email || password !== 'Alfred77') {
-    loginError.classList.add('visible');
+  if (!email || !password) {
+    showLoginError('Email y contraseña son obligatorios.');
     return;
   }
 
@@ -62,12 +99,47 @@ loginBtn.addEventListener('click', () => {
   loginBtn.disabled = true;
   loginBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
 
-  setTimeout(() => {
-    localStorage.setItem('bugshot_session', JSON.stringify({ email }));
+  try {
+    let body, endpoint;
+    if (isRegisterMode) {
+      const name = loginNameInput.value.trim();
+      if (!name) {
+        loginBtn.disabled = false;
+        loginBtn.textContent = originalText;
+        showLoginError('El nombre es obligatorio para registrarse.');
+        return;
+      }
+      endpoint = '/api/auth/register';
+      body = { name, email, password };
+    } else {
+      endpoint = '/api/auth/login';
+      body = { email, password };
+    }
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      showLoginError(data.error || 'Error al iniciar sesión.');
+      loginBtn.disabled = false;
+      loginBtn.textContent = originalText;
+      return;
+    }
+
+    localStorage.setItem('bugshot_session', JSON.stringify({ token: data.data.token, user: data.data.user }));
     loginBtn.disabled = false;
     loginBtn.textContent = originalText;
-    showApp(email);
-  }, 1200);
+    showApp(data.data.user.email);
+    loadCards();
+  } catch {
+    showLoginError('Error de red. Intenta de nuevo.');
+    loginBtn.disabled = false;
+    loginBtn.textContent = originalText;
+  }
 });
 
 loginPasswordInput.addEventListener('keydown', (e) => {
@@ -239,7 +311,13 @@ function createCard(transcript, audioBlob, duration) {
   `;
   card.querySelector('.card-text').textContent = displayText;
 
-  card.querySelector('.card-delete').addEventListener('click', () => {
+  card.querySelector('.card-delete').addEventListener('click', async () => {
+    const cardId = card.dataset.cardId;
+    if (cardId) {
+      try {
+        await fetch(`/api/cards/${cardId}`, { method: 'DELETE', headers: authHeaders() });
+      } catch { /* degradacion graceful */ }
+    }
     card.remove();
     updateEmptyState();
   });
@@ -247,17 +325,57 @@ function createCard(transcript, audioBlob, duration) {
   feed.prepend(card);
   updateEmptyState();
 
-  runSummarize(card, rawText);
+  const sourceType = hasAudio ? 'audio' : 'text';
+  runSummarize(card, rawText, sourceType, duration);
 }
 
-function runSummarize(card, rawText) {
-  summarize(rawText).then((result) => {
+async function persistCard(payload) {
+  try {
+    const res = await fetch('/api/cards', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.data?.card?.id || null;
+  } catch {
+    return null;
+  }
+}
+
+function attachTicketButton(card, footer) {
+  const ticketBtn = footer.querySelector('.btn-create-ticket');
+  ticketBtn.addEventListener('click', async () => {
+    if (card.querySelector('.badge-sent')) return;
+    openTicketModal({
+      title: card.dataset.summaryTitle,
+      transcript: card.dataset.summaryTranscript,
+      bullets: JSON.parse(card.dataset.summaryBullets),
+      cardElement: card,
+      onTicketCreated: async (taskId, taskUrl) => {
+        const cardId = card.dataset.cardId;
+        if (cardId) {
+          try {
+            await fetch(`/api/cards/${cardId}`, {
+              method: 'PATCH',
+              headers: authHeaders(),
+              body: JSON.stringify({ clickup_task_id: taskId, clickup_task_url: taskUrl, status: 'completado' })
+            });
+          } catch { /* degradacion graceful */ }
+        }
+      }
+    });
+  });
+}
+
+function runSummarize(card, rawText, sourceType, durationMs) {
+  summarize(rawText).then(async (result) => {
     const badge = card.querySelector('.js-status-badge');
     const spinner = card.querySelector('.js-spinner');
     if (spinner) spinner.remove();
 
     const body = card.querySelector('.card-body');
-    const textEl = card.querySelector('.card-text');
 
     if (!result.is_bug) {
       badge.textContent = 'Completado';
@@ -269,6 +387,14 @@ function runSummarize(card, rawText) {
       body.appendChild(msg);
 
       card.dataset.summaryTranscript = rawText;
+
+      const cardId = await persistCard({
+        transcript: rawText,
+        status: 'completado',
+        source_type: sourceType || 'audio',
+        duration_ms: durationMs || 0
+      });
+      if (cardId) card.dataset.cardId = cardId;
       return;
     }
 
@@ -291,19 +417,21 @@ function runSummarize(card, rawText) {
     footer.innerHTML = `<button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button>`;
     card.appendChild(footer);
 
-    const ticketBtn = footer.querySelector('.btn-create-ticket');
-    ticketBtn.addEventListener('click', () => {
-      if (card.querySelector('.badge-sent')) return;
-      openTicketModal({
-        title: card.dataset.summaryTitle,
-        transcript: card.dataset.summaryTranscript,
-        bullets: JSON.parse(card.dataset.summaryBullets),
-        cardElement: card
-      });
-    });
-
     card.dataset.summaryTranscript = result.transcript;
     card.dataset.summaryBullets = JSON.stringify(result.bullets);
+
+    attachTicketButton(card, footer);
+
+    const cardId = await persistCard({
+      transcript: rawText,
+      title: result.title,
+      bullets: JSON.stringify(result.bullets),
+      status: 'completado',
+      source_type: sourceType || 'audio',
+      duration_ms: durationMs || 0
+    });
+    if (cardId) card.dataset.cardId = cardId;
+
   }).catch((err) => {
     const badge = card.querySelector('.js-status-badge');
     badge.textContent = 'Error';
@@ -325,7 +453,7 @@ function runSummarize(card, rawText) {
       body.appendChild(newSpinner);
 
       retryBtn.remove();
-      runSummarize(card, rawText);
+      runSummarize(card, rawText, sourceType, durationMs);
     });
     body.appendChild(retryBtn);
 
@@ -364,90 +492,134 @@ function formatDuration(ms) {
 
 recordBtn.addEventListener('click', toggleRecording);
 
-clearAllBtn.addEventListener('click', () => {
+clearAllBtn.addEventListener('click', async () => {
+  const cards = feed.querySelectorAll('.card[data-card-id]');
+  const deletePromises = Array.from(cards).map(c =>
+    fetch(`/api/cards/${c.dataset.cardId}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
+  );
+  await Promise.all(deletePromises);
   feed.innerHTML = '';
   updateEmptyState();
 });
 
-function loadMocks() {
-  MOCK_CARDS.forEach((mock) => {
-    const card = document.createElement('div');
-    card.className = 'card';
-    const durationStr = formatDuration(mock.duration);
-    const createdAt = mock.createdAt;
-    card.dataset.createdAt = createdAt.toISOString();
+let cardsOffset = 0;
+const CARDS_LIMIT = 20;
 
-    if (mock.is_bug) {
-      card.innerHTML = `
-        <div class="card-header">
-          <div class="card-badges">
-            <span class="badge badge-audio">Audio</span>
-            <span class="badge badge-completed">Completado</span>
-            <span class="badge badge-duration">${durationStr}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px">
-            <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-            <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
-          </div>
-        </div>
-        <div class="card-body">
-          <p class="card-text"></p>
-          <ul class="card-bullets"></ul>
-        </div>
-        <div class="card-footer">
-          <button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button>
-        </div>
-      `;
-      card.querySelector('.card-text').textContent = capitalize(mock.transcript);
-      const bulletsList = card.querySelector('.card-bullets');
-      mock.bullets.forEach(b => {
-        const li = document.createElement('li');
-        li.textContent = ensurePeriod(capitalize(b));
-        bulletsList.appendChild(li);
-      });
-      card.dataset.summaryTitle = mock.title;
-      card.dataset.summaryTranscript = mock.transcript;
-      card.dataset.summaryBullets = JSON.stringify(mock.bullets);
+function renderCardFromDB(dbCard) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.cardId = dbCard.id;
+  card.dataset.createdAt = dbCard.created_at;
 
-      const mockTicketBtn = card.querySelector('.btn-create-ticket');
-      mockTicketBtn.addEventListener('click', () => {
-        if (card.querySelector('.badge-sent')) return;
-        openTicketModal({
-          title: card.dataset.summaryTitle,
-          transcript: card.dataset.summaryTranscript,
-          bullets: JSON.parse(card.dataset.summaryBullets),
-          cardElement: card
-        });
-      });
-    } else {
-      card.innerHTML = `
-        <div class="card-header">
-          <div class="card-badges">
-            <span class="badge badge-audio">Audio</span>
-            <span class="badge badge-completed">Completado</span>
-            <span class="badge badge-duration">${durationStr}</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:16px">
-            <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
-            <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
-          </div>
-        </div>
-        <div class="card-body">
-          <p class="card-text"></p>
-          <p class="card-no-bug">No hay información suficiente para generar el ticket.</p>
-        </div>
-      `;
-      card.querySelector('.card-text').textContent = capitalize(mock.rawTranscript);
-      card.dataset.summaryTranscript = mock.rawTranscript;
+  const createdAt = new Date(dbCard.created_at);
+  const durationStr = formatDuration(dbCard.duration_ms || 0);
+  const sourceType = dbCard.source_type || 'audio';
+  const typeBadgeClass = sourceType === 'audio' ? 'badge-audio' : 'badge-text';
+  const typeBadgeLabel = sourceType === 'audio' ? 'Audio' : 'Texto';
+  const statusBadgeClass = dbCard.status === 'error' ? 'badge-error' : 'badge-completed';
+  const statusLabel = dbCard.status === 'error' ? 'Error' : 'Completado';
+
+  const hasBullets = dbCard.bullets && dbCard.title;
+  const displayText = capitalize(dbCard.transcript || '');
+
+  let bulletsHTML = '';
+  let footerHTML = '';
+  let noBugHTML = '';
+
+  if (hasBullets) {
+    let parsedBullets = [];
+    try { parsedBullets = JSON.parse(dbCard.bullets); } catch { parsedBullets = []; }
+    bulletsHTML = `<ul class="card-bullets">${parsedBullets.map(b => `<li>${ensurePeriod(capitalize(b))}</li>`).join('')}</ul>`;
+    footerHTML = `<div class="card-footer"><button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button></div>`;
+
+    card.dataset.summaryTitle = dbCard.title;
+    card.dataset.summaryTranscript = dbCard.transcript;
+    card.dataset.summaryBullets = dbCard.bullets;
+  } else {
+    noBugHTML = `<p class="card-no-bug">No hay información suficiente para generar el ticket.</p>`;
+    card.dataset.summaryTranscript = dbCard.transcript;
+  }
+
+  let ticketLinkHTML = '';
+  if (dbCard.clickup_task_url) {
+    footerHTML = `<div class="card-footer"><a href="${dbCard.clickup_task_url}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></a></div>`;
+  }
+
+  const sentBadge = dbCard.clickup_task_id
+    ? `<span class="badge badge-sent js-status-badge">Enviado</span>`
+    : `<span class="badge ${statusBadgeClass} js-status-badge">${statusLabel}</span>`;
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-badges">
+        <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
+        ${sentBadge}
+        <span class="badge badge-duration">${durationStr}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="card-time js-time-relative">${timeAgo(createdAt)}</span>
+        <button class="card-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="card-text"></p>
+      ${bulletsHTML}
+      ${noBugHTML}
+    </div>
+    ${footerHTML}
+  `;
+  card.querySelector('.card-text').textContent = displayText;
+
+  if (hasBullets && !dbCard.clickup_task_url) {
+    const footer = card.querySelector('.card-footer');
+    if (footer) attachTicketButton(card, footer);
+  }
+
+  card.querySelector('.card-delete').addEventListener('click', async () => {
+    try {
+      await fetch(`/api/cards/${card.dataset.cardId}`, { method: 'DELETE', headers: authHeaders() });
+    } catch { /* degradacion graceful */ }
+    card.remove();
+    updateEmptyState();
+  });
+
+  return card;
+}
+
+async function loadCards(append = false) {
+  if (!append) {
+    cardsOffset = 0;
+    feed.innerHTML = '';
+  }
+  try {
+    const res = await fetch(`/api/cards?limit=${CARDS_LIMIT}&offset=${cardsOffset}`, { headers: authHeaders() });
+    if (!res.ok) return;
+    const data = await res.json();
+    const cards = data.data?.cards || [];
+    const total = data.data?.total || 0;
+
+    cards.forEach(dbCard => {
+      feed.appendChild(renderCardFromDB(dbCard));
+    });
+
+    cardsOffset += cards.length;
+
+    const existingBtn = document.getElementById('load-more-btn');
+    if (existingBtn) existingBtn.remove();
+
+    if (cardsOffset < total) {
+      const loadMoreBtn = document.createElement('button');
+      loadMoreBtn.id = 'load-more-btn';
+      loadMoreBtn.className = 'w-full py-2 text-sm text-gray-400 hover:text-accent cursor-pointer';
+      loadMoreBtn.textContent = 'Cargar más';
+      loadMoreBtn.addEventListener('click', () => loadCards(true));
+      feed.appendChild(loadMoreBtn);
     }
 
-    card.querySelector('.card-delete').addEventListener('click', () => {
-      card.remove();
-      updateEmptyState();
-    });
-    feed.appendChild(card);
-  });
-  updateEmptyState();
+    updateEmptyState();
+  } catch {
+    /* fallo silencioso */
+  }
 }
 
 function handleExtensionMode() {
@@ -461,10 +633,11 @@ function handleExtensionMode() {
 
   history.replaceState({}, '', location.pathname);
 
-  if (!getSession()) {
-    const email = params.get('email') || 'extension@bugshot';
-    localStorage.setItem('bugshot_session', JSON.stringify({ email }));
-    showApp(email);
+  const session = getSession();
+  if (!session?.token) {
+    const token = params.get('token') || 'local';
+    localStorage.setItem('bugshot_session', JSON.stringify({ token, user: { id: null, name: 'Extension', email: params.get('email') || 'extension@bugshot' } }));
+    showApp(params.get('email') || 'extension@bugshot');
   }
 
   createCard(content, source === 'audio' ? 'ext-audio' : null, 0);
@@ -474,7 +647,6 @@ document.addEventListener('DOMContentLoaded', () => {
   handleExtensionMode();
   checkAuth();
   initMic();
-  // loadMocks();
   updateEmptyState();
 });
 
