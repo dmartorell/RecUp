@@ -52,6 +52,7 @@ let attachments = null;
 let currentCardElement = null;
 let currentTranscript = '';
 let createdTaskId = null;
+let onTicketCreatedCallback = null;
 
 function setProgress(percent) {
   progressContainer.classList.remove('hidden');
@@ -102,6 +103,7 @@ function closeModal() {
   currentCardElement = null;
   currentTranscript = '';
   createdTaskId = null;
+  onTicketCreatedCallback = null;
   hideMissingBanner();
   bannerShown = false;
 
@@ -113,6 +115,7 @@ export function openTicketModal(cardData) {
   currentCardElement = cardData.cardElement;
   currentTranscript = cardData.transcript || '';
   createdTaskId = null;
+  onTicketCreatedCallback = cardData.onTicketCreated || null;
 
   titleInput.value = cardData.title || '';
 
@@ -311,7 +314,7 @@ async function executeSubmit() {
         setProgress(90);
       } catch (attErr) {
         setProgress(90);
-        markCardAsSent(ticket.url);
+        markCardAsSent(ticket.url, ticket.id);
         showModalError('Ticket creado pero algunos adjuntos fallaron.');
 
         const retryBtn = document.createElement('button');
@@ -343,7 +346,7 @@ async function executeSubmit() {
     }
 
     setProgress(100);
-    markCardAsSent(ticket.url);
+    markCardAsSent(ticket.url, ticket.id);
 
     setTimeout(() => {
       closeModal();
@@ -394,7 +397,10 @@ missingCompleteBtn.addEventListener('click', () => {
   firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
 
-function markCardAsSent(ticketUrl) {
+function markCardAsSent(ticketUrl, taskId) {
+  if (onTicketCreatedCallback && taskId) {
+    onTicketCreatedCallback(taskId, ticketUrl).catch(() => {});
+  }
   if (!currentCardElement) return;
 
   const badge = currentCardElement.querySelector('.js-status-badge');
