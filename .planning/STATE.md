@@ -56,7 +56,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None.
+- Validar transcript antes de llamar a Claude para evitar consumo innecesario de tokens (api)
+- Add keyboard text input button to webapp (ui)
 
 ### Roadmap Evolution
 
