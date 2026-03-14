@@ -7,3 +7,8 @@ bun.lockb
 .planning/
 docs/
 logs/
+
+# Claude Code — solo trackear CLAUDE.md y settings.json
+.claude/*
+!.claude/CLAUDE.md
+!.claude/settings.json
