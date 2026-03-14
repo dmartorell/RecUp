@@ -70,6 +70,8 @@ Recent decisions affecting current work:
 - Validar transcript antes de llamar a Claude para evitar consumo innecesario de tokens (api)
 - Add keyboard text input button to webapp (ui)
 - Prepare Chrome extension for unlisted Chrome Web Store publishing (general)
+- Refactorizar frontend y backend — poner orden y reutilizar (code-quality)
+- Gestionar errores de grabación que siguen sin control del usuario (reliability)
 
 ### Roadmap Evolution
 

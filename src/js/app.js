@@ -232,7 +232,7 @@ function animateWaveform() {
     if (v > peak) peak = v;
   }
   const normalized = Math.min(1, peak / 15);
-  const height = Math.max(3, normalized * 26);
+  const height = Math.max(3, normalized * 18);
   waveformBars.forEach(bar => bar.style.height = height + 'px');
   animFrameId = requestAnimationFrame(animateWaveform);
 }
@@ -554,7 +554,7 @@ clearAllBtn.addEventListener('click', () => {
 });
 
 let incidentsOffset = 0;
-const INCIDENTS_LIMIT = 20;
+const INCIDENTS_LIMIT = 25;
 
 function renderIncidentFromDB(dbIncident) {
   const incident = document.createElement('div');
@@ -672,7 +672,7 @@ async function loadIncidents(append = false) {
     if (incidentsOffset < total) {
       const loadMoreBtn = document.createElement('button');
       loadMoreBtn.id = 'load-more-btn';
-      loadMoreBtn.className = 'w-full py-2 text-sm text-gray-400 hover:text-accent cursor-pointer';
+      loadMoreBtn.className = 'mx-auto block py-2 px-4 text-sm text-gray-400 hover:text-accent cursor-pointer';
       loadMoreBtn.textContent = 'Cargar más';
       loadMoreBtn.addEventListener('click', () => loadIncidents(true));
       feed.appendChild(loadMoreBtn);
