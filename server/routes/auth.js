@@ -15,7 +15,7 @@ function rateLimit(req, res, next) {
   const attempts = loginAttempts.get(ip) || [];
   const recent = attempts.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
   if (recent.length >= RATE_LIMIT_MAX) {
-    return res.status(429).json({ success: false, error: 'Demasiados intentos. Espera un minuto.' });
+    return res.status(429).json({ success: false, error: 'RATE_LIMITED' });
   }
   recent.push(now);
   loginAttempts.set(ip, recent);
@@ -26,20 +26,20 @@ router.post('/api/auth/register', rateLimit, async (req, res) => {
   const { name, email, password } = req.body || {};
 
   if (!name || typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 100) {
-    return res.status(400).json({ success: false, error: 'Nombre invalido (1-100 caracteres)' });
+    return res.status(400).json({ success: false, error: 'INVALID_NAME' });
   }
   if (!email || !EMAIL_RE.test(email)) {
-    return res.status(400).json({ success: false, error: 'Email inválido' });
+    return res.status(400).json({ success: false, error: 'INVALID_EMAIL' });
   }
   if (!password || password.length < 6) {
-    return res.status(400).json({ success: false, error: 'Contraseña: mínimo 6 caracteres' });
+    return res.status(400).json({ success: false, error: 'WEAK_PASSWORD' });
   }
 
   const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN;
   if (allowedDomain) {
     const domain = `@${allowedDomain.replace(/^@/, '')}`;
     if (!email.toLowerCase().endsWith(domain.toLowerCase())) {
-      return res.status(400).json({ success: false, error: `Email debe ser del dominio ${domain}` });
+      return res.status(400).json({ success: false, error: 'EMAIL_DOMAIN' });
     }
   }
 
@@ -59,10 +59,10 @@ router.post('/api/auth/register', rateLimit, async (req, res) => {
     });
   } catch (err) {
     if (err?.message?.includes('UNIQUE')) {
-      return res.status(409).json({ success: false, error: 'Email ya registrado' });
+      return res.status(409).json({ success: false, error: 'EMAIL_TAKEN' });
     }
     logDbError(err, 'POST /api/auth/register');
-    return res.status(500).json({ success: false, error: 'Error interno' });
+    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
   }
 });
 
@@ -70,19 +70,19 @@ router.post('/api/auth/login', rateLimit, async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, error: 'Email y password son obligatorios' });
+    return res.status(400).json({ success: false, error: 'REQUIRED_FIELDS' });
   }
 
   try {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
 
     if (!user) {
-      return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
+      return res.status(401).json({ success: false, error: 'INVALID_CREDENTIALS' });
     }
 
     const valid = await Bun.password.verify(password, user.password);
     if (!valid) {
-      return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
+      return res.status(401).json({ success: false, error: 'INVALID_CREDENTIALS' });
     }
 
     const token = signToken(user.id, user.name, user.email);
@@ -95,7 +95,7 @@ router.post('/api/auth/login', rateLimit, async (req, res) => {
     });
   } catch (err) {
     logDbError(err, 'POST /api/auth/login');
-    return res.status(500).json({ success: false, error: 'Error interno' });
+    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
   }
 });
 

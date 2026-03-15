@@ -1,3 +1,5 @@
+import { UI } from './strings.js';
+
 let stream = null;
 let mediaRecorder = null;
 let chunks = [];
@@ -8,10 +10,10 @@ async function requestMicAccess() {
     return stream;
   } catch (err) {
     if (err.name === 'NotAllowedError') {
-      throw new Error('Permiso de micrófono denegado. Activa el micrófono en la barra de direcciones.');
+      throw new Error(UI.MIC_DENIED);
     }
     if (err.name === 'NotFoundError') {
-      throw new Error('No se encontró ningún micrófono conectado.');
+      throw new Error(UI.MIC_NOT_FOUND);
     }
     throw err;
   }
@@ -42,7 +44,7 @@ function startRecording() {
 
 function stopRecording() {
   return new Promise((resolve, reject) => {
-    mediaRecorder.onerror = (e) => reject(e.error || new Error('Error en MediaRecorder'));
+    mediaRecorder.onerror = (e) => reject(e.error || new Error(UI.MIC_RECORDER_ERROR));
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
       resolve(blob);

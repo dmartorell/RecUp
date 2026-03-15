@@ -1,6 +1,31 @@
 const RECUP_URL = 'http://localhost:3000';
 const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
 
+const API_ERRORS = {
+  RATE_LIMITED: 'Demasiados intentos. Espera un minuto.',
+  INVALID_EMAIL: 'Email inválido',
+  WEAK_PASSWORD: 'Contraseña: mínimo 6 caracteres',
+  INVALID_CREDENTIALS: 'Credenciales incorrectas',
+  REQUIRED_FIELDS: 'Email y contraseña son obligatorios',
+  UNAUTHORIZED: 'No autorizado',
+  INTERNAL_ERROR: 'Error interno',
+  UNKNOWN: 'Ha ocurrido un error',
+};
+function apiError(code) { return API_ERRORS[code] || API_ERRORS.UNKNOWN; }
+
+const UI = {
+  LOGIN_BTN: 'Entrar',
+  LOGIN_BTN_LOADING: 'Entrando...',
+  LOGIN_ERROR_DEFAULT: 'Credenciales incorrectas',
+  LOGIN_ERROR_REQUIRED: 'Introduce email y contraseña',
+  LOGIN_ERROR_NETWORK: 'Error de conexión',
+  MIC_DENIED: 'Permiso de micrófono denegado.',
+  MIC_ERROR_PREFIX: 'Error micrófono: ',
+  RECORDING_AUTO_STOP: 'Grabación detenida (máx. 5 min)',
+  SEND_BTN_LOADING: 'Enviando...',
+  SEND_ERROR: 'Error al enviar. Intenta de nuevo.',
+};
+
 let mediaStream = null;
 let audioContext = null;
 let analyser = null;
@@ -48,7 +73,7 @@ function showLogin() {
   views.login.classList.remove('hidden');
   els.email.value = '';
   els.password.value = '';
-  els.loginError.textContent = 'Credenciales incorrectas';
+  els.loginError.textContent = UI.LOGIN_ERROR_DEFAULT;
   els.loginError.classList.remove('visible');
 }
 
@@ -126,8 +151,8 @@ async function startRecording() {
   } catch (err) {
     const errEl = document.getElementById('mic-error');
     errEl.textContent = err.name === 'NotAllowedError'
-      ? 'Permiso de micrófono denegado.'
-      : `Error micrófono: ${err.name}`;
+      ? UI.MIC_DENIED
+      : UI.MIC_ERROR_PREFIX + err.name;
     errEl.classList.remove('hidden');
     return;
   }
@@ -157,7 +182,7 @@ async function startRecording() {
   window.startTranscription((error, isFatal) => {
     if (isFatal) {
       const errEl = document.getElementById('mic-error');
-      errEl.textContent = 'Error micrófono: ' + error;
+      errEl.textContent = UI.MIC_ERROR_PREFIX + error;
       errEl.classList.remove('hidden');
       forceCleanup();
     }
@@ -165,7 +190,7 @@ async function startRecording() {
 
   recordingTimeoutId = setTimeout(() => {
     const errEl = document.getElementById('mic-error');
-    errEl.textContent = 'Grabación detenida (máx. 5 min)';
+    errEl.textContent = UI.RECORDING_AUTO_STOP;
     errEl.classList.remove('hidden');
     forceCleanup();
   }, RECORDING_TIMEOUT_MS);
@@ -207,13 +232,13 @@ async function handleLogin() {
   const password = els.password.value;
 
   if (!email || !password) {
-    els.loginError.textContent = 'Introduce email y contraseña';
+    els.loginError.textContent = UI.LOGIN_ERROR_REQUIRED;
     els.loginError.classList.add('visible');
     return;
   }
 
   els.btnLogin.disabled = true;
-  els.btnLogin.textContent = 'Entrando...';
+  els.btnLogin.textContent = UI.LOGIN_BTN_LOADING;
   els.loginError.classList.remove('visible');
 
   try {
@@ -231,15 +256,15 @@ async function handleLogin() {
         () => checkMicPermission(json.data.user.email)
       );
     } else {
-      els.loginError.textContent = json.error || 'Credenciales incorrectas';
+      els.loginError.textContent = apiError(json.error);
       els.loginError.classList.add('visible');
     }
   } catch {
-    els.loginError.textContent = 'Error de conexión';
+    els.loginError.textContent = UI.LOGIN_ERROR_NETWORK;
     els.loginError.classList.add('visible');
   } finally {
     els.btnLogin.disabled = false;
-    els.btnLogin.textContent = 'Entrar';
+    els.btnLogin.textContent = UI.LOGIN_BTN;
   }
 }
 
@@ -280,7 +305,7 @@ els.sendBtn.addEventListener('click', () => {
 
     els.sendBtn.disabled = true;
     const originalText = els.sendBtn.textContent;
-    els.sendBtn.textContent = 'Enviando...';
+    els.sendBtn.textContent = UI.SEND_BTN_LOADING;
 
     try {
       const res = await fetch(`${RECUP_URL}/api/incidents`, {
@@ -297,7 +322,7 @@ els.sendBtn.addEventListener('click', () => {
         }),
       });
 
-      if (!res.ok) throw new Error('Error al crear incidencia');
+      if (!res.ok) throw new Error(UI.SEND_ERROR);
       const data = await res.json();
       const incidentId = data.data?.incident?.id;
 
@@ -317,7 +342,7 @@ els.sendBtn.addEventListener('click', () => {
       els.sendBtn.disabled = false;
       els.sendBtn.textContent = originalText;
       const errEl = document.getElementById('mic-error');
-      errEl.textContent = 'Error al enviar. Intenta de nuevo.';
+      errEl.textContent = UI.SEND_ERROR;
       errEl.classList.remove('hidden');
     }
   });

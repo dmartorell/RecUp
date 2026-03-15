@@ -27,7 +27,7 @@ router.get('/api/incidents', (req, res) => {
     return res.json({ success: true, data: { incidents: parsed, total } });
   } catch (err) {
     logDbError(err, 'GET /api/incidents');
-    return res.status(500).json({ success: false, error: 'Error interno' });
+    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
   }
 });
 
@@ -38,7 +38,7 @@ router.post('/api/incidents', (req, res) => {
   } = req.body || {};
 
   if (!transcript || !transcript.trim()) {
-    return res.status(400).json({ success: false, error: 'transcript es obligatorio' });
+    return res.status(400).json({ success: false, error: 'TRANSCRIPT_REQUIRED' });
   }
 
   try {
@@ -64,23 +64,23 @@ router.post('/api/incidents', (req, res) => {
     return res.status(201).json({ success: true, data: { incident } });
   } catch (err) {
     logDbError(err, 'POST /api/incidents');
-    return res.status(500).json({ success: false, error: 'Error interno' });
+    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
   }
 });
 
 router.patch('/api/incidents/:id', (req, res) => {
   const id = parseInt(req.params.id);
-  if (!id) return res.status(400).json({ success: false, error: 'ID invalido' });
+  if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
 
   try {
     const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
-    if (!incident) return res.status(404).json({ success: false, error: 'Incidencia no encontrada' });
-    if (incident.user_id !== req.user.id) return res.status(403).json({ success: false, error: 'No autorizado' });
+    if (!incident) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
+    if (incident.user_id !== req.user.id) return res.status(403).json({ success: false, error: 'UNAUTHORIZED' });
 
     const allowed = ['clickup_task_id', 'clickup_task_url', 'status', 'title', 'bullets', 'transcript'];
     const fields = Object.keys(req.body || {}).filter(k => allowed.includes(k));
     if (fields.length === 0) {
-      return res.status(400).json({ success: false, error: 'No hay campos validos para actualizar' });
+      return res.status(400).json({ success: false, error: 'NO_VALID_FIELDS' });
     }
 
     const values = fields.map(k => {
@@ -98,24 +98,24 @@ router.patch('/api/incidents/:id', (req, res) => {
     return res.json({ success: true, data: { incident: updated } });
   } catch (err) {
     logDbError(err, 'PATCH /api/incidents/:id');
-    return res.status(500).json({ success: false, error: 'Error interno' });
+    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
   }
 });
 
 router.delete('/api/incidents/:id', (req, res) => {
   const id = parseInt(req.params.id);
-  if (!id) return res.status(400).json({ success: false, error: 'ID invalido' });
+  if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
 
   try {
     const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
-    if (!incident) return res.status(404).json({ success: false, error: 'Incidencia no encontrada' });
-    if (incident.user_id !== req.user.id) return res.status(403).json({ success: false, error: 'No autorizado' });
+    if (!incident) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
+    if (incident.user_id !== req.user.id) return res.status(403).json({ success: false, error: 'UNAUTHORIZED' });
 
     db.prepare('DELETE FROM incidents WHERE id = ?').run(id);
     return res.json({ success: true });
   } catch (err) {
     logDbError(err, 'DELETE /api/incidents/:id');
-    return res.status(500).json({ success: false, error: 'Error interno' });
+    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
   }
 });
 
