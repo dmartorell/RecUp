@@ -1,4 +1,7 @@
 import { AttachmentManager } from './attachments.js';
+import { capitalize, ensurePeriod } from './utils.js';
+import { showToast, showToastWithLink } from './toast.js';
+import { getSession } from './auth.js';
 
 const modal = document.getElementById('ticket-modal');
 const titleInput = document.getElementById('ticket-title');
@@ -119,8 +122,6 @@ export function openTicketModal(incidentData) {
 
   titleInput.value = incidentData.title || '';
 
-  const ensurePeriod = s => s && /[.!?]$/.test(s.trim()) ? s.trim() : s.trim() + '.';
-  const capitalize = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
   const bulletsText = (incidentData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
   descriptionEl.value = bulletsText;
 
@@ -218,17 +219,19 @@ async function uploadAttachments(taskId, files) {
   formData.append('taskId', taskId);
   files.forEach(f => formData.append('attachment', f));
 
-  const res = await fetch('/api/attachment', { method: 'POST', body: formData });
+  const session = getSession();
+  const res = await fetch('/api/attachment', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + (session?.token || '') },
+    body: formData,
+  });
   const data = await res.json();
   if (!res.ok) throw { partial: data.uploaded.length > 0, data };
   return data;
 }
 
 function getLoggedEmail() {
-  try {
-    const session = JSON.parse(localStorage.getItem('bugshot_session'));
-    return session?.user?.email || '';
-  } catch { return ''; }
+  return getSession()?.user?.email || '';
 }
 
 function getMissingFields() {
@@ -296,7 +299,7 @@ async function executeSubmit() {
       const err = await ticketRes.json().catch(() => ({}));
       if (err.error === 'no_member') {
         closeModal();
-        showToastHtml('<strong>Error</strong><br>Comunícate con el gestor de ClickUp en Alfred Smart.');
+        showToast('Error: Comunícate con el gestor de ClickUp en Alfred Smart.');
         return;
       }
       const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || 'Error al crear el ticket');
@@ -350,14 +353,7 @@ async function executeSubmit() {
 
     setTimeout(() => {
       closeModal();
-      const toast = document.createElement('div');
-      toast.className = 'toast';
-      toast.innerHTML = `Ticket creado. <a href="${ticket.url}" target="_blank" rel="noopener" style="color:#4a9ec5;text-decoration:underline;">Ver en ClickUp</a>`;
-      document.getElementById('toast-container').appendChild(toast);
-      setTimeout(() => {
-        toast.classList.add('toast-fade-out');
-        toast.addEventListener('transitionend', () => toast.remove());
-      }, 6000);
+      showToastWithLink('Ticket creado.', 'Ver en ClickUp', ticket.url);
     }, 400);
 
   } catch (err) {
@@ -411,30 +407,14 @@ function markCardAsSent(ticketUrl, taskId) {
 
   const footer = currentIncidentElement.querySelector('.incident-footer');
   if (footer) {
-    footer.innerHTML = `
-      <a href="${ticketUrl}" target="_blank" rel="noopener" class="text-sm text-accent hover:underline">Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></a>
-    `;
+    footer.textContent = '';
+    const link = document.createElement('a');
+    link.href = ticketUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.className = 'text-sm text-accent hover:underline';
+    link.innerHTML = `Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>`;
+    footer.appendChild(link);
   }
 }
 
-function showToastHtml(html) {
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.innerHTML = html;
-  document.getElementById('toast-container').appendChild(toast);
-  setTimeout(() => {
-    toast.classList.add('toast-fade-out');
-    toast.addEventListener('transitionend', () => toast.remove());
-  }, 6000);
-}
-
-function showToast(message) {
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-  document.getElementById('toast-container').appendChild(toast);
-  setTimeout(() => {
-    toast.classList.add('toast-fade-out');
-    toast.addEventListener('transitionend', () => toast.remove());
-  }, 4000);
-}
