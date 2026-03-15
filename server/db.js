@@ -10,7 +10,7 @@ const PROJECT_ROOT = join(__dirname, '..');
 mkdirSync(join(PROJECT_ROOT, 'data'), { recursive: true });
 mkdirSync(join(PROJECT_ROOT, 'dbLogs'), { recursive: true });
 
-const DB_PATH = join(PROJECT_ROOT, 'data', 'bugshot.db');
+const DB_PATH = join(PROJECT_ROOT, 'data', 'recup.db');
 const LOG_PATH = join(PROJECT_ROOT, 'dbLogs', 'errors.log');
 
 export function logDbError(error, context = '') {
@@ -55,5 +55,8 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_incidents_user_id ON incidents(user_id);
 `);
+
+process.on('SIGINT', () => { db.close(); process.exit(0); });
+process.on('SIGTERM', () => { db.close(); process.exit(0); });
 
 export default db;
