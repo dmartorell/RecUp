@@ -1,4 +1,4 @@
-const BUGSHOT_URL = 'http://localhost:3000';
+const RECUP_URL = 'http://localhost:3000';
 
 let mediaStream = null;
 let audioContext = null;
@@ -185,7 +185,7 @@ async function handleLogin() {
   els.loginError.classList.remove('visible');
 
   try {
-    const res = await fetch(`${BUGSHOT_URL}/api/auth/login`, {
+    const res = await fetch(`${RECUP_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -195,7 +195,7 @@ async function handleLogin() {
 
     if (json.success) {
       chrome.storage.local.set(
-        { bugshot_token: json.data.token, bugshot_email: json.data.user.email },
+        { recup_token: json.data.token, recup_email: json.data.user.email },
         () => checkMicPermission(json.data.user.email)
       );
     } else {
@@ -212,7 +212,7 @@ async function handleLogin() {
 }
 
 function handleLogout() {
-  chrome.storage.local.remove(['bugshot_token', 'bugshot_email'], () => {
+  chrome.storage.local.remove(['recup_token', 'recup_email'], () => {
     showLogin();
   });
 }
@@ -239,8 +239,8 @@ els.sendBtn.addEventListener('click', () => {
   const content = els.issueText.value.trim();
   if (!content) return;
 
-  chrome.storage.local.get(['bugshot_token', 'bugshot_email'], async (stored) => {
-    const token = stored.bugshot_token || '';
+  chrome.storage.local.get(['recup_token', 'recup_email'], async (stored) => {
+    const token = stored.recup_token || '';
     const sourceType = usedAudio ? 'audio' : 'text';
     const durationMs = usedAudio ? lastRecordingDuration : 0;
     usedAudio = false;
@@ -251,7 +251,7 @@ els.sendBtn.addEventListener('click', () => {
     els.sendBtn.textContent = 'Enviando...';
 
     try {
-      const res = await fetch(`${BUGSHOT_URL}/api/incidents`, {
+      const res = await fetch(`${RECUP_URL}/api/incidents`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -269,9 +269,9 @@ els.sendBtn.addEventListener('click', () => {
       const data = await res.json();
       const incidentId = data.data?.incident?.id;
 
-      const email = stored.bugshot_email || '';
-      const url = BUGSHOT_URL + '/?highlight=' + (incidentId || '') + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email);
-      chrome.tabs.query({ url: BUGSHOT_URL + '/*' }, (tabs) => {
+      const email = stored.recup_email || '';
+      const url = RECUP_URL + '/?highlight=' + (incidentId || '') + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email);
+      chrome.tabs.query({ url: RECUP_URL + '/*' }, (tabs) => {
         if (tabs.length > 0) {
           chrome.tabs.update(tabs[0].id, { url, active: true });
           chrome.windows.update(tabs[0].windowId, { focused: true });
@@ -292,8 +292,8 @@ els.sendBtn.addEventListener('click', () => {
 
 document.getElementById('btn-register').addEventListener('click', (e) => {
   e.preventDefault();
-  const registerUrl = `${BUGSHOT_URL}/#register`;
-  chrome.tabs.query({ url: `${BUGSHOT_URL}/*` }, (tabs) => {
+  const registerUrl = `${RECUP_URL}/#register`;
+  chrome.tabs.query({ url: `${RECUP_URL}/*` }, (tabs) => {
     if (tabs.length > 0) {
       chrome.tabs.update(tabs[0].id, { url: registerUrl, active: true });
       chrome.windows.update(tabs[0].windowId, { focused: true });
@@ -311,8 +311,8 @@ document.getElementById('btn-grant-mic').addEventListener('click', async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     stream.getTracks().forEach(t => t.stop());
-    chrome.storage.local.get(['bugshot_email'], (result) => {
-      showIdle(result.bugshot_email || '');
+    chrome.storage.local.get(['recup_email'], (result) => {
+      showIdle(result.recup_email || '');
     });
   } catch {
     showMicPrompt(true);
@@ -321,11 +321,11 @@ document.getElementById('btn-grant-mic').addEventListener('click', async () => {
 
 async function validateToken(token, email) {
   try {
-    const res = await fetch(`${BUGSHOT_URL}/api/incidents?limit=1`, {
+    const res = await fetch(`${RECUP_URL}/api/incidents?limit=1`, {
       headers: { 'Authorization': `Bearer ${token}` },
     });
     if (res.status === 401) {
-      chrome.storage.local.remove(['bugshot_token', 'bugshot_email'], () => showLogin());
+      chrome.storage.local.remove(['recup_token', 'recup_email'], () => showLogin());
     } else {
       checkMicPermission(email);
     }
@@ -334,9 +334,9 @@ async function validateToken(token, email) {
   }
 }
 
-chrome.storage.local.get(['bugshot_token', 'bugshot_email'], (result) => {
-  if (result.bugshot_token && result.bugshot_email) {
-    validateToken(result.bugshot_token, result.bugshot_email);
+chrome.storage.local.get(['recup_token', 'recup_email'], (result) => {
+  if (result.recup_token && result.recup_email) {
+    validateToken(result.recup_token, result.recup_email);
   } else {
     showLogin();
   }

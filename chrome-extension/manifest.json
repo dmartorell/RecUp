@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Bugshot",
+  "name": "RecUp",
   "version": "1.1.0",
   "description": "Genera tickets de incidencias en ClickUp usando audio o texto.",
   "icons": {

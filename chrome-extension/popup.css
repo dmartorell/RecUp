@@ -164,15 +164,10 @@ body {
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.75);
+  color: #ffffff;
   padding: 4px;
   display: flex;
   align-items: center;
-  transition: color 150ms ease;
-}
-
-.btn-logout:hover {
-  color: #ffffff;
 }
 
 .idle-body {
