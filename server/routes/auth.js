@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db, { logDbError } from '../db.js';
-import { createSession } from '../middleware/auth.js';
+import { signToken } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -49,7 +49,7 @@ router.post('/api/auth/register', rateLimit, async (req, res) => {
       'INSERT INTO users (name, email, password) VALUES (?, ?, ?)'
     ).run(name.trim(), email.toLowerCase(), hashed);
 
-    const token = createSession(result.lastInsertRowid);
+    const token = signToken(result.lastInsertRowid, name.trim(), email.toLowerCase());
     return res.status(201).json({
       success: true,
       data: {
@@ -85,7 +85,7 @@ router.post('/api/auth/login', rateLimit, async (req, res) => {
       return res.status(401).json({ success: false, error: 'Credenciales inválidas' });
     }
 
-    const token = createSession(user.id);
+    const token = signToken(user.id, user.name, user.email);
     return res.json({
       success: true,
       data: {
