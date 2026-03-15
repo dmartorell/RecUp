@@ -41,7 +41,8 @@ function startRecording() {
 }
 
 function stopRecording() {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    mediaRecorder.onerror = (e) => reject(e.error || new Error('Error en MediaRecorder'));
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
       resolve(blob);
