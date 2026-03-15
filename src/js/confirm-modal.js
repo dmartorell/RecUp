@@ -6,13 +6,14 @@ const confirmCancel = document.getElementById('confirm-modal-cancel');
 
 let confirmAbort = null;
 
-export function showConfirmModal(title, message, onConfirm) {
+export function showConfirmModal(title, message, onConfirm, { okLabel = 'Borrar' } = {}) {
   if (confirmAbort) confirmAbort.abort();
   confirmAbort = new AbortController();
   const { signal } = confirmAbort;
 
   confirmTitle.textContent = title;
   confirmMessage.textContent = message;
+  confirmOk.textContent = okLabel;
   confirmModal.classList.remove('hidden');
   const cleanup = () => { confirmModal.classList.add('hidden'); confirmAbort.abort(); };
   confirmCancel.addEventListener('click', cleanup, { signal });

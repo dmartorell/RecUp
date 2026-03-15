@@ -54,7 +54,7 @@ router.post('/api/auth/register', rateLimit, async (req, res) => {
       success: true,
       data: {
         token,
-        user: { id: result.lastInsertRowid, name: name.trim(), email: email.toLowerCase() },
+        user: { name: name.trim(), email: email.toLowerCase() },
       },
     });
   } catch (err) {
@@ -90,7 +90,7 @@ router.post('/api/auth/login', rateLimit, async (req, res) => {
       success: true,
       data: {
         token,
-        user: { id: user.id, name: user.name, email: user.email },
+        user: { name: user.name, email: user.email },
       },
     });
   } catch (err) {
