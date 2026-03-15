@@ -5,8 +5,24 @@ import { createSession } from '../middleware/auth.js';
 const router = Router();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 10;
+const loginAttempts = new Map();
 
-router.post('/api/auth/register', async (req, res) => {
+function rateLimit(req, res, next) {
+  const ip = req.ip;
+  const now = Date.now();
+  const attempts = loginAttempts.get(ip) || [];
+  const recent = attempts.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    return res.status(429).json({ success: false, error: 'Demasiados intentos. Espera un minuto.' });
+  }
+  recent.push(now);
+  loginAttempts.set(ip, recent);
+  next();
+}
+
+router.post('/api/auth/register', rateLimit, async (req, res) => {
   const { name, email, password } = req.body || {};
 
   if (!name || typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 100) {
@@ -50,7 +66,7 @@ router.post('/api/auth/register', async (req, res) => {
   }
 });
 
-router.post('/api/auth/login', async (req, res) => {
+router.post('/api/auth/login', rateLimit, async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {

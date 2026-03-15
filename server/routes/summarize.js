@@ -35,8 +35,9 @@ router.post('/api/summarize', async (req, res) => {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY no esta configurada en el servidor' });
   }
 
+  const SUMMARIZE_TIMEOUT_MS = 30_000;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), SUMMARIZE_TIMEOUT_MS);
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {

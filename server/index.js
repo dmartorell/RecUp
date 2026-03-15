@@ -31,5 +31,5 @@ if (!process.env.CLICKUP_API_KEY || !process.env.CLICKUP_LIST_ID) {
 }
 
 app.listen(PORT, () => {
-  console.log(`Bugshot running on http://localhost:${PORT}`);
+  console.log(`recUp running on http://localhost:${PORT}`);
 });
