@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards
 Current Plan: 04 (de 4)
-Last activity: 2026-03-15 - Completed quick task 8: Migrar autenticación de sesiones SQLite a JWT
+Last activity: 2026-03-16 - Completed quick task 9: Gestionar errores de grabación sin control
 
 Progress: [██████████] 100%
 
@@ -71,7 +71,6 @@ Recent decisions affecting current work:
 - Add keyboard text input button to webapp (ui)
 - Prepare Chrome extension for unlisted Chrome Web Store publishing (general)
 - Refactorizar frontend y backend — poner orden y reutilizar (code-quality)
-- Gestionar errores de grabación que siguen sin control del usuario (reliability)
 - Evaluar domain knowledge de Alfred en prompt de resumen (api)
 - Implementar testing backend y frontend (testing)
 
@@ -91,3 +90,4 @@ None.
 | 5 | Rediseñar login: layout dos columnas con imagen bug.png alineada, responsivo en móvil | 2026-03-13 | e8b8f22 | [5-redise-ar-login-layout-dos-columnas-con-](./quick/5-redise-ar-login-layout-dos-columnas-con-/) |
 | 6 | Autoscroll al top del feed tras crear incident en webapp | 2026-03-14 | 45f84dc | [6-implementar-autoscroll-en-la-webapp](./quick/6-implementar-autoscroll-en-la-webapp/) |
 | 8 | Migrar autenticación de sesiones SQLite a JWT stateless | 2026-03-15 | bf5d9c0 | [8-migrar-autenticaci-n-de-sesiones-sqlite-](./quick/8-migrar-autenticaci-n-de-sesiones-sqlite-/) |
+| 9 | Gestionar errores de grabación sin control: fatal error detection, forceCleanup, timeout 5min | 2026-03-16 | — | [9-gestionar-errores-de-grabaci-n-sin-contr](./quick/9-gestionar-errores-de-grabaci-n-sin-contr/) |
