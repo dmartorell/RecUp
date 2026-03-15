@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: unknown
-last_updated: "2026-03-14T11:44:50.330Z"
+last_updated: "2026-03-15T00:00:00.000Z"
 progress:
   total_phases: 2
   completed_phases: 2
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards
 Current Plan: 04 (de 4)
-Last activity: 2026-03-14 - Completed quick task 6: Implementar autoscroll en la webapp
+Last activity: 2026-03-15 - Completed quick task 8: Migrar autenticación de sesiones SQLite a JWT
 
 Progress: [██████████] 100%
 
@@ -90,3 +90,4 @@ None.
 |---|-------------|------|--------|-----------|
 | 5 | Rediseñar login: layout dos columnas con imagen bug.png alineada, responsivo en móvil | 2026-03-13 | e8b8f22 | [5-redise-ar-login-layout-dos-columnas-con-](./quick/5-redise-ar-login-layout-dos-columnas-con-/) |
 | 6 | Autoscroll al top del feed tras crear incident en webapp | 2026-03-14 | 45f84dc | [6-implementar-autoscroll-en-la-webapp](./quick/6-implementar-autoscroll-en-la-webapp/) |
+| 8 | Migrar autenticación de sesiones SQLite a JWT stateless | 2026-03-15 | bf5d9c0 | [8-migrar-autenticaci-n-de-sesiones-sqlite-](./quick/8-migrar-autenticaci-n-de-sesiones-sqlite-/) |
