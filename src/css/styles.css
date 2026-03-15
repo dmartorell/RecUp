@@ -27,8 +27,8 @@ html {
   scroll-behavior: smooth;
 }
 
-#ticket-modal input:focus,
-#ticket-modal textarea:focus {
+#ticket-modal .form-input:focus,
+#text-input-modal .form-input:focus {
   background-color: #fff;
 }
 
@@ -211,19 +211,24 @@ body {
   color: #92400e;
 }
 
-.badge-completed {
+.badge-neutral {
   background-color: #f3f4f6;
   color: #6b7280;
 }
 
-.badge-error {
-  background-color: #f3f4f6;
-  color: #6b7280;
+.form-input {
+  width: 100%;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
 }
 
-.badge-duration {
-  background-color: #f3f4f6;
-  color: #6b7280;
+.form-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(36, 94, 131, 0.3);
+  border-color: #245E83;
 }
 
 .badge-app {

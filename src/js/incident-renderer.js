@@ -5,6 +5,7 @@ import { authHeaders } from './auth.js';
 import { summarize } from './summarizer.js';
 import { openTicketModal } from './ticket-modal.js';
 import { showToast } from './toast.js';
+import { icons } from './icons.js';
 
 const feed = document.getElementById('feed');
 const emptyState = document.getElementById('empty-state');
@@ -18,6 +19,27 @@ export function updateEmptyState() {
     emptyState.classList.add('hidden');
     clearAllBtn.classList.remove('hidden');
   }
+}
+
+function buildIncidentHTML({ typeBadgeClass, typeBadgeLabel, statusBadge, durationBadge, timeLabel, transcript, showSpinner, noBugHTML }) {
+  return `
+    <div class="incident-header">
+      <div class="incident-badges">
+        <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
+        ${statusBadge || ''}
+        ${durationBadge || ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <span class="incident-time js-time-relative">${timeLabel}</span>
+        <button class="incident-delete" aria-label="Eliminar">${icons.delete}</button>
+      </div>
+    </div>
+    <div class="incident-body">
+      <p class="incident-text"></p>
+      ${noBugHTML || ''}
+      ${showSpinner ? '<div class="incident-spinner js-spinner"></div>' : ''}
+    </div>
+  `;
 }
 
 function attachTicketButton(incident, footer) {
@@ -45,6 +67,38 @@ function attachTicketButton(incident, footer) {
   });
 }
 
+function attachDeleteHandler(incident, hasId) {
+  incident.querySelector('.incident-delete').addEventListener('click', async () => {
+    const incidentId = incident.dataset.incidentId;
+    if (hasId && incidentId) {
+      try {
+        await fetch(`/api/incidents/${incidentId}`, { method: 'DELETE', headers: authHeaders() });
+      } catch (e) { console.warn('delete incident:', e); }
+    }
+    incident.remove();
+    updateEmptyState();
+  });
+}
+
+function createTicketFooter(incident, { isLink, url }) {
+  const footer = document.createElement('div');
+  footer.className = 'incident-footer';
+  if (isLink) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.className = 'text-sm text-accent hover:underline';
+    link.innerHTML = `Ver ticket ${icons.externalLinkInline}`;
+    footer.appendChild(link);
+  } else {
+    footer.innerHTML = `<button class="btn-create-ticket">Crear ticket en ClickUp ${icons.externalLink}</button>`;
+    attachTicketButton(incident, footer);
+  }
+  incident.appendChild(footer);
+  return footer;
+}
+
 export async function runSummarize(incident, rawText, sourceType, durationMs) {
   try {
     const result = await summarize(rawText);
@@ -56,7 +110,7 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
 
     if (!result.is_bug) {
       badge.textContent = 'Completado';
-      badge.className = 'badge badge-completed js-status-badge';
+      badge.className = 'badge badge-neutral js-status-badge';
 
       const msg = document.createElement('p');
       msg.className = 'incident-no-bug';
@@ -70,7 +124,7 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
     }
 
     badge.textContent = 'Completado';
-    badge.className = 'badge badge-completed js-status-badge';
+    badge.className = 'badge badge-neutral js-status-badge';
 
     incident.dataset.summaryTitle = result.title;
 
@@ -83,15 +137,10 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
     });
     body.appendChild(bullets);
 
-    const footer = document.createElement('div');
-    footer.className = 'incident-footer';
-    footer.innerHTML = `<button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button>`;
-    incident.appendChild(footer);
-
     incident.dataset.summaryTranscript = result.transcript;
     incident.dataset.summaryBullets = JSON.stringify(result.bullets);
 
-    attachTicketButton(incident, footer);
+    createTicketFooter(incident, { isLink: false });
 
     await saveIncidentResult(incident, {
       transcript: rawText,
@@ -103,7 +152,7 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
   } catch (err) {
     const badge = incident.querySelector('.js-status-badge');
     badge.textContent = 'Error';
-    badge.className = 'badge badge-error js-status-badge';
+    badge.className = 'badge badge-neutral js-status-badge';
 
     const spinner = incident.querySelector('.js-spinner');
     if (spinner) spinner.remove();
@@ -147,61 +196,33 @@ export function createIncident(transcript, audioBlob, duration) {
   const typeBadgeLabel = hasAudio ? 'Audio' : 'Texto';
 
   if (!rawText) {
-    incident.innerHTML = `
-      <div class="incident-header">
-        <div class="incident-badges">
-          <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
-          ${hasAudio ? `<span class="badge badge-duration">${durationStr}</span>` : ''}
-        </div>
-        <div style="display:flex;align-items:center;gap:16px">
-          <span class="incident-time js-time-relative">${timeAgo(createdAt)}</span>
-          <button class="incident-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
-        </div>
-      </div>
-      <div class="incident-body">
-        <p class="incident-text">No se detecto voz. Intenta grabar de nuevo.</p>
-      </div>
-    `;
-    incident.querySelector('.incident-delete').addEventListener('click', () => {
-      incident.remove();
-      updateEmptyState();
+    incident.innerHTML = buildIncidentHTML({
+      typeBadgeClass,
+      typeBadgeLabel,
+      durationBadge: hasAudio ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
+      timeLabel: timeAgo(createdAt),
+      transcript: 'No se detecto voz. Intenta grabar de nuevo.',
     });
+    incident.querySelector('.incident-text').textContent = 'No se detecto voz. Intenta grabar de nuevo.';
+    attachDeleteHandler(incident, false);
     feed.prepend(incident);
     updateEmptyState();
     return;
   }
 
-  let displayText = ensurePeriod(capitalize(rawText));
+  const displayText = ensurePeriod(capitalize(rawText));
 
-  incident.innerHTML = `
-    <div class="incident-header">
-      <div class="incident-badges">
-        <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
-        <span class="badge badge-processing js-status-badge">Procesando</span>
-        ${hasAudio ? `<span class="badge badge-duration">${durationStr}</span>` : ''}
-      </div>
-      <div style="display:flex;align-items:center;gap:16px">
-        <span class="incident-time js-time-relative">${timeAgo(createdAt)}</span>
-        <button class="incident-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg></button>
-      </div>
-    </div>
-    <div class="incident-body">
-      <p class="incident-text"></p>
-      <div class="incident-spinner js-spinner"></div>
-    </div>
-  `;
+  incident.innerHTML = buildIncidentHTML({
+    typeBadgeClass,
+    typeBadgeLabel,
+    statusBadge: '<span class="badge badge-processing js-status-badge">Procesando</span>',
+    durationBadge: hasAudio ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
+    timeLabel: timeAgo(createdAt),
+    showSpinner: true,
+  });
   incident.querySelector('.incident-text').textContent = displayText;
 
-  incident.querySelector('.incident-delete').addEventListener('click', async () => {
-    const incidentId = incident.dataset.incidentId;
-    if (incidentId) {
-      try {
-        await fetch(`/api/incidents/${incidentId}`, { method: 'DELETE', headers: authHeaders() });
-      } catch (e) { console.warn('degradacion graceful:', e); }
-    }
-    incident.remove();
-    updateEmptyState();
-  });
+  attachDeleteHandler(incident, true);
 
   feed.prepend(incident);
   updateEmptyState();
@@ -223,7 +244,7 @@ export function renderIncidentFromDB(dbIncident) {
   const typeBadgeLabel = sourceType === 'audio' ? 'Audio' : 'Texto';
 
   const isPending = dbIncident.status === 'procesando';
-  const statusBadgeClass = isPending ? 'badge-processing' : (dbIncident.status === 'error' ? 'badge-error' : 'badge-completed');
+  const statusBadgeClass = isPending ? 'badge-processing' : 'badge-neutral';
   const statusLabel = isPending ? 'Procesando' : (dbIncident.status === 'error' ? 'Error' : 'Completado');
 
   const hasBullets = dbIncident.bullets && dbIncident.title;
@@ -236,43 +257,33 @@ export function renderIncidentFromDB(dbIncident) {
   }
 
   let noBugHTML = '';
-  let spinnerHTML = '';
   let parsedBullets = [];
 
   if (isPending) {
-    spinnerHTML = '<div class="incident-spinner js-spinner"></div>';
+    // spinner shown via buildIncidentHTML
   } else if (hasBullets) {
     parsedBullets = Array.isArray(dbIncident.bullets) ? dbIncident.bullets : (() => { try { return JSON.parse(dbIncident.bullets); } catch { return []; } })();
     incident.dataset.summaryTitle = dbIncident.title;
     incident.dataset.summaryTranscript = dbIncident.transcript;
     incident.dataset.summaryBullets = JSON.stringify(dbIncident.bullets);
   } else {
-    noBugHTML = `<p class="incident-no-bug">No hay información suficiente para generar el ticket.</p>`;
+    noBugHTML = '<p class="incident-no-bug">No hay información suficiente para generar el ticket.</p>';
     incident.dataset.summaryTranscript = dbIncident.transcript;
   }
 
   const sentBadge = dbIncident.clickup_task_id
-    ? `<span class="badge badge-sent js-status-badge">Enviado</span>`
+    ? '<span class="badge badge-sent js-status-badge">Enviado</span>'
     : `<span class="badge ${statusBadgeClass} js-status-badge">${statusLabel}</span>`;
 
-  incident.innerHTML = `
-    <div class="incident-header">
-      <div class="incident-badges">
-        <span class="badge ${typeBadgeClass}">${typeBadgeLabel}</span>
-        ${sentBadge}
-        ${sourceType !== 'text' && dbIncident.duration_ms ? `<span class="badge badge-duration">${durationStr}</span>` : ''}
-      </div>
-      <div style="display:flex;align-items:center;gap:16px">
-        <span class="incident-time js-time-relative">${timeAgo(createdAt)}</span>
-        <button class="incident-delete" aria-label="Eliminar"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0 -7.5 0"/></svg></button>
-      </div>
-    </div>
-    <div class="incident-body">
-      <p class="incident-text"></p>
-      ${noBugHTML}
-      ${spinnerHTML}
-    </div>
-  `;
+  incident.innerHTML = buildIncidentHTML({
+    typeBadgeClass,
+    typeBadgeLabel,
+    statusBadge: sentBadge,
+    durationBadge: sourceType !== 'text' && dbIncident.duration_ms ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
+    timeLabel: timeAgo(createdAt),
+    showSpinner: isPending,
+    noBugHTML,
+  });
   incident.querySelector('.incident-text').textContent = displayText;
 
   const body = incident.querySelector('.incident-body');
@@ -289,31 +300,12 @@ export function renderIncidentFromDB(dbIncident) {
   }
 
   if (dbIncident.clickup_task_url) {
-    const footer = document.createElement('div');
-    footer.className = 'incident-footer';
-    const link = document.createElement('a');
-    link.href = dbIncident.clickup_task_url;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.className = 'text-sm text-accent hover:underline';
-    link.innerHTML = `Ver ticket <svg class="w-4 h-4" style="display:inline;vertical-align:middle;margin-left:2px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>`;
-    footer.appendChild(link);
-    incident.appendChild(footer);
+    createTicketFooter(incident, { isLink: true, url: dbIncident.clickup_task_url });
   } else if (hasBullets) {
-    const footer = document.createElement('div');
-    footer.className = 'incident-footer';
-    footer.innerHTML = `<button class="btn-create-ticket">Crear ticket en ClickUp <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg></button>`;
-    incident.appendChild(footer);
-    attachTicketButton(incident, footer);
+    createTicketFooter(incident, { isLink: false });
   }
 
-  incident.querySelector('.incident-delete').addEventListener('click', async () => {
-    try {
-      await fetch(`/api/incidents/${incident.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() });
-    } catch (e) { console.warn('delete incident:', e); }
-    incident.remove();
-    updateEmptyState();
-  });
+  attachDeleteHandler(incident, true);
 
   return incident;
 }
