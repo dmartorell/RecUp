@@ -73,6 +73,7 @@ Recent decisions affecting current work:
 - Refactorizar frontend y backend — poner orden y reutilizar (code-quality)
 - Gestionar errores de grabación que siguen sin control del usuario (reliability)
 - Evaluar domain knowledge de Alfred en prompt de resumen (api)
+- Implementar testing backend y frontend (testing)
 
 ### Roadmap Evolution
 
