@@ -1,4 +1,5 @@
 const RECUP_URL = 'http://localhost:3000';
+const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
 
 let mediaStream = null;
 let audioContext = null;
@@ -6,6 +7,7 @@ let analyser = null;
 let waveformAnimId = null;
 let timerInterval = null;
 let recordingStartTime = null;
+let recordingTimeoutId = null;
 let usedAudio = false;
 let lastRecordingDuration = 0;
 
@@ -103,6 +105,20 @@ function animateWaveform() {
   waveformAnimId = requestAnimationFrame(animateWaveform);
 }
 
+function forceCleanup() {
+  cancelAnimationFrame(waveformAnimId);
+  clearInterval(timerInterval);
+  clearTimeout(recordingTimeoutId);
+  recordingTimeoutId = null;
+  recordingStartTime = null;
+  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+  if (audioContext) { audioContext.close(); audioContext = null; analyser = null; }
+  document.getElementById('mic-idle').classList.remove('hidden');
+  document.getElementById('mic-recording').classList.add('hidden');
+  document.querySelectorAll('.waveform-bar').forEach(bar => { bar.style.height = '3px'; });
+  window.stopTranscription?.().catch?.(() => {});
+}
+
 async function startRecording() {
   document.getElementById('mic-error').classList.add('hidden');
   try {
@@ -138,10 +154,26 @@ async function startRecording() {
   timerInterval = setInterval(updateTimer, 1000);
   animateWaveform();
 
-  window.startTranscription(() => {});
+  window.startTranscription((error, isFatal) => {
+    if (isFatal) {
+      const errEl = document.getElementById('mic-error');
+      errEl.textContent = 'Error micrófono: ' + error;
+      errEl.classList.remove('hidden');
+      forceCleanup();
+    }
+  });
+
+  recordingTimeoutId = setTimeout(() => {
+    const errEl = document.getElementById('mic-error');
+    errEl.textContent = 'Grabación detenida (máx. 5 min)';
+    errEl.classList.remove('hidden');
+    forceCleanup();
+  }, RECORDING_TIMEOUT_MS);
 }
 
 async function stopRecording() {
+  clearTimeout(recordingTimeoutId);
+  recordingTimeoutId = null;
   cancelAnimationFrame(waveformAnimId);
   clearInterval(timerInterval);
 
@@ -195,7 +227,7 @@ async function handleLogin() {
 
     if (json.success) {
       chrome.storage.local.set(
-        { recup_token: json.data.token, recup_email: json.data.user.email },
+        { recup_token: json.data.token, recup_email: json.data.user.email, recup_name: json.data.user.name || '' },
         () => checkMicPermission(json.data.user.email)
       );
     } else {
@@ -212,7 +244,7 @@ async function handleLogin() {
 }
 
 function handleLogout() {
-  chrome.storage.local.remove(['recup_token', 'recup_email'], () => {
+  chrome.storage.local.remove(['recup_token', 'recup_email', 'recup_name'], () => {
     showLogin();
   });
 }
@@ -239,7 +271,7 @@ els.sendBtn.addEventListener('click', () => {
   const content = els.issueText.value.trim();
   if (!content) return;
 
-  chrome.storage.local.get(['recup_token', 'recup_email'], async (stored) => {
+  chrome.storage.local.get(['recup_token', 'recup_email', 'recup_name'], async (stored) => {
     const token = stored.recup_token || '';
     const sourceType = usedAudio ? 'audio' : 'text';
     const durationMs = usedAudio ? lastRecordingDuration : 0;
@@ -270,7 +302,8 @@ els.sendBtn.addEventListener('click', () => {
       const incidentId = data.data?.incident?.id;
 
       const email = stored.recup_email || '';
-      const url = RECUP_URL + '/?highlight=' + (incidentId || '') + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email);
+      const name = stored.recup_name || '';
+      const url = RECUP_URL + '/?highlight=' + (incidentId || '') + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email) + '&name=' + encodeURIComponent(name);
       chrome.tabs.query({ url: RECUP_URL + '/*' }, (tabs) => {
         if (tabs.length > 0) {
           chrome.tabs.update(tabs[0].id, { url, active: true });

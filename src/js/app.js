@@ -159,9 +159,13 @@ loginPasswordInput.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('btn-logout').addEventListener('click', () => {
-  localStorage.removeItem('recup_session');
-  location.reload();
+  showConfirmModal('¿Cerrar sesión?', 'Se cerrará tu sesión actual.', () => {
+    localStorage.removeItem('recup_session');
+    location.reload();
+  }, { okLabel: 'Cerrar sesión' });
 });
+
+const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
 
 let isRecording = false;
 let timerInterval = null;
@@ -170,6 +174,7 @@ let micReady = false;
 let analyser = null;
 let animFrameId = null;
 let audioCtx = null;
+let recordingTimeoutId = null;
 
 const recordBtn = document.getElementById('record-btn');
 const micIcon = document.getElementById('mic-icon');
@@ -287,6 +292,24 @@ function animateWaveform() {
   animFrameId = requestAnimationFrame(animateWaveform);
 }
 
+function forceCleanup() {
+  isRecording = false;
+  setPageInteractive(true);
+  modeToggleBtn.classList.remove('pointer-events-none', 'opacity-40');
+  recordingUI.classList.add('hidden');
+  micIcon.classList.remove('hidden');
+  recordBtn.classList.remove('bg-accent-hover');
+  recordBtn.classList.add('bg-accent');
+  cancelAnimationFrame(animFrameId);
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  waveformBars.forEach(bar => bar.style.height = '3px');
+  clearInterval(timerInterval);
+  clearTimeout(recordingTimeoutId);
+  recordingTimeoutId = null;
+  stopTranscription().catch(() => {});
+  stopRecording().catch(() => {});
+}
+
 async function toggleRecording() {
   if (!micReady) {
     await initMic();
@@ -311,9 +334,15 @@ async function toggleRecording() {
     source.connect(analyser);
     animateWaveform();
 
-    startTranscription((error) => {
+    startTranscription((error, isFatal) => {
       showToast('Error de transcripción: ' + error);
+      if (isFatal) forceCleanup();
     });
+
+    recordingTimeoutId = setTimeout(() => {
+      showToast('Grabación detenida automáticamente (5 min)');
+      forceCleanup();
+    }, RECORDING_TIMEOUT_MS);
 
     startRecording();
     scrollFeedToTop();
@@ -321,6 +350,8 @@ async function toggleRecording() {
     recordBtn.classList.add('bg-accent-hover');
     setPageInteractive(false);
   } else {
+    clearTimeout(recordingTimeoutId);
+    recordingTimeoutId = null;
     isRecording = false;
     setPageInteractive(true);
     modeToggleBtn.classList.remove('pointer-events-none', 'opacity-40');
@@ -345,7 +376,7 @@ async function toggleRecording() {
 recordBtn.addEventListener('click', toggleRecording);
 
 clearAllBtn.addEventListener('click', () => {
-  showConfirmModal('¿Borrar todas las incidencias?', 'Esta acción no se puede deshacer', async () => {
+  showConfirmModal('¿Borrar todas las incidencias?', 'Esta acción no se puede deshacer.', async () => {
     const incidents = feed.querySelectorAll('.incident[data-incident-id]');
     const deletePromises = Array.from(incidents).map(i =>
       fetch(`/api/incidents/${i.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
@@ -428,12 +459,14 @@ function adoptExtensionSession() {
   const params = new URLSearchParams(location.search);
   const token = params.get('token');
   const email = params.get('email');
+  const name = params.get('name');
   if (token && email && !getSession()?.token) {
-    localStorage.setItem('recup_session', JSON.stringify({ token, user: { email } }));
+    localStorage.setItem('recup_session', JSON.stringify({ token, user: { email, ...(name && { name }) } }));
   }
   if (token || email) {
     params.delete('token');
     params.delete('email');
+    params.delete('name');
     const qs = params.toString();
     history.replaceState({}, '', location.pathname + (qs ? '?' + qs : ''));
   }

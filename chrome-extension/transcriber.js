@@ -1,3 +1,5 @@
+const FATAL_ERRORS = new Set(['not-allowed', 'service-not-allowed', 'network', 'audio-capture']);
+
 let finalTranscript = '';
 let isActive = false;
 let recognition = null;
@@ -25,7 +27,10 @@ function createRecognition() {
         if (isActive) {
           try {
             rec.start();
-          } catch (_) {}
+          } catch (_) {
+            isActive = false;
+            if (errorCallback) errorCallback('restart-failed', true);
+          }
         }
       }, 300);
     } else if (stopResolve) {
@@ -38,8 +43,13 @@ function createRecognition() {
     if ((event.error === 'no-speech' || event.error === 'aborted') && isActive) {
       return;
     }
+    if (FATAL_ERRORS.has(event.error)) {
+      isActive = false;
+      if (errorCallback) errorCallback(event.error, true);
+      return;
+    }
     if (errorCallback) {
-      errorCallback(event.error);
+      errorCallback(event.error, false);
     }
   };
 
