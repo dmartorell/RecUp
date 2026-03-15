@@ -6,6 +6,7 @@ import { summarize } from './summarizer.js';
 import { openTicketModal } from './ticket-modal.js';
 import { showToast } from './toast.js';
 import { icons } from './icons.js';
+import { UI } from './strings.js';
 
 const feed = document.getElementById('feed');
 const emptyState = document.getElementById('empty-state');
@@ -31,7 +32,7 @@ function buildIncidentHTML({ typeBadgeClass, typeBadgeLabel, statusBadge, durati
       </div>
       <div style="display:flex;align-items:center;gap:16px">
         <span class="incident-time js-time-relative">${timeLabel}</span>
-        <button class="incident-delete" aria-label="Eliminar">${icons.delete}</button>
+        <button class="incident-delete" aria-label="${UI.DELETE_LABEL}">${icons.delete}</button>
       </div>
     </div>
     <div class="incident-body">
@@ -89,10 +90,10 @@ function createTicketFooter(incident, { isLink, url }) {
     link.target = '_blank';
     link.rel = 'noopener';
     link.className = 'text-sm text-accent hover:underline';
-    link.innerHTML = `Ver ticket ${icons.externalLinkInline}`;
+    link.innerHTML = `${UI.TICKET_VIEW} ${icons.externalLinkInline}`;
     footer.appendChild(link);
   } else {
-    footer.innerHTML = `<button class="btn-create-ticket">Crear ticket en ClickUp ${icons.externalLink}</button>`;
+    footer.innerHTML = `<button class="btn-create-ticket">${UI.TICKET_CREATE_BTN} ${icons.externalLink}</button>`;
     attachTicketButton(incident, footer);
   }
   incident.appendChild(footer);
@@ -109,12 +110,12 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
     const body = incident.querySelector('.incident-body');
 
     if (!result.is_bug) {
-      badge.textContent = 'Completado';
+      badge.textContent = UI.STATUS_COMPLETED;
       badge.className = 'badge badge-neutral js-status-badge';
 
       const msg = document.createElement('p');
       msg.className = 'incident-no-bug';
-      msg.textContent = 'No hay información suficiente para generar el ticket.';
+      msg.textContent = UI.NO_BUG_MSG;
       body.appendChild(msg);
 
       incident.dataset.summaryTranscript = rawText;
@@ -123,7 +124,7 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
       return;
     }
 
-    badge.textContent = 'Completado';
+    badge.textContent = UI.STATUS_COMPLETED;
     badge.className = 'badge badge-neutral js-status-badge';
 
     incident.dataset.summaryTitle = result.title;
@@ -151,7 +152,7 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
 
   } catch (err) {
     const badge = incident.querySelector('.js-status-badge');
-    badge.textContent = 'Error';
+    badge.textContent = UI.STATUS_ERROR;
     badge.className = 'badge badge-neutral js-status-badge';
 
     const spinner = incident.querySelector('.js-spinner');
@@ -160,9 +161,9 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
     const body = incident.querySelector('.incident-body');
     const retryBtn = document.createElement('button');
     retryBtn.className = 'btn-retry';
-    retryBtn.textContent = 'Reintentar';
+    retryBtn.textContent = UI.RETRY_BTN;
     retryBtn.addEventListener('click', () => {
-      badge.textContent = 'Procesando';
+      badge.textContent = UI.STATUS_PROCESSING;
       badge.className = 'badge badge-processing js-status-badge';
 
       const newSpinner = document.createElement('div');
@@ -174,7 +175,7 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
     });
     body.appendChild(retryBtn);
 
-    showToast('Error al resumir: ' + err.message);
+    showToast(UI.SUMMARIZE_ERROR_PREFIX + err.message);
   }
 }
 
@@ -193,7 +194,7 @@ export function createIncident(transcript, audioBlob, duration) {
   incident.dataset.createdAt = createdAt.toISOString();
 
   const typeBadgeClass = hasAudio ? 'badge-audio' : 'badge-text';
-  const typeBadgeLabel = hasAudio ? 'Audio' : 'Texto';
+  const typeBadgeLabel = hasAudio ? UI.TYPE_AUDIO : UI.TYPE_TEXT;
 
   if (!rawText) {
     incident.innerHTML = buildIncidentHTML({
@@ -201,9 +202,9 @@ export function createIncident(transcript, audioBlob, duration) {
       typeBadgeLabel,
       durationBadge: hasAudio ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
       timeLabel: timeAgo(createdAt),
-      transcript: 'No se detecto voz. Intenta grabar de nuevo.',
+      transcript: UI.NO_VOICE,
     });
-    incident.querySelector('.incident-text').textContent = 'No se detecto voz. Intenta grabar de nuevo.';
+    incident.querySelector('.incident-text').textContent = UI.NO_VOICE;
     attachDeleteHandler(incident, false);
     feed.prepend(incident);
     updateEmptyState();
@@ -215,7 +216,7 @@ export function createIncident(transcript, audioBlob, duration) {
   incident.innerHTML = buildIncidentHTML({
     typeBadgeClass,
     typeBadgeLabel,
-    statusBadge: '<span class="badge badge-processing js-status-badge">Procesando</span>',
+    statusBadge: `<span class="badge badge-processing js-status-badge">${UI.STATUS_PROCESSING}</span>`,
     durationBadge: hasAudio ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
     timeLabel: timeAgo(createdAt),
     showSpinner: true,
@@ -241,11 +242,11 @@ export function renderIncidentFromDB(dbIncident) {
   const durationStr = formatDuration(dbIncident.duration_ms || 0);
   const sourceType = dbIncident.source_type || 'audio';
   const typeBadgeClass = sourceType === 'audio' ? 'badge-audio' : 'badge-text';
-  const typeBadgeLabel = sourceType === 'audio' ? 'Audio' : 'Texto';
+  const typeBadgeLabel = sourceType === 'audio' ? UI.TYPE_AUDIO : UI.TYPE_TEXT;
 
   const isPending = dbIncident.status === 'procesando';
   const statusBadgeClass = isPending ? 'badge-processing' : 'badge-neutral';
-  const statusLabel = isPending ? 'Procesando' : (dbIncident.status === 'error' ? 'Error' : 'Completado');
+  const statusLabel = isPending ? UI.STATUS_PROCESSING : (dbIncident.status === 'error' ? UI.STATUS_ERROR : UI.STATUS_COMPLETED);
 
   const hasBullets = dbIncident.bullets && dbIncident.title;
   const displayText = capitalize(dbIncident.transcript || '');
@@ -267,12 +268,12 @@ export function renderIncidentFromDB(dbIncident) {
     incident.dataset.summaryTranscript = dbIncident.transcript;
     incident.dataset.summaryBullets = JSON.stringify(dbIncident.bullets);
   } else {
-    noBugHTML = '<p class="incident-no-bug">No hay información suficiente para generar el ticket.</p>';
+    noBugHTML = `<p class="incident-no-bug">${UI.NO_BUG_MSG}</p>`;
     incident.dataset.summaryTranscript = dbIncident.transcript;
   }
 
   const sentBadge = dbIncident.clickup_task_id
-    ? '<span class="badge badge-sent js-status-badge">Enviado</span>'
+    ? `<span class="badge badge-sent js-status-badge">${UI.STATUS_SENT}</span>`
     : `<span class="badge ${statusBadgeClass} js-status-badge">${statusLabel}</span>`;
 
   incident.innerHTML = buildIncidentHTML({
@@ -314,7 +315,7 @@ export function resumePendingIncidents() {
   const pendingIncidents = feed.querySelectorAll('.incident');
   pendingIncidents.forEach(incident => {
     const badge = incident.querySelector('.js-status-badge');
-    if (!badge || badge.textContent.trim() !== 'Procesando') return;
+    if (!badge || badge.textContent.trim() !== UI.STATUS_PROCESSING) return;
     const transcript = incident.dataset.transcript;
     if (!transcript) return;
     const sourceType = incident.dataset.sourceType || 'text';

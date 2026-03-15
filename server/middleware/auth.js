@@ -15,7 +15,7 @@ export function signToken(userId, name, email) {
 export function authMiddleware(req, res, next) {
   const authHeader = req.headers['authorization'];
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, error: 'No autorizado' });
+    return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
   }
 
   const token = authHeader.slice(7);
@@ -26,6 +26,6 @@ export function authMiddleware(req, res, next) {
     next();
   } catch (err) {
     logDbError(err, 'authMiddleware');
-    return res.status(401).json({ success: false, error: 'No autorizado' });
+    return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
   }
 }

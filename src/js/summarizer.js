@@ -1,3 +1,5 @@
+import { apiError } from './strings.js';
+
 export async function summarize(transcript) {
   const response = await fetch('/api/summarize', {
     method: 'POST',
@@ -6,8 +8,8 @@ export async function summarize(transcript) {
   });
 
   if (!response.ok) {
-    const body = await response.json().catch(() => ({ error: 'Error desconocido' }));
-    throw new Error(body.error || `Error ${response.status}`);
+    const body = await response.json().catch(() => ({ error: 'UNKNOWN' }));
+    throw new Error(apiError(body.error));
   }
 
   return response.json();

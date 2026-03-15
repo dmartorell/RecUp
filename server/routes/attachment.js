@@ -13,16 +13,16 @@ router.post('/api/attachment', authMiddleware, upload.array('attachment', 5), as
   const { taskId } = req.body;
 
   if (!taskId) {
-    return res.status(400).json({ error: 'taskId es obligatorio' });
+    return res.status(400).json({ error: 'TASK_ID_REQUIRED' });
   }
 
   if (!req.files || req.files.length === 0) {
-    return res.status(400).json({ error: 'Se requiere al menos un archivo' });
+    return res.status(400).json({ error: 'FILE_REQUIRED' });
   }
 
   const apiKey = process.env.CLICKUP_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'CLICKUP_API_KEY no esta configurada en el servidor' });
+    return res.status(500).json({ error: 'API_KEY_MISSING' });
   }
 
   const results = [];
@@ -59,7 +59,7 @@ router.post('/api/attachment', authMiddleware, upload.array('attachment', 5), as
       results.push(data);
     } catch (err) {
       return res.status(500).json({
-        error: `Error subiendo ${file.originalname}: ${err.message}`,
+        error: 'UPLOAD_ERROR',
         file: file.originalname,
         uploaded: results,
       });

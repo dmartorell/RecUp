@@ -27,12 +27,12 @@ router.post('/api/summarize', async (req, res) => {
   const { transcript } = req.body;
 
   if (!transcript || !transcript.trim()) {
-    return res.status(400).json({ error: 'transcript es obligatorio y no puede estar vacio' });
+    return res.status(400).json({ error: 'TRANSCRIPT_REQUIRED' });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY no esta configurada en el servidor' });
+    return res.status(500).json({ error: 'API_KEY_MISSING' });
   }
 
   const SUMMARIZE_TIMEOUT_MS = 30_000;
@@ -63,16 +63,14 @@ router.post('/api/summarize', async (req, res) => {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      return res.status(response.status).json({
-        error: `Claude API error (${response.status}): ${errorBody}`,
-      });
+      return res.status(response.status).json({ error: 'CLAUDE_API_ERROR' });
     }
 
     const data = await response.json();
     const rawText = data.content?.[0]?.text;
 
     if (!rawText) {
-      return res.status(502).json({ error: 'Respuesta vacia de Claude API' });
+      return res.status(502).json({ error: 'EMPTY_RESPONSE' });
     }
 
     let parsed;
@@ -80,10 +78,7 @@ router.post('/api/summarize', async (req, res) => {
       const cleaned = rawText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
       parsed = JSON.parse(cleaned);
     } catch {
-      return res.status(502).json({
-        error: 'Claude devolvio JSON invalido',
-        raw: rawText,
-      });
+      return res.status(502).json({ error: 'INVALID_JSON' });
     }
 
     return res.json({
@@ -95,9 +90,9 @@ router.post('/api/summarize', async (req, res) => {
   } catch (err) {
     clearTimeout(timeout);
     if (err.name === 'AbortError') {
-      return res.status(504).json({ error: 'Timeout: Claude API tardo mas de 30 segundos' });
+      return res.status(504).json({ error: 'TIMEOUT' });
     }
-    return res.status(500).json({ error: `Error interno: ${err.message}` });
+    return res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
 });
 

@@ -2,6 +2,7 @@ import { AttachmentManager } from './attachments.js';
 import { capitalize, ensurePeriod } from './utils.js';
 import { showToast, showToastWithLink } from './toast.js';
 import { getSession } from './auth.js';
+import { UI, apiError } from './strings.js';
 
 const modal = document.getElementById('ticket-modal');
 const titleInput = document.getElementById('ticket-title');
@@ -95,7 +96,7 @@ function closeModal() {
   assetIdInput.value = '';
   appVersionInput.value = '';
   submitBtn.disabled = false;
-  submitBtn.textContent = 'Crear ticket';
+  submitBtn.textContent = UI.TICKET_BTN;
   resetProgress();
   hideModalError();
   attachmentError.classList.add('invisible');
@@ -154,7 +155,7 @@ async function openCamera() {
     cameraViewfinder.srcObject = cameraStream;
     cameraOverlay.classList.remove('hidden');
   } catch {
-    showAttachmentError('Cámara sin permisos.');
+    showAttachmentError(UI.TICKET_CAMERA_DENIED);
   }
 }
 
@@ -175,7 +176,7 @@ function capturePhoto() {
   ctx.drawImage(video, 0, 0);
   cameraCanvas.toBlob((blob) => {
     if (!blob) {
-      showAttachmentError('Error al capturar la foto.');
+      showAttachmentError(UI.TICKET_PHOTO_ERROR);
       closeCamera();
       return;
     }
@@ -236,10 +237,10 @@ function getLoggedEmail() {
 
 function getMissingFields() {
   const missing = [];
-  if (!selectedApp) missing.push('App');
-  if (!selectedPlatform) missing.push('Plataforma');
-  if (!appVersionInput.value.trim()) missing.push('Versión de la app');
-  if (!assetIdInput.value.trim()) missing.push('Asset ID');
+  if (!selectedApp) missing.push(UI.TICKET_MISSING_APP);
+  if (!selectedPlatform) missing.push(UI.TICKET_MISSING_PLATFORM);
+  if (!appVersionInput.value.trim()) missing.push(UI.TICKET_MISSING_APP_VERSION);
+  if (!assetIdInput.value.trim()) missing.push(UI.TICKET_MISSING_ASSET_ID);
   return missing;
 }
 
@@ -253,14 +254,14 @@ function showMissingBanner(fields) {
   missingBanner.classList.remove('hidden');
   const panel = modal.querySelector('.modal-panel');
   panel.scrollTo({ top: panel.scrollHeight, behavior: 'smooth' });
-  submitBtn.textContent = 'Crear ticket';
+  submitBtn.textContent = UI.TICKET_BTN;
   submitBtn.classList.remove('bg-accent', 'hover:bg-accent-hover');
   submitBtn.classList.add('bg-amber-500', 'hover:bg-amber-600');
 }
 
 function hideMissingBanner() {
   missingBanner.classList.add('hidden');
-  submitBtn.textContent = 'Crear ticket';
+  submitBtn.textContent = UI.TICKET_BTN;
   submitBtn.classList.remove('bg-amber-500', 'hover:bg-amber-600');
   submitBtn.classList.add('bg-accent', 'hover:bg-accent-hover');
 }
@@ -297,13 +298,12 @@ async function executeSubmit() {
 
     if (!ticketRes.ok) {
       const err = await ticketRes.json().catch(() => ({}));
-      if (err.error === 'no_member') {
+      if (err.error === 'NO_MEMBER') {
         closeModal();
-        showToast('Error: Comunícate con el gestor de ClickUp en Alfred Smart.');
+        showToast(UI.TICKET_NO_MEMBER);
         return;
       }
-      const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error || 'Error al crear el ticket');
-      throw new Error(msg);
+      throw new Error(apiError(typeof err.error === 'string' ? err.error : 'UNKNOWN'));
     }
 
     const ticket = await ticketRes.json();
@@ -318,11 +318,11 @@ async function executeSubmit() {
       } catch (attErr) {
         setProgress(90);
         markCardAsSent(ticket.url, ticket.id);
-        showModalError('Ticket creado pero algunos adjuntos fallaron.');
+        showModalError(UI.TICKET_ATTACHMENTS_PARTIAL);
 
         const retryBtn = document.createElement('button');
         retryBtn.className = 'btn-retry-attachments text-sm px-3 py-1.5 border border-accent text-accent rounded-lg hover:bg-accent/5 cursor-pointer mt-2';
-        retryBtn.textContent = 'Reintentar adjuntos';
+        retryBtn.textContent = UI.TICKET_ATTACHMENTS_RETRY;
         retryBtn.addEventListener('click', async () => {
           retryBtn.disabled = true;
           hideModalError();
@@ -332,18 +332,18 @@ async function executeSubmit() {
             setProgress(100);
             setTimeout(() => {
               closeModal();
-              showToast('Adjuntos subidos correctamente.');
+              showToast(UI.TICKET_ATTACHMENTS_OK);
             }, 400);
           } catch {
             setProgress(90);
             retryBtn.disabled = false;
-            showModalError('Los adjuntos siguen fallando. Intenta de nuevo.');
+            showModalError(UI.TICKET_ATTACHMENTS_FAIL);
           }
         });
         modalError.after(retryBtn);
 
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Crear ticket';
+        submitBtn.textContent = UI.TICKET_BTN;
         return;
       }
     }
@@ -353,11 +353,11 @@ async function executeSubmit() {
 
     setTimeout(() => {
       closeModal();
-      showToastWithLink('Ticket creado.', 'Ver en ClickUp', ticket.url);
+      showToastWithLink(UI.TICKET_CREATED, UI.TICKET_VIEW_CLICKUP, ticket.url);
     }, 400);
 
   } catch (err) {
-    showModalError(err.message || 'Error inesperado');
+    showModalError(err.message || apiError('UNKNOWN'));
     submitBtn.disabled = false;
     resetProgress();
   }
@@ -368,7 +368,7 @@ let bannerShown = false;
 submitBtn.addEventListener('click', () => {
   const name = titleInput.value.trim();
   if (!name) {
-    showModalError('El título es obligatorio.');
+    showModalError(UI.TICKET_TITLE_REQUIRED);
     return;
   }
 
@@ -401,7 +401,7 @@ function markCardAsSent(ticketUrl, taskId) {
 
   const badge = currentIncidentElement.querySelector('.js-status-badge');
   if (badge) {
-    badge.textContent = 'Enviado';
+    badge.textContent = UI.STATUS_SENT;
     badge.className = 'badge badge-sent js-status-badge';
   }
 

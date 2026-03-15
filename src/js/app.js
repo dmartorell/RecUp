@@ -5,6 +5,7 @@ import { getSession, authHeaders } from './auth.js';
 import { formatDuration, parseUTC, timeAgo } from './time.js';
 import { showConfirmModal } from './confirm-modal.js';
 import { createIncident, renderIncidentFromDB, updateEmptyState, resumePendingIncidents } from './incident-renderer.js';
+import { UI, apiError } from './strings.js';
 
 function scrollFeedToTop() {
   const mainEl = document.querySelector('main');
@@ -49,8 +50,8 @@ function setLoginMode(register) {
   loginNameField.classList.toggle('invisible', !register);
   loginNameField.classList.toggle('order-last', !register);
   loginNameField.classList.toggle('order-first', register);
-  loginBtn.textContent = register ? 'Registrarse' : 'Entrar';
-  loginToggleLink.textContent = register ? 'Ya tengo cuenta' : '¿No tienes cuenta? Regístrate';
+  loginBtn.textContent = register ? UI.LOGIN_BTN_REGISTER : UI.LOGIN_BTN;
+  loginToggleLink.textContent = register ? UI.LOGIN_TOGGLE_HAS_ACCOUNT : UI.LOGIN_TOGGLE_REGISTER;
   loginError.classList.remove('visible');
   loginError.classList.add('invisible');
   loginEmailInput.value = '';
@@ -82,7 +83,7 @@ function checkAuth() {
 }
 
 function showLoginError(msg) {
-  loginError.textContent = msg || 'Credenciales incorrectas';
+  loginError.textContent = msg || UI.LOGIN_ERROR_DEFAULT;
   loginError.classList.remove('invisible');
   loginError.classList.add('visible');
 }
@@ -101,7 +102,7 @@ loginBtn.addEventListener('click', async () => {
   loginError.classList.add('invisible');
 
   if (!email || !password) {
-    showLoginError('Email y contraseña son obligatorios');
+    showLoginError(UI.LOGIN_ERROR_REQUIRED);
     return;
   }
 
@@ -116,7 +117,7 @@ loginBtn.addEventListener('click', async () => {
       if (!name) {
         loginBtn.disabled = false;
         loginBtn.textContent = originalText;
-        showLoginError('El nombre es obligatorio para registrarse.');
+        showLoginError(UI.LOGIN_ERROR_NAME_REQUIRED);
         return;
       }
       endpoint = '/api/auth/register';
@@ -134,7 +135,7 @@ loginBtn.addEventListener('click', async () => {
     const data = await res.json();
 
     if (!res.ok || !data.success) {
-      showLoginError(data.error || 'Error al iniciar sesión.');
+      showLoginError(apiError(data.error));
       loginBtn.disabled = false;
       loginBtn.textContent = originalText;
       return;
@@ -148,7 +149,7 @@ loginBtn.addEventListener('click', async () => {
     resumePendingIncidents();
     initMic();
   } catch {
-    showLoginError('Error de red. Intenta de nuevo.');
+    showLoginError(UI.LOGIN_ERROR_NETWORK);
     loginBtn.disabled = false;
     loginBtn.textContent = originalText;
   }
@@ -159,10 +160,10 @@ loginPasswordInput.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('btn-logout').addEventListener('click', () => {
-  showConfirmModal('¿Cerrar sesión?', 'Se cerrará tu sesión actual.', () => {
+  showConfirmModal(UI.LOGOUT_TITLE, UI.LOGOUT_MSG, () => {
     localStorage.removeItem('recup_session');
     location.reload();
-  }, { okLabel: 'Cerrar sesión' });
+  }, { okLabel: UI.LOGOUT_BTN, danger: false });
 });
 
 const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
@@ -335,12 +336,12 @@ async function toggleRecording() {
     animateWaveform();
 
     startTranscription((error, isFatal) => {
-      showToast('Error de transcripción: ' + error);
+      showToast(UI.TRANSCRIPTION_ERROR_PREFIX + error);
       if (isFatal) forceCleanup();
     });
 
     recordingTimeoutId = setTimeout(() => {
-      showToast('Grabación detenida automáticamente (5 min)');
+      showToast(UI.RECORDING_AUTO_STOP);
       forceCleanup();
     }, RECORDING_TIMEOUT_MS);
 
@@ -376,7 +377,7 @@ async function toggleRecording() {
 recordBtn.addEventListener('click', toggleRecording);
 
 clearAllBtn.addEventListener('click', () => {
-  showConfirmModal('¿Borrar todas las incidencias?', 'Esta acción no se puede deshacer.', async () => {
+  showConfirmModal(UI.CLEAR_ALL_TITLE, UI.CLEAR_ALL_MSG, async () => {
     const incidents = feed.querySelectorAll('.incident[data-incident-id]');
     const deletePromises = Array.from(incidents).map(i =>
       fetch(`/api/incidents/${i.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
@@ -416,7 +417,7 @@ async function loadIncidents(append = false) {
       const loadMoreBtn = document.createElement('button');
       loadMoreBtn.id = 'load-more-btn';
       loadMoreBtn.className = 'mx-auto block py-2 px-4 text-sm text-gray-400 hover:text-accent cursor-pointer';
-      loadMoreBtn.textContent = 'Cargar más';
+      loadMoreBtn.textContent = UI.LOAD_MORE;
       loadMoreBtn.addEventListener('click', () => loadIncidents(true));
       feed.appendChild(loadMoreBtn);
     }

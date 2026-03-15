@@ -1,3 +1,5 @@
+import { UI } from './strings.js';
+
 const MAX_FILES = 5;
 const MAX_SIZE_BYTES = 50 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/', 'video/'];
@@ -21,16 +23,16 @@ export class AttachmentManager {
     const incoming = Array.from(fileList);
 
     for (const file of incoming) {
-      if (!ALLOWED_TYPES.some(t => file.type.startsWith(t))) {
-        return `Tipo de archivo no permitido: ${file.name}. Solo imágenes y vídeos.`;
+      if (!ALLOWED_TYPEUI.some(t => file.type.startsWith(t))) {
+        return UI.ATTACH_TYPE_NOT_ALLOWED(file.name);
       }
       if (file.size > MAX_SIZE_BYTES) {
-        return `${file.name} excede el límite de 50 MB.`;
+        return UI.ATTACH_TOO_LARGE(file.name);
       }
     }
 
     if (this._files.length + incoming.length > MAX_FILES) {
-      return `Máximo ${MAX_FILES} archivos. Ya tienes ${this._files.length}.`;
+      return UI.ATTACH_MAX_FILES(MAX_FILES, this._files.length);
     }
 
     this._files.push(...incoming);
