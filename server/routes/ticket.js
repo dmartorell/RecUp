@@ -1,56 +1,18 @@
 import { Router } from 'express';
+import { ClickUpService } from '../services/ClickUpService.js';
+import { CLICKUP_CUSTOM_FIELD_IDS } from '../config/constants.js';
+import { config } from '../config/env.js';
 
 const router = Router();
 
-const CUSTOM_FIELD_IDS = {
-  reporter: 'c9fb2e87-b7a9-4646-9292-d74225f4e2d3',
-  assetId: '3aedd038-ce17-4325-9dfb-10ba2a85d89d',
-  dispositivo: 'b07abf0c-7bae-405d-a107-31af17c98867',
-  versionApp: '660974a4-2eef-4dd3-bbbd-0c50eaea0216',
-};
-
-let cachedMembers = null;
-let cacheTime = 0;
-const CACHE_TTL = 10 * 60 * 1000;
-
-async function getWorkspaceMembers(apiKey) {
-  if (cachedMembers && Date.now() - cacheTime < CACHE_TTL) return cachedMembers;
-
-  const res = await fetch('https://api.clickup.com/api/v2/team', {
-    headers: { Authorization: apiKey },
-  });
-  const data = await res.json();
-  const teams = data.teams || [];
-  const members = [];
-  for (const team of teams) {
-    for (const m of team.members || []) {
-      const u = m.user || {};
-      if (u.email) members.push({ id: u.id, email: u.email.toLowerCase() });
-    }
-  }
-  cachedMembers = members;
-  cacheTime = Date.now();
-  return members;
-}
-
-async function resolveEmailToUserId(apiKey, email) {
-  if (!email) return null;
-  const members = await getWorkspaceMembers(apiKey);
-  const match = members.find(m => m.email === email.toLowerCase());
-  return match ? match.id : null;
-}
-
-router.post('/api/ticket', async (req, res) => {
+router.post('/api/ticket', async (req, res, next) => {
   const { name, markdown_description, reporterEmail, assetId, platform, product, appVersion } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'NAME_REQUIRED' });
   }
 
-  const apiKey = process.env.CLICKUP_API_KEY;
-  const listId = process.env.CLICKUP_LIST_ID;
-
-  if (!apiKey || !listId) {
+  if (!config.clickupApiKey || !config.clickupListId) {
     return res.status(500).json({ error: 'CLICKUP_NOT_CONFIGURED' });
   }
 
@@ -69,57 +31,35 @@ router.post('/api/ticket', async (req, res) => {
   const customFields = [];
 
   if (assetId) {
-    customFields.push({ id: CUSTOM_FIELD_IDS.assetId, value: assetId });
+    customFields.push({ id: CLICKUP_CUSTOM_FIELD_IDS.assetId, value: assetId });
   }
   if (platform) {
-    customFields.push({ id: CUSTOM_FIELD_IDS.dispositivo, value: platform });
+    customFields.push({ id: CLICKUP_CUSTOM_FIELD_IDS.dispositivo, value: platform });
   }
   const versionFieldValue = [product, appVersion].filter(Boolean).join(' ');
   if (versionFieldValue) {
-    customFields.push({ id: CUSTOM_FIELD_IDS.versionApp, value: versionFieldValue });
+    customFields.push({ id: CLICKUP_CUSTOM_FIELD_IDS.versionApp, value: versionFieldValue });
   }
 
-  let reporterUserId = null;
   try {
-    if (reporterEmail) {
-      reporterUserId = await resolveEmailToUserId(apiKey, reporterEmail);
-    }
+    const reporterUserId = await ClickUpService.resolveEmailToUserId(reporterEmail);
 
     if (!reporterUserId) {
       return res.status(403).json({ error: 'NO_MEMBER' });
     }
 
-    const response = await fetch(`https://api.clickup.com/api/v2/list/${listId}/task`, {
-      method: 'POST',
-      headers: {
-        'Authorization': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: name.trim(),
-        markdown_description: finalDescription,
-        priority: 3,
-        custom_fields: customFields,
-      }),
+    const data = await ClickUpService.createTask({
+      name: name.trim(),
+      markdown_description: finalDescription,
+      priority: 3,
+      custom_fields: customFields,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json({ error: 'CLICKUP_API_ERROR' });
-    }
-
-    if (reporterUserId) {
-      await fetch(`https://api.clickup.com/api/v2/task/${data.id}/field/${CUSTOM_FIELD_IDS.reporter}`, {
-        method: 'POST',
-        headers: { 'Authorization': apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: { add: [reporterUserId] } }),
-      });
-    }
+    await ClickUpService.setReporterField(data.id, reporterUserId);
 
     return res.json({ id: data.id, url: data.url });
   } catch (err) {
-    return res.status(500).json({ error: 'INTERNAL_ERROR' });
+    next(err);
   }
 });
 
