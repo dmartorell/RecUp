@@ -30,7 +30,7 @@ const appBadges = document.querySelectorAll('#app-badges .badge-app');
 const platformBadges = document.querySelectorAll('#platform-badges .badge-platform');
 const missingBanner = document.getElementById('missing-fields-banner');
 const missingList = document.getElementById('missing-fields-list');
-const missingCompleteBtn = document.getElementById('missing-fields-complete-btn');
+const missingCompleteBtn = document.getElementById('missing-banner-cta');
 let selectedApp = 'alfred';
 let selectedPlatform = 'iOS';
 
