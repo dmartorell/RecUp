@@ -24,4 +24,3 @@ export const RATE_LIMIT_MAX = 10;
 // Multer
 export const MULTER_MAX_FILE_SIZE = 100 * 1024 * 1024;
 export const MULTER_MAX_FILES = 5;
-
