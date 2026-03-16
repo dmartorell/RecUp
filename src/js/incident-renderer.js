@@ -43,6 +43,21 @@ function buildIncidentHTML({ typeBadgeClass, typeBadgeLabel, statusBadge, durati
   `;
 }
 
+export function buildOnTicketCreated(incident) {
+  return async (taskId, taskUrl) => {
+    const incidentId = incident.dataset.incidentId;
+    if (incidentId) {
+      try {
+        await fetch(`/api/incidents/${incidentId}`, {
+          method: 'PATCH',
+          headers: authHeaders(),
+          body: JSON.stringify({ clickup_task_id: taskId, clickup_task_url: taskUrl, status: 'completado' })
+        });
+      } catch (e) { console.warn('degradacion graceful:', e); }
+    }
+  };
+}
+
 function attachTicketButton(incident, footer) {
   const ticketBtn = footer.querySelector('.btn-create-ticket');
   ticketBtn.addEventListener('click', async () => {
@@ -52,18 +67,7 @@ function attachTicketButton(incident, footer) {
       transcript: incident.dataset.summaryTranscript,
       bullets: JSON.parse(incident.dataset.summaryBullets),
       incidentElement: incident,
-      onTicketCreated: async (taskId, taskUrl) => {
-        const incidentId = incident.dataset.incidentId;
-        if (incidentId) {
-          try {
-            await fetch(`/api/incidents/${incidentId}`, {
-              method: 'PATCH',
-              headers: authHeaders(),
-              body: JSON.stringify({ clickup_task_id: taskId, clickup_task_url: taskUrl, status: 'completado' })
-            });
-          } catch (e) { console.warn('degradacion graceful:', e); }
-        }
-      }
+      onTicketCreated: buildOnTicketCreated(incident)
     });
   });
 }
@@ -142,6 +146,14 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
     incident.dataset.summaryBullets = JSON.stringify(result.bullets);
 
     createTicketFooter(incident, { isLink: false });
+
+    openTicketModal({
+      title: result.title,
+      transcript: result.transcript,
+      bullets: result.bullets,
+      incidentElement: incident,
+      onTicketCreated: buildOnTicketCreated(incident)
+    });
 
     await saveIncidentResult(incident, {
       transcript: rawText,
