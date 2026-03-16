@@ -125,16 +125,20 @@ function closeModal() {
   if (retryBtn) retryBtn.remove();
 }
 
-export function openTicketModal(incidentData) {
-  currentIncidentElement = incidentData.incidentElement;
+export async function openTicketModal(incidentData) {
+  currentIncidentElement = incidentData.incidentElement || null;
   currentTranscript = incidentData.transcript || '';
   createdTaskId = null;
   onTicketCreatedCallback = incidentData.onTicketCreated || null;
 
   titleInput.value = incidentData.title || '';
 
-  const bulletsText = (incidentData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
-  descriptionEl.value = bulletsText;
+  if (incidentData.description !== undefined) {
+    descriptionEl.value = incidentData.description;
+  } else {
+    const bulletsText = (incidentData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
+    descriptionEl.value = bulletsText;
+  }
 
   selectedApp = 'alfred';
   selectedPlatform = 'iOS';
@@ -145,6 +149,19 @@ export function openTicketModal(incidentData) {
 
   modal.classList.remove('hidden');
   modal.querySelector('.modal-panel').scrollTop = 0;
+
+  if (incidentData.source === 'clipboard') {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && text.trim()) {
+        descriptionEl.value = text;
+      } else {
+        showToast(UI.CLIPBOARD_EMPTY);
+      }
+    } catch {
+      showToast(UI.CLIPBOARD_DENIED);
+    }
+  }
 }
 
 attachFileBtn.addEventListener('click', () => fileInput.click());
