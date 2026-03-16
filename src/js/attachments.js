@@ -23,7 +23,7 @@ export class AttachmentManager {
     const incoming = Array.from(fileList);
 
     for (const file of incoming) {
-      if (!ALLOWED_TYPEUI.some(t => file.type.startsWith(t))) {
+      if (!ALLOWED_TYPES.some(t => file.type.startsWith(t))) {
         return UI.ATTACH_TYPE_NOT_ALLOWED(file.name);
       }
       if (file.size > MAX_SIZE_BYTES) {

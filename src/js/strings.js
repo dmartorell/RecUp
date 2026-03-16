@@ -51,7 +51,7 @@ export const UI = {
   TICKET_MISSING_APP: 'Producto',
   TICKET_MISSING_PLATFORM: 'Plataforma',
   TICKET_MISSING_APP_VERSION: 'Versión',
-  TICKET_MISSING_ASSET_ID: 'Asset o Proyecto',
+  TICKET_MISSING_ASSET_ID: 'ID de Asset o Proyecto',
 
   ATTACH_TYPE_NOT_ALLOWED: (name) => `Tipo de archivo no permitido: ${name}. Solo imágenes y vídeos.`,
   ATTACH_TOO_LARGE: (name) => `${name} excede el límite de 50 MB.`,

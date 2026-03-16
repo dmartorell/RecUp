@@ -41,7 +41,7 @@ async function resolveEmailToUserId(apiKey, email) {
 }
 
 router.post('/api/ticket', async (req, res) => {
-  const { name, markdown_description, reporterEmail, assetId, platform, appVersion } = req.body;
+  const { name, markdown_description, reporterEmail, assetId, platform, product, appVersion } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'NAME_REQUIRED' });
@@ -55,9 +55,10 @@ router.post('/api/ticket', async (req, res) => {
   }
 
   const metadataLines = [
+    product && `**Producto:** ${product}`,
     assetId && `**Asset ID:** ${assetId}`,
     platform && `**Plataforma:** ${platform}`,
-    appVersion && `**Version de la app:** ${appVersion}`,
+    appVersion && `**Versión:** ${appVersion}`,
   ].filter(Boolean);
 
   let finalDescription = (markdown_description || '').trim();
@@ -73,8 +74,9 @@ router.post('/api/ticket', async (req, res) => {
   if (platform) {
     customFields.push({ id: CUSTOM_FIELD_IDS.dispositivo, value: platform });
   }
-  if (appVersion) {
-    customFields.push({ id: CUSTOM_FIELD_IDS.versionApp, value: appVersion });
+  const versionFieldValue = [product, appVersion].filter(Boolean).join(' ');
+  if (versionFieldValue) {
+    customFields.push({ id: CUSTOM_FIELD_IDS.versionApp, value: versionFieldValue });
   }
 
   let reporterUserId = null;

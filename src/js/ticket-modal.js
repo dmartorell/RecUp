@@ -41,9 +41,13 @@ appBadges.forEach(btn => {
     btn.classList.add('selected');
     selectedApp = btn.dataset.app;
     const webProducts = ['dkey', 'assets', 'assets-beta'];
+    const iosProducts = ['alfred', 'nn', 'lavidda'];
     if (webProducts.includes(selectedApp)) {
       platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'Web'));
       selectedPlatform = 'Web';
+    } else if (iosProducts.includes(selectedApp)) {
+      platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
+      selectedPlatform = 'iOS';
     }
   });
 });
@@ -311,7 +315,8 @@ async function executeSubmit() {
         reporterEmail: getLoggedEmail(),
         assetId: assetIdInput.value.trim(),
         platform: selectedPlatform,
-        appVersion: [appVersionInput.value.trim(), selectedAppLabel].filter(Boolean).join(' ')
+        product: selectedAppLabel,
+        appVersion: appVersionInput.value.trim()
       })
     });
 

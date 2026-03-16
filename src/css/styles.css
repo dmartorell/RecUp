@@ -252,6 +252,21 @@ body {
   color: #fff;
 }
 
+.badge-app.selected[data-app="dkey"] {
+  background-color: #f59e0b;
+  color: #fff;
+}
+
+.badge-app.selected[data-app="assets"] {
+  background-color: #ef4444;
+  color: #fff;
+}
+
+.badge-app.selected[data-app="assets-beta"] {
+  background-color: #f97316;
+  color: #fff;
+}
+
 .badge-platform {
   background-color: #e5e7eb;
   color: #6b7280;
