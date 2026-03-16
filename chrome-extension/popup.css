@@ -170,6 +170,21 @@ body {
   box-shadow: var(--shadow);
 }
 
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .user-email {
   font-size: 12px;
   font-weight: 400;

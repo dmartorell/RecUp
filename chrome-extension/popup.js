@@ -47,6 +47,7 @@ const els = {
   loginError: document.getElementById('login-error'),
   btnLogin: document.getElementById('btn-login'),
   btnLogout: document.getElementById('btn-logout'),
+  userAvatar: document.getElementById('user-avatar'),
   userEmail: document.getElementById('user-email'),
   issueText: document.getElementById('issue-text'),
   sendBtn: document.getElementById('send-btn'),
@@ -87,6 +88,14 @@ function showIdle(email) {
   hideAllViews();
   views.idle.classList.remove('hidden');
   els.userEmail.textContent = email;
+  chrome.storage.local.get(['recup_avatar'], (result) => {
+    if (result.recup_avatar) {
+      els.userAvatar.src = result.recup_avatar;
+      els.userAvatar.classList.remove('hidden');
+    } else {
+      els.userAvatar.classList.add('hidden');
+    }
+  });
   els.issueText.value = '';
   els.sendBtn.disabled = true;
 }
@@ -250,10 +259,9 @@ async function handleLogin() {
     const json = await res.json();
 
     if (json.success) {
-      chrome.storage.local.set(
-        { recup_token: json.data.token, recup_email: json.data.user.email, recup_name: json.data.user.name || '' },
-        () => checkMicPermission(json.data.user.email)
-      );
+      const storageData = { recup_token: json.data.token, recup_email: json.data.user.email, recup_name: json.data.user.name || '' };
+      if (json.data.user.avatar) storageData.recup_avatar = json.data.user.avatar;
+      chrome.storage.local.set(storageData, () => checkMicPermission(json.data.user.email));
     } else {
       els.loginError.textContent = apiError(json.error);
       els.loginError.classList.add('visible');
@@ -268,7 +276,7 @@ async function handleLogin() {
 }
 
 function handleLogout() {
-  chrome.storage.local.remove(['recup_token', 'recup_email', 'recup_name'], () => {
+  chrome.storage.local.remove(['recup_token', 'recup_email', 'recup_name', 'recup_avatar'], () => {
     showLogin();
   });
 }

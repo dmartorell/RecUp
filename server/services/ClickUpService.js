@@ -20,7 +20,7 @@ export const ClickUpService = {
     for (const team of data.teams || []) {
       for (const m of team.members || []) {
         const u = m.user || {};
-        if (u.email) members.push({ id: u.id, email: u.email.toLowerCase() });
+        if (u.email) members.push({ id: u.id, email: u.email.toLowerCase(), avatar: u.profilePicture || null });
       }
     }
     cachedMembers = members;
@@ -32,6 +32,12 @@ export const ClickUpService = {
     if (!email) return null;
     const members = await this.getWorkspaceMembers();
     return members.find(m => m.email === email.toLowerCase())?.id ?? null;
+  },
+
+  async resolveAvatarByEmail(email) {
+    if (!email) return null;
+    const members = await this.getWorkspaceMembers();
+    return members.find(m => m.email === email.toLowerCase())?.avatar ?? null;
   },
 
   async createTask({ name, markdown_description, priority = 0, custom_fields = [] }) {

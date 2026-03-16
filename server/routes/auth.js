@@ -4,6 +4,7 @@ import db from '../db.js';
 import { signToken } from '../middleware/auth.js';
 import { createRateLimiter } from '../middleware/rateLimiter.js';
 import { config } from '../config/env.js';
+import { ClickUpService } from '../services/ClickUpService.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -77,11 +78,13 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
     }
 
     const token = signToken(Number(user.id), user.name, user.email);
+    let avatar = null;
+    try { avatar = await ClickUpService.resolveAvatarByEmail(user.email); } catch {}
     return res.json({
       success: true,
       data: {
         token,
-        user: { name: user.name, email: user.email },
+        user: { name: user.name, email: user.email, avatar },
       },
     });
   } catch (err) {
