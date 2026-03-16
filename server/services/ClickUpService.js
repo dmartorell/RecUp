@@ -34,7 +34,7 @@ export const ClickUpService = {
     return members.find(m => m.email === email.toLowerCase())?.id ?? null;
   },
 
-  async createTask({ name, markdown_description, priority = 3, custom_fields = [] }) {
+  async createTask({ name, markdown_description, priority = 0, custom_fields = [] }) {
     const res = await fetch(`${BASE_URL}/list/${config.clickupListId}/task`, {
       method: 'POST',
       headers: headers('application/json'),
