@@ -68,27 +68,25 @@
           />
         </svg>
         <h1
+          id="unsupported-title"
           style="
             font-size: 1.5rem;
             font-weight: 600;
             margin: 0 0 0.75rem;
             color: var(--color-text);
           "
-        >
-          Navegador no compatible
-        </h1>
+        ></h1>
         <p
+          id="unsupported-msg"
           style="
             font-size: 1rem;
             line-height: 1.6;
             color: #666;
             margin: 0 0 1.5rem;
           "
-        >
-          RecUp necesita APIs que solo están disponibles en navegadores basados
-          en Chromium. Por favor, usa Chrome o Edge.
-        </p>
+        ></p>
         <a
+          id="unsupported-cta"
           href="https://www.google.com/chrome/"
           style="
             display: inline-block;
@@ -100,8 +98,7 @@
             font-weight: 500;
             font-size: 0.95rem;
           "
-          >Descargar Chrome</a
-        >
+        ></a>
       </div>
     </div>
 
@@ -115,16 +112,8 @@
               alt="RecUp"
               class="login-illustration"
             />
-            <h2 class="login-left-title">
-              Graba, habla y envía<br />
-              en sólo un par de clics.
-            </h2>
-            <p class="login-left-desc">
-              Describe la incidencia en voz alta y RecUp hace el resto:
-              transcribe tu audio, genera un resumen conciso y crea el ticket en
-              ClickUp automáticamente, listo para que el equipo empiece a
-              investigar.
-            </p>
+            <h2 id="login-tagline" class="login-left-title"></h2>
+            <p id="login-desc" class="login-left-desc"></p>
           </div>
         </div>
         <!-- Panel derecho -->
@@ -223,9 +212,7 @@
             <p
               id="login-error"
               class="text-xs text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2 invisible"
-            >
-              Credenciales incorrectas
-            </p>
+            ></p>
             <button
               id="login-btn"
               type="button"
@@ -304,10 +291,11 @@
             class="panel flex flex-col items-center text-center"
             style="padding: 96px 128px"
           >
-            <p class="text-lg font-medium text-gray-600">Sin registros</p>
-            <p class="text-sm text-gray-400 mt-1">
-              Envía un audio y cuéntanos qué está fallando
-            </p>
+            <p
+              id="empty-state-title"
+              class="text-lg font-medium text-gray-600"
+            ></p>
+            <p id="empty-state-msg" class="text-sm text-gray-400 mt-1"></p>
           </div>
         </div>
 
@@ -474,12 +462,14 @@
           class="flex items-start justify-between px-6 py-4 border-b border-gray-100"
         >
           <div>
-            <h2 class="text-lg font-medium text-[var(--color-text)]">
-              Crear ticket
-            </h2>
-            <p class="text-sm text-gray-400 mt-0.5">
-              Genera un ticket en ClickUp a partir de este audio
-            </p>
+            <h2
+              id="ticket-modal-title"
+              class="text-lg font-medium text-[var(--color-text)]"
+            ></h2>
+            <p
+              id="ticket-modal-subtitle"
+              class="text-sm text-gray-400 mt-0.5"
+            ></p>
           </div>
           <button
             id="ticket-close-btn"
@@ -525,9 +515,27 @@
               >
                 Lavidda
               </button>
-              <button type="button" class="badge badge-app cursor-pointer" data-app="dkey">D-Key</button>
-              <button type="button" class="badge badge-app cursor-pointer" data-app="assets">Assets</button>
-              <button type="button" class="badge badge-app cursor-pointer" data-app="assets-beta">Assets Beta</button>
+              <button
+                type="button"
+                class="badge badge-app cursor-pointer"
+                data-app="dkey"
+              >
+                D-Key
+              </button>
+              <button
+                type="button"
+                class="badge badge-app cursor-pointer"
+                data-app="assets"
+              >
+                Assets
+              </button>
+              <button
+                type="button"
+                class="badge badge-app cursor-pointer"
+                data-app="assets-beta"
+              >
+                Assets Beta
+              </button>
             </div>
           </div>
           <div>
@@ -549,7 +557,13 @@
               >
                 Android
               </button>
-              <button type="button" class="badge badge-platform cursor-pointer" data-platform="Web">Web</button>
+              <button
+                type="button"
+                class="badge badge-platform cursor-pointer"
+                data-platform="Web"
+              >
+                Web
+              </button>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -642,13 +656,11 @@
             id="missing-fields-banner"
             class="hidden rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 mb-4"
           >
-            <span class="text-sm font-medium text-amber-800 mb-1"
-              >Te faltan datos</span
-            >
-            <p class="text-xs text-amber-700 mb-2">
-              Sin estos campos, al equipo de IT le costará un poco más detectar
-              el problema.
-            </p>
+            <span
+              id="missing-banner-title"
+              class="text-sm font-medium text-amber-800 mb-1"
+            ></span>
+            <p id="missing-banner-msg" class="text-xs text-amber-700 mb-2"></p>
             <ul
               id="missing-fields-list"
               class="text-xs text-amber-700 list-disc pl-5 mb-2 space-y-0.5"
@@ -656,10 +668,9 @@
             <button
               id="missing-fields-complete-btn"
               type="button"
+              id="missing-banner-cta"
               class="text-xs text-amber-700 underline cursor-pointer hover:text-amber-900"
-            >
-              Completar campos
-            </button>
+            ></button>
           </div>
           <div class="flex justify-end gap-2">
             <button
@@ -690,14 +701,14 @@
       <div
         class="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6"
       >
-        <h3 class="text-lg font-medium text-[var(--color-text)] mb-4">
-          Reportar incidencia
-        </h3>
+        <h3
+          id="text-input-title"
+          class="text-lg font-medium text-[var(--color-text)] mb-4"
+        ></h3>
         <textarea
           id="text-input-area"
           rows="9"
           class="form-input resize-none"
-          placeholder="Sé tan descriptivo como puedas..."
         ></textarea>
         <hr class="border-gray-100 mt-8 mb-4 -mx-6" />
         <div class="flex justify-end gap-3">

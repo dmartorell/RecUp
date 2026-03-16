@@ -13,6 +13,33 @@ function scrollFeedToTop() {
   if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function hydrateStaticStrings() {
+  const map = {
+    'unsupported-title': UI.UNSUPPORTED_TITLE,
+    'unsupported-msg': UI.UNSUPPORTED_MSG,
+    'unsupported-cta': UI.UNSUPPORTED_CTA,
+    'login-desc': UI.LOGIN_DESC,
+    'empty-state-title': UI.EMPTY_STATE_TITLE,
+    'empty-state-msg': UI.EMPTY_STATE_MSG,
+    'ticket-modal-title': UI.TICKET_MODAL_TITLE,
+    'ticket-modal-subtitle': UI.TICKET_MODAL_SUBTITLE,
+    'missing-banner-title': UI.TICKET_MISSING_BANNER_TITLE,
+    'missing-banner-msg': UI.TICKET_MISSING_BANNER_MSG,
+    'missing-banner-cta': UI.TICKET_MISSING_BANNER_CTA,
+    'text-input-title': UI.TEXT_INPUT_TITLE,
+  };
+  for (const [id, text] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+  const tagline = document.getElementById('login-tagline');
+  if (tagline) tagline.innerHTML = UI.LOGIN_TAGLINE;
+  const textArea = document.getElementById('text-input-area');
+  if (textArea) textArea.placeholder = UI.TEXT_INPUT_PLACEHOLDER;
+}
+
+hydrateStaticStrings();
+
 function isBrowserCompatible() {
   return !!window.chrome;
 }
