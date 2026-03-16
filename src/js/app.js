@@ -9,8 +9,8 @@ import { openTicketModal } from './ticket-modal.js';
 import { UI, apiError } from './strings.js';
 
 function scrollFeedToTop() {
-  const mainEl = document.querySelector('main');
-  if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+  const scrollEl = document.getElementById('app');
+  if (scrollEl) scrollEl.scrollTo({ top: 0 });
 }
 
 function hydrateStaticStrings() {
@@ -367,7 +367,6 @@ async function toggleRecording() {
     }, RECORDING_TIMEOUT_MS);
 
     startRecording();
-    scrollFeedToTop();
     recordBtn.classList.remove('bg-accent');
     recordBtn.classList.add('bg-accent-hover');
     setPageInteractive(false);
@@ -392,6 +391,7 @@ async function toggleRecording() {
     const audioBlob = await stopRecording();
     releaseStream();
 
+    scrollFeedToTop();
     createIncident(transcript, audioBlob, duration);
   }
 }
