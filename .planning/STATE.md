@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: unknown
-last_updated: "2026-03-15T00:00:00.000Z"
+last_updated: "2026-03-16T17:52:19.591Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
+  total_phases: 3
+  completed_phases: 1
+  total_plans: 12
+  completed_plans: 5
 ---
 
 # Project State
@@ -22,11 +22,11 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 ## Current Position
 
-Phase: 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards
-Current Plan: 04 (de 4)
-Last activity: 2026-03-16 - Completed quick task 12: Enviar a RecUp desde Chrome context menu + clipboard
+Phase: 03-refactorizar-backend
+Current Plan: 01 (de 3)
+Last activity: 2026-03-16 - Completed 03-01: Config foundation (constants.js, env.js, system prompt)
 
-Progress: [██████████] 100%
+Progress: [████░░░░░░] 42%
 
 ## Accumulated Context
 
@@ -64,6 +64,8 @@ Recent decisions affecting current work:
 - [Phase 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards]: renderCardFromDB() separada de createCard() — cards de DB tienen estado final, sin spinner ni summarize
 - [Phase 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards]: Degradacion graceful en persistCard() — card visible en DOM aunque POST /api/cards falle
 - [Phase 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards]: handleExtensionMode sin fallback 'local' — sin token en params muestra login (no sesion ficticia que rompe API)
+- [Phase 03-refactorizar-backend]: JWT_SECRET required (no insecure fallback) en env.js — server exits con FATAL si falta
+- [Phase 03-refactorizar-backend]: Config-first pattern: dotenv/config movido a env.js, todo acceso a env vars via config object
 
 ### Pending Todos
 
@@ -79,6 +81,7 @@ Recent decisions affecting current work:
 
 - Phase 1 added: Extensión Chrome para Bugshot (v1.1)
 - Phase 2 added: Base de datos simple para gestión de usuarios y asociación de cards
+- Phase 3 added: Refactorizar backend: extraer constantes, middleware de errores, IncidentService, ClickUpService, rate limiting middleware, validar env vars, extraer system prompt
 
 ### Blockers/Concerns
 
