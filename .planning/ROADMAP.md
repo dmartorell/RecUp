@@ -52,3 +52,15 @@ Plans:
 - [x] 02-02-PLAN.md — Webapp: login/registro contra API real, cards persistidas en DB, feed desde API
 - [x] 02-03-PLAN.md — Extension Chrome: login via API real, token real en flujo
 - [x] 02-04-PLAN.md — Gap closure: eliminar fallback 'local' en handleExtensionMode
+
+### Phase 3: Refactorizar backend: extraer constantes, middleware de errores, IncidentService, ClickUpService, rate limiting middleware, validar env vars, extraer system prompt
+
+**Goal:** Backend limpio con config centralizada, servicios encapsulados, middleware reutilizable y zero process.env en rutas. Sin cambios de comportamiento — solo estructura.
+**Requirements**: BE-CONFIG, BE-ENV, BE-PROMPT, BE-ERROR, BE-RATELIMIT, BE-INCIDENT-SVC, BE-CLICKUP-SVC, BE-SUMMARIZE
+**Depends on:** Phase 2
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Config layer: constants.js, env validation, system prompt extraction
+- [ ] 03-02-PLAN.md — Middleware + IncidentService: error handler, rate limiter, service layer para incidents
+- [ ] 03-03-PLAN.md — ClickUpService + summarize refactor: encapsular ClickUp API, config en summarize
