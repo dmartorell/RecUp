@@ -18,7 +18,7 @@ router.post('/api/ticket', async (req, res, next) => {
 
   const metadataLines = [
     product && `**Producto:** ${product}`,
-    assetId && `**Asset ID:** ${assetId}`,
+    assetId && `**ID de Asset o Proyecto:** ${assetId}`,
     platform && `**Plataforma:** ${platform}`,
     appVersion && `**Versión:** ${appVersion}`,
   ].filter(Boolean);
