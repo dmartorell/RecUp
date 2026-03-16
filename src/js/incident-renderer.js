@@ -1,7 +1,7 @@
 import { capitalize, ensurePeriod } from './utils.js';
 import { timeAgo, parseUTC, formatDuration } from './time.js';
 import { saveIncidentResult } from './incident-api.js';
-import { authHeaders } from './auth.js';
+import { authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
 import { summarize } from './summarizer.js';
 import { openTicketModal } from './ticket-modal.js';
 import { showToast } from './toast.js';
@@ -48,11 +48,12 @@ export function buildOnTicketCreated(incident) {
     const incidentId = incident.dataset.incidentId;
     if (incidentId) {
       try {
-        await fetch(`/api/incidents/${incidentId}`, {
+        const res = await fetch(`/api/incidents/${incidentId}`, {
           method: 'PATCH',
           headers: authHeaders(),
           body: JSON.stringify({ clickup_task_id: taskId, clickup_task_url: taskUrl, status: 'completado' })
         });
+        if (isUnauthorized(res)) handleExpiredSession();
       } catch (e) { console.warn('degradacion graceful:', e); }
     }
   };
@@ -77,7 +78,8 @@ function attachDeleteHandler(incident, hasId) {
     const incidentId = incident.dataset.incidentId;
     if (hasId && incidentId) {
       try {
-        await fetch(`/api/incidents/${incidentId}`, { method: 'DELETE', headers: authHeaders() });
+        const res = await fetch(`/api/incidents/${incidentId}`, { method: 'DELETE', headers: authHeaders() });
+        if (isUnauthorized(res)) { handleExpiredSession(); return; }
       } catch (e) { console.warn('delete incident:', e); }
     }
     incident.remove();

@@ -1,7 +1,7 @@
 import { AttachmentManager } from './attachments.js';
 import { capitalize, ensurePeriod } from './utils.js';
 import { showToast, showToastWithLink } from './toast.js';
-import { getSession } from './auth.js';
+import { getSession, handleExpiredSession } from './auth.js';
 import { UI, apiError } from './strings.js';
 
 const modal = document.getElementById('ticket-modal');
@@ -237,6 +237,7 @@ async function uploadAttachments(taskId, files) {
     headers: { 'Authorization': 'Bearer ' + (session?.token || '') },
     body: formData,
   });
+  if (res.status === 401) { handleExpiredSession(); return; }
   const data = await res.json();
   if (!res.ok) throw { partial: data.uploaded.length > 0, data };
   return data;

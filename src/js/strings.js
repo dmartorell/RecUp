@@ -12,6 +12,7 @@ export const UI = {
   LOGOUT_TITLE: '¿Cerrar sesión?',
   LOGOUT_MSG: 'Se cerrará tu sesión actual.',
   LOGOUT_BTN: 'Cerrar sesión',
+  SESSION_EXPIRED: 'Tu sesión ha caducado. Inicia sesión de nuevo.',
 
   TRANSCRIPTION_ERROR_PREFIX: 'Error de transcripción: ',
   RECORDING_AUTO_STOP: 'Grabación detenida automáticamente (5 min)',
