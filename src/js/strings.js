@@ -59,8 +59,6 @@ export const UI = {
 
   CONFIRM_DELETE: 'Borrar',
 
-  CLIPBOARD_DENIED: 'No se pudo leer el portapapeles. Pega el texto manualmente.',
-  CLIPBOARD_EMPTY: 'El portapapeles esta vacio.',
 };
 
 export const API_ERRORS = {
