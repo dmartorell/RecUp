@@ -1,41 +1,28 @@
 import { Router } from 'express';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { config } from '../config/env.js';
+import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS, CLAUDE_TEMPERATURE, SUMMARIZE_TIMEOUT_MS } from '../config/constants.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const SYSTEM_PROMPT = readFileSync(join(__dirname, '..', 'config', 'prompts', 'summarize-system.txt'), 'utf-8');
 
 const router = Router();
 
-const SYSTEM_PROMPT = `Eres un asistente tecnico que procesa transcripciones de reportes de bugs.
-Dada una transcripcion de voz, determina si describe algun tipo de problema, incidencia, queja o situacion que requiera atencion. Se MUY permisivo: si el usuario menciona que algo no funciona, no aparece, esta roto, falta, esta mal, le sale un error, o cualquier situacion anomala, es un bug.
-
-Si describe un problema (is_bug true), genera:
-{"is_bug": true, "title": "titulo conciso (max 10 palabras)", "transcript": "transcripcion limpia y corregida", "bullets": ["punto clave 1", "punto clave 2"]}
-
-Los bullets deben ser SOLO un resumen factual de lo que el usuario dijo. NO generes hipotesis, causas posibles, ni sugerencias de solucion. Limitate a extraer los hechos del reporte.
-
-Ejemplo CORRECTO de bullets:
-- "Usuario no puede iniciar sesion"
-- "Todos los accesos estan bloqueados"
-- "Funcion de login no operativa"
-
-Ejemplo INCORRECTO (NUNCA hagas esto):
-- "Posible interferencia electrica o problema de circuitos compartidos"
-
-Solo responde is_bug false si el mensaje es claramente un saludo, prueba de microfono, contenido sin ninguna queja o problema:
-{"is_bug": false, "transcript": "transcripcion limpia y corregida"}
-
-Responde UNICAMENTE con JSON valido, sin texto adicional, sin markdown code blocks.`;
-
-router.post('/api/summarize', async (req, res) => {
+router.post('/api/summarize', async (req, res, next) => {
   const { transcript } = req.body;
 
   if (!transcript || !transcript.trim()) {
     return res.status(400).json({ error: 'TRANSCRIPT_REQUIRED' });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = config.anthropicApiKey;
   if (!apiKey) {
     return res.status(500).json({ error: 'API_KEY_MISSING' });
   }
 
-  const SUMMARIZE_TIMEOUT_MS = 30_000;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), SUMMARIZE_TIMEOUT_MS);
 
@@ -48,9 +35,9 @@ router.post('/api/summarize', async (req, res) => {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        temperature: 0.3,
+        model: CLAUDE_MODEL,
+        max_tokens: CLAUDE_MAX_TOKENS,
+        temperature: CLAUDE_TEMPERATURE,
         system: SYSTEM_PROMPT,
         messages: [
           { role: 'user', content: transcript.trim() },
@@ -62,7 +49,7 @@ router.post('/api/summarize', async (req, res) => {
     clearTimeout(timeout);
 
     if (!response.ok) {
-      const errorBody = await response.text();
+      await response.text();
       return res.status(response.status).json({ error: 'CLAUDE_API_ERROR' });
     }
 
@@ -92,7 +79,7 @@ router.post('/api/summarize', async (req, res) => {
     if (err.name === 'AbortError') {
       return res.status(504).json({ error: 'TIMEOUT' });
     }
-    return res.status(500).json({ error: 'INTERNAL_ERROR' });
+    next(err);
   }
 });
 
