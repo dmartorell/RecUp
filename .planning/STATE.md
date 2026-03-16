@@ -77,7 +77,7 @@ Recent decisions affecting current work:
 - Prepare Chrome extension for unlisted Chrome Web Store publishing (general)
 - Refactorizar frontend y backend — poner orden y reutilizar (code-quality)
 - Evaluar domain knowledge de Alfred en prompt de resumen (api)
-- Implementar testing backend y frontend (testing)
+- Implementar testing frontend (testing)
 - Desplegar servidor en Railway para testing remoto (general)
 
 
@@ -102,3 +102,4 @@ None.
 | 10 | Auto-abrir formulario de ticket cuando hay resumen de bug | 2026-03-16 | c4410cc | [10-auto-abrir-formulario-de-ticket-cuando-h](./quick/10-auto-abrir-formulario-de-ticket-cuando-h/) |
 | 11 | Form labels, badges y auto-select plataforma Web | 2026-03-16 | 9c7c234 | [11-form-labels-badges-y-auto-select-platafo](./quick/11-form-labels-badges-y-auto-select-platafo/) |
 | 12 | Enviar a RecUp desde Chrome context menu + clipboard | 2026-03-16 | 04a8c06 | [12-enviar-a-recup-desde-chrome-context-menu](./quick/12-enviar-a-recup-desde-chrome-context-menu/) |
+| 13 | Tests de integración backend: auth, incidents CRUD, rutas proxy con mock fetch | 2026-03-16 | 3d6b0da | [13-implementar-testing-backend-tests-de-int](./quick/13-implementar-testing-backend-tests-de-int/) |
