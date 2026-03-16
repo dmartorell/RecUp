@@ -59,6 +59,7 @@ const loginToggleLink = document.getElementById('login-toggle-link');
 const loginError = document.getElementById('login-error');
 const userAvatar = document.getElementById('user-avatar');
 const avatarImg = document.getElementById('avatar-img');
+const avatarFallback = document.getElementById('avatar-fallback');
 const avatarEmail = document.getElementById('avatar-email');
 
 const togglePasswordBtn = document.getElementById('toggle-password-btn');
@@ -102,8 +103,10 @@ function showApp(email) {
   if (session?.user?.avatar) {
     avatarImg.src = session.user.avatar;
     avatarImg.classList.remove('hidden');
+    avatarFallback.classList.add('hidden');
   } else {
     avatarImg.classList.add('hidden');
+    avatarFallback.classList.remove('hidden');
   }
   userAvatar.classList.remove('hidden');
 }

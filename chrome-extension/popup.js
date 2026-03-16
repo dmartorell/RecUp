@@ -48,6 +48,7 @@ const els = {
   btnLogin: document.getElementById('btn-login'),
   btnLogout: document.getElementById('btn-logout'),
   userAvatar: document.getElementById('user-avatar'),
+  avatarFallback: document.getElementById('avatar-fallback'),
   userEmail: document.getElementById('user-email'),
   issueText: document.getElementById('issue-text'),
   sendBtn: document.getElementById('send-btn'),
@@ -92,8 +93,10 @@ function showIdle(email) {
     if (result.recup_avatar) {
       els.userAvatar.src = result.recup_avatar;
       els.userAvatar.classList.remove('hidden');
+      els.avatarFallback.classList.add('hidden');
     } else {
       els.userAvatar.classList.add('hidden');
+      els.avatarFallback.classList.remove('hidden');
     }
   });
   els.issueText.value = '';

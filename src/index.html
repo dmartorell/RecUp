@@ -251,7 +251,6 @@
             RecUp
           </h1>
           <div id="user-avatar" class="hidden flex items-center gap-2">
-            <img id="avatar-img" class="hidden w-7 h-7 rounded-full object-cover" alt="" />
             <span
               id="avatar-email"
               class="text-xs text-gray-400 sm:inline"
@@ -259,12 +258,13 @@
             ></span>
             <button
               id="btn-logout"
-              class="text-gray-400 hover:text-[var(--color-accent)] cursor-pointer bg-transparent border-none p-1 flex items-center justify-center"
+              class="cursor-pointer bg-transparent border-none p-0 flex items-center justify-center rounded-full"
               title="Cerrar sesión"
             >
+              <img id="avatar-img" class="hidden w-7 h-7 rounded-full object-cover" alt="" />
               <svg
-                width="20"
-                height="20"
+                id="avatar-fallback"
+                class="w-7 h-7 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -273,7 +273,7 @@
                 <path
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                  d="M5.636 5.636a9 9 0 1 0 12.728 0M12 3v9"
+                  d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
                 />
               </svg>
             </button>
