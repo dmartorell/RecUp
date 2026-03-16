@@ -501,9 +501,9 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2"
-              >App</label
+              >Producto</label
             >
-            <div id="app-badges" class="flex gap-2">
+            <div id="app-badges" class="flex flex-wrap gap-2">
               <button
                 type="button"
                 class="badge badge-app cursor-pointer"
@@ -525,6 +525,9 @@
               >
                 Lavidda
               </button>
+              <button type="button" class="badge badge-app cursor-pointer" data-app="dkey">D-Key</button>
+              <button type="button" class="badge badge-app cursor-pointer" data-app="assets">Assets</button>
+              <button type="button" class="badge badge-app cursor-pointer" data-app="assets-beta">Assets Beta</button>
             </div>
           </div>
           <div>
@@ -546,6 +549,7 @@
               >
                 Android
               </button>
+              <button type="button" class="badge badge-platform cursor-pointer" data-platform="Web">Web</button>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -553,7 +557,7 @@
               <label
                 for="ticket-app-version"
                 class="block text-sm font-light text-gray-400 mb-1"
-                >Versión de la app</label
+                >Versión</label
               >
               <input
                 type="text"
@@ -566,7 +570,7 @@
               <label
                 for="ticket-asset-id"
                 class="block text-sm font-light text-gray-400 mb-1"
-                >Asset ID</label
+                >Asset o Proyecto</label
               >
               <input type="text" id="ticket-asset-id" class="form-input" />
             </div>
@@ -668,7 +672,7 @@
             <button
               id="ticket-submit-btn"
               type="button"
-              class="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer"
+              class="px-4 py-2 text-sm font-medium text-white bg-accent rounded-lg hover:bg-accent-hover cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Crear ticket
             </button>
