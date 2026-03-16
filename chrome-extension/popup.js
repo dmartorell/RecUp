@@ -237,7 +237,7 @@ async function handleLogin() {
   }
 
   els.btnLogin.disabled = true;
-  els.btnLogin.textContent = UI.LOGIN_BTN_LOADING;
+  els.btnLogin.innerHTML = '<span class="btn-spinner"></span>';
   els.loginError.classList.remove('visible');
 
   try {
