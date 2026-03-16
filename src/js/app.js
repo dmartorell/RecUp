@@ -1,4 +1,4 @@
-import { requestMicAccess, getStream, startRecording, stopRecording } from './recorder.js';
+import { requestMicAccess, getStream, startRecording, stopRecording, releaseStream } from './recorder.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
 import { showToast } from './toast.js';
 import { getSession, authHeaders } from './auth.js';
@@ -147,7 +147,6 @@ loginBtn.addEventListener('click', async () => {
     showApp(data.data.user.email);
     await loadIncidents();
     resumePendingIncidents();
-    initMic();
   } catch {
     showLoginError(UI.LOGIN_ERROR_NETWORK);
     loginBtn.disabled = false;
@@ -171,7 +170,6 @@ const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
 let isRecording = false;
 let timerInterval = null;
 let startTime = null;
-let micReady = false;
 let analyser = null;
 let animFrameId = null;
 let audioCtx = null;
@@ -267,15 +265,6 @@ textInputSubmit.addEventListener('click', () => {
   createIncident(text, null, 0);
 });
 
-async function initMic() {
-  try {
-    await requestMicAccess();
-    micReady = true;
-  } catch (err) {
-    showToast(err.message);
-  }
-}
-
 function animateWaveform() {
   const dataArray = new Uint8Array(analyser.fftSize);
   analyser.getByteTimeDomainData(dataArray);
@@ -309,15 +298,19 @@ function forceCleanup() {
   recordingTimeoutId = null;
   stopTranscription().catch(() => {});
   stopRecording().catch(() => {});
+  releaseStream();
 }
 
 async function toggleRecording() {
-  if (!micReady) {
-    await initMic();
-    if (!micReady) return;
-  }
-
   if (!isRecording) {
+    if (!getStream()) {
+      try {
+        await requestMicAccess();
+      } catch (err) {
+        showToast(err.message);
+        return;
+      }
+    }
     isRecording = true;
     modeToggleBtn.classList.add('pointer-events-none', 'opacity-40');
     micIcon.classList.add('hidden');
@@ -369,6 +362,7 @@ async function toggleRecording() {
 
     const transcript = await stopTranscription();
     const audioBlob = await stopRecording();
+    releaseStream();
 
     createIncident(transcript, audioBlob, duration);
   }
@@ -482,7 +476,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadIncidents();
     handleExtensionMode();
     resumePendingIncidents();
-    initMic();
   }
   updateEmptyState();
 });
