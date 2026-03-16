@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 03-refactorizar-backend
 Current Plan: 03 (de 3)
-Last activity: 2026-03-16 - Completed 03-03: ClickUpService + route refactor
+Last activity: 2026-03-16 - Completed quick-13: tests de integración backend
 
 Progress: [█████░░░░░] 50%
 
