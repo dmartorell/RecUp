@@ -48,10 +48,10 @@ export const UI = {
   TICKET_CREATED: 'Ticket creado.',
   TICKET_CAMERA_DENIED: 'Cámara sin permisos.',
   TICKET_PHOTO_ERROR: 'Error al capturar la foto.',
-  TICKET_MISSING_APP: 'App',
+  TICKET_MISSING_APP: 'Producto',
   TICKET_MISSING_PLATFORM: 'Plataforma',
-  TICKET_MISSING_APP_VERSION: 'Versión de la app',
-  TICKET_MISSING_ASSET_ID: 'Asset ID',
+  TICKET_MISSING_APP_VERSION: 'Versión',
+  TICKET_MISSING_ASSET_ID: 'Asset o Proyecto',
 
   ATTACH_TYPE_NOT_ALLOWED: (name) => `Tipo de archivo no permitido: ${name}. Solo imágenes y vídeos.`,
   ATTACH_TOO_LARGE: (name) => `${name} excede el límite de 50 MB.`,
