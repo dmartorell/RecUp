@@ -31,6 +31,7 @@ export async function initDb() {
       email TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       clickup_user_id TEXT,
+      avatar_url TEXT,
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -50,6 +51,8 @@ export async function initDb() {
 
     CREATE INDEX IF NOT EXISTS idx_incidents_user_id ON incidents(user_id);
   `);
+
+  try { await db.execute('ALTER TABLE users ADD COLUMN avatar_url TEXT'); } catch {}
 }
 
 export default db;

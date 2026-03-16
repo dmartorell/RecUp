@@ -78,8 +78,14 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
     }
 
     const token = signToken(Number(user.id), user.name, user.email);
-    let avatar = null;
-    try { avatar = await ClickUpService.resolveAvatarByEmail(user.email); } catch {}
+    let avatar = user.avatar_url || null;
+    try {
+      const clickupAvatar = await ClickUpService.resolveAvatarByEmail(user.email);
+      if (clickupAvatar) {
+        avatar = clickupAvatar;
+        db.execute({ sql: 'UPDATE users SET avatar_url = ? WHERE id = ?', args: [avatar, user.id] });
+      }
+    } catch {}
     return res.json({
       success: true,
       data: {
