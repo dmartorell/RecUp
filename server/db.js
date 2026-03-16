@@ -10,7 +10,7 @@ const PROJECT_ROOT = join(__dirname, '..');
 mkdirSync(join(PROJECT_ROOT, 'data'), { recursive: true });
 mkdirSync(join(PROJECT_ROOT, 'dbLogs'), { recursive: true });
 
-const DB_PATH = join(PROJECT_ROOT, 'data', 'recup.db');
+const DB_PATH = process.env.DB_PATH || join(PROJECT_ROOT, 'data', 'recup.db');
 const LOG_PATH = join(PROJECT_ROOT, 'dbLogs', 'errors.log');
 
 export function logDbError(error, context = '') {
