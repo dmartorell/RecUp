@@ -22,7 +22,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 |-------|-----------|----------------|--------|-----------|
 | 1. Estructura del Proyecto | 5/5 | Complete   | 2026-03-13 | 2026-03-07 |
 | 2. Audio + Transcripcion | 4/4 | Complete   | 2026-03-14 | 2026-03-08 |
-| 3. Resumen IA | v1.0 | 1/1 | Complete | 2026-03-08 |
+| 3. Resumen IA | 3/3 | Complete   | 2026-03-16 | 2026-03-08 |
 | 4. Tickets + Adjuntos | v1.0 | 2/2 | Complete | 2026-03-07 |
 | 4.1. Limpieza técnica | v1.0 | 1/1 | Complete | 2026-03-08 |
 
@@ -58,7 +58,7 @@ Plans:
 **Goal:** Backend limpio con config centralizada, servicios encapsulados, middleware reutilizable y zero process.env en rutas. Sin cambios de comportamiento — solo estructura.
 **Requirements**: BE-CONFIG, BE-ENV, BE-PROMPT, BE-ERROR, BE-RATELIMIT, BE-INCIDENT-SVC, BE-CLICKUP-SVC, BE-SUMMARIZE
 **Depends on:** Phase 2
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 03-01-PLAN.md — Config layer: constants.js, env validation, system prompt extraction
