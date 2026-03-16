@@ -478,6 +478,30 @@ function adoptExtensionSession() {
   }
 }
 
+async function handleExternalText() {
+  const params = new URLSearchParams(location.search);
+  const contextText = params.get('contextText');
+  const fromClipboard = params.get('fromClipboard');
+
+  if (contextText) {
+    params.delete('contextText');
+    const qs = params.toString();
+    history.replaceState({}, '', location.pathname + (qs ? '?' + qs : ''));
+    openTicketModal({ title: '', description: decodeURIComponent(contextText), source: 'context-menu' });
+    return true;
+  }
+
+  if (fromClipboard === '1') {
+    params.delete('fromClipboard');
+    const qs = params.toString();
+    history.replaceState({}, '', location.pathname + (qs ? '?' + qs : ''));
+    openTicketModal({ title: '', description: '', source: 'clipboard' });
+    return true;
+  }
+
+  return false;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   adoptExtensionSession();
   handleHashRegister();
@@ -485,7 +509,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const authed = checkAuth();
   if (authed) {
     await loadIncidents();
-    handleExtensionMode();
+    const handledExternal = await handleExternalText();
+    if (!handledExternal) {
+      handleExtensionMode();
+    }
     resumePendingIncidents();
   }
   updateEmptyState();
