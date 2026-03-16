@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards
 Current Plan: 04 (de 4)
-Last activity: 2026-03-16 - Completed quick task 11: Form labels, badges y auto-select plataforma
+Last activity: 2026-03-16 - Completed quick task 12: Enviar a RecUp desde Chrome context menu + clipboard
 
 Progress: [██████████] 100%
 
@@ -94,3 +94,4 @@ None.
 | 9 | Gestionar errores de grabación sin control: fatal error detection, forceCleanup, timeout 5min | 2026-03-16 | 7b97323 | [9-gestionar-errores-de-grabaci-n-sin-contr](./quick/9-gestionar-errores-de-grabaci-n-sin-contr/) |
 | 10 | Auto-abrir formulario de ticket cuando hay resumen de bug | 2026-03-16 | c4410cc | [10-auto-abrir-formulario-de-ticket-cuando-h](./quick/10-auto-abrir-formulario-de-ticket-cuando-h/) |
 | 11 | Form labels, badges y auto-select plataforma Web | 2026-03-16 | 9c7c234 | [11-form-labels-badges-y-auto-select-platafo](./quick/11-form-labels-badges-y-auto-select-platafo/) |
+| 12 | Enviar a RecUp desde Chrome context menu + clipboard | 2026-03-16 | 04a8c06 | [12-enviar-a-recup-desde-chrome-context-menu](./quick/12-enviar-a-recup-desde-chrome-context-menu/) |
