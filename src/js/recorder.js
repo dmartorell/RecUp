@@ -53,4 +53,11 @@ function stopRecording() {
   });
 }
 
-export { requestMicAccess, getStream, startRecording, stopRecording };
+function releaseStream() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+  }
+}
+
+export { requestMicAccess, getStream, startRecording, stopRecording, releaseStream };
