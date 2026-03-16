@@ -6,49 +6,49 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/', (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
     const limit = Math.max(1, parseInt(req.query.limit) || 20);
     const offset = Math.max(0, parseInt(req.query.offset) || 0);
-    const data = IncidentService.list(req.user.id, { limit, offset });
+    const data = await IncidentService.list(req.user.id, { limit, offset });
     return res.json({ success: true, data });
   } catch (err) { next(err); }
 });
 
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
   const { transcript } = req.body || {};
   if (!transcript || !transcript.trim()) {
     return res.status(400).json({ success: false, error: 'TRANSCRIPT_REQUIRED' });
   }
   try {
-    const incident = IncidentService.create(req.user.id, req.body);
+    const incident = await IncidentService.create(req.user.id, req.body);
     return res.status(201).json({ success: true, data: { incident } });
   } catch (err) { next(err); }
 });
 
-router.patch('/:id', (req, res, next) => {
+router.patch('/:id', async (req, res, next) => {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
   try {
-    const incident = IncidentService.getById(id);
+    const incident = await IncidentService.getById(id);
     if (!incident) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
     IncidentService.assertOwnership(incident, req.user.id);
     const fields = Object.keys(req.body || {});
     if (fields.length === 0) return res.status(400).json({ success: false, error: 'NO_VALID_FIELDS' });
-    const updated = IncidentService.update(id, req.body);
+    const updated = await IncidentService.update(id, req.body);
     if (!updated) return res.status(400).json({ success: false, error: 'NO_VALID_FIELDS' });
     return res.json({ success: true, data: { incident: updated } });
   } catch (err) { next(err); }
 });
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', async (req, res, next) => {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
   try {
-    const incident = IncidentService.getById(id);
+    const incident = await IncidentService.getById(id);
     if (!incident) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
     IncidentService.assertOwnership(incident, req.user.id);
-    IncidentService.delete(id);
+    await IncidentService.delete(id);
     return res.json({ success: true });
   } catch (err) { next(err); }
 });

@@ -10,8 +10,8 @@
 |---|---|
 | Runtime | Bun |
 | Backend | Express 4 (ESM) |
-| Base de datos | SQLite (bun:sqlite) |
-| Auth | JWT (jsonwebtoken) + Bun.password (bcrypt) |
+| Base de datos | Turso (@libsql/client) — SQLite remoto |
+| Auth | JWT (jsonwebtoken) + bcryptjs |
 | IA | Anthropic API (Claude Haiku 4.5) |
 | Integraciones | ClickUp API v2 |
 | Frontend | Vanilla JS (ESM modules), HTML, CSS |
@@ -21,7 +21,7 @@
 ### Arquitectura a alto nivel
 
 ```
-[Chrome Extension] --query params--> [Frontend SPA] --fetch--> [Express API] ---> [SQLite]
+[Chrome Extension] --query params--> [Frontend SPA] --fetch--> [Express API] ---> [Turso (SQLite)]
                                                                     |
                                                           +---------+---------+
                                                           |                   |
@@ -36,7 +36,7 @@
 RecUp/
 ├── server/
 │   ├── index.js              # Entry point, Express setup, static serving
-│   ├── db.js                 # SQLite init, schemas, error logger
+│   ├── db.js                 # Turso/libSQL client, schemas, error logger
 │   ├── middleware/
 │   │   └── auth.js           # JWT sign/verify, authMiddleware
 │   └── routes/
@@ -72,7 +72,6 @@ RecUp/
 │   ├── popup.js               # Login, grabacion, envio desde popup
 │   ├── popup.css
 │   └── icons/
-├── data/                      # SQLite DB (gitignored)
 ├── dbLogs/                    # Error logs
 ├── scripts/
 │   └── seed-users.js
@@ -83,7 +82,7 @@ RecUp/
 
 ## 3. Base de datos
 
-**Motor:** SQLite via `bun:sqlite`. Archivo: `data/recup.db`.
+**Motor:** SQLite via Turso (`@libsql/client`). DB remota en Turso cloud.
 
 ### Tabla `users`
 
@@ -131,10 +130,10 @@ RecUp/
 ### Registro y login
 
 - **Registro:** `POST /api/auth/register` — name, email, password
-  - Password hasheado con `Bun.password.hash()` (bcrypt)
+  - Password hasheado con `bcryptjs` (salt rounds: 10)
   - Dominio de email restringible via `ALLOWED_EMAIL_DOMAIN`
 - **Login:** `POST /api/auth/login` — email, password
-  - Verificacion con `Bun.password.verify()`
+  - Verificacion con `bcrypt.compare()`
 - Ambos devuelven JWT firmado
 
 ### JWT
@@ -427,6 +426,8 @@ Directrices clave del prompt:
 
 | Variable | Obligatoria | Descripcion |
 |---|---|---|
+| `TURSO_DATABASE_URL` | Si | URL de la base de datos Turso (ej: `libsql://db.turso.io`) |
+| `TURSO_AUTH_TOKEN` | Si (prod) | Token de autenticacion Turso |
 | `ANTHROPIC_API_KEY` | Si | API key de Anthropic para Claude |
 | `CLICKUP_API_KEY` | Si | API key personal de ClickUp |
 | `CLICKUP_LIST_ID` | Si | ID de la lista ClickUp donde crear tasks |
@@ -440,7 +441,7 @@ Directrices clave del prompt:
 
 | Mecanismo | Implementacion |
 |---|---|
-| **Password hashing** | `Bun.password.hash()` / `.verify()` (bcrypt) |
+| **Password hashing** | `bcryptjs` hash / compare (salt rounds: 10) |
 | **JWT** | HS256, expira en 7d, secret configurable |
 | **Rate limiting** | 10 req/min/IP en register + login (in-memory) |
 | **Ownership** | PATCH/DELETE incidents validan `user_id === req.user.id` |

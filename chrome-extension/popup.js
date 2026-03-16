@@ -394,6 +394,7 @@ async function validateToken(token, email) {
 
 chrome.storage.local.get(['recup_token', 'recup_email'], (result) => {
   if (result.recup_token && result.recup_email) {
+    checkMicPermission(result.recup_email);
     validateToken(result.recup_token, result.recup_email);
   } else {
     showLogin();

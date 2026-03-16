@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import db from '../db.js';
 import { signToken } from '../middleware/auth.js';
 import { createRateLimiter } from '../middleware/rateLimiter.js';
@@ -30,12 +31,13 @@ router.post('/api/auth/register', rateLimit, async (req, res, next) => {
   }
 
   try {
-    const hashed = await Bun.password.hash(password);
-    const result = db.prepare(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)'
-    ).run(name.trim(), email.toLowerCase(), hashed);
+    const hashed = await bcrypt.hash(password, 10);
+    const result = await db.execute({
+      sql: 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
+      args: [name.trim(), email.toLowerCase(), hashed],
+    });
 
-    const token = signToken(result.lastInsertRowid, name.trim(), email.toLowerCase());
+    const token = signToken(Number(result.lastInsertRowid), name.trim(), email.toLowerCase());
     return res.status(201).json({
       success: true,
       data: {
@@ -59,18 +61,22 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
   }
 
   try {
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.toLowerCase());
+    const result = await db.execute({
+      sql: 'SELECT * FROM users WHERE email = ?',
+      args: [email.toLowerCase()],
+    });
+    const user = result.rows[0];
 
     if (!user) {
       return res.status(401).json({ success: false, error: 'INVALID_CREDENTIALS' });
     }
 
-    const valid = await Bun.password.verify(password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ success: false, error: 'INVALID_CREDENTIALS' });
     }
 
-    const token = signToken(user.id, user.name, user.email);
+    const token = signToken(Number(user.id), user.name, user.email);
     return res.json({
       success: true,
       data: {
