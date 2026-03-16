@@ -17,7 +17,7 @@
     }
   },
   "permissions": ["storage", "tabs", "contextMenus"],
-  "host_permissions": ["http://localhost:3000/*"],
+  "host_permissions": ["https://recup.onrender.com/*"],
   "background": {
     "service_worker": "background.js"
   }

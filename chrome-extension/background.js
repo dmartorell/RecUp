@@ -1,4 +1,4 @@
-const RECUP_URL = 'http://localhost:3000';
+importScripts('config.js');
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({

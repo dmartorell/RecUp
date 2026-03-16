@@ -1,4 +1,3 @@
-const RECUP_URL = 'http://localhost:3000';
 const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
 
 const API_ERRORS = {
