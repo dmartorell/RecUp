@@ -4,7 +4,8 @@ import { showToast } from './toast.js';
 import { getSession, authHeaders } from './auth.js';
 import { formatDuration, parseUTC, timeAgo } from './time.js';
 import { showConfirmModal } from './confirm-modal.js';
-import { createIncident, renderIncidentFromDB, updateEmptyState, resumePendingIncidents } from './incident-renderer.js';
+import { createIncident, renderIncidentFromDB, updateEmptyState, resumePendingIncidents, buildOnTicketCreated } from './incident-renderer.js';
+import { openTicketModal } from './ticket-modal.js';
 import { UI, apiError } from './strings.js';
 
 function scrollFeedToTop() {
@@ -433,6 +434,16 @@ function handleExtensionMode() {
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       target.classList.add('incident-highlight');
       setTimeout(() => target.classList.remove('incident-highlight'), 3000);
+
+      if (target.dataset.summaryTitle && !target.querySelector('.badge-sent')) {
+        openTicketModal({
+          title: target.dataset.summaryTitle,
+          transcript: target.dataset.summaryTranscript,
+          bullets: JSON.parse(target.dataset.summaryBullets),
+          incidentElement: target,
+          onTicketCreated: buildOnTicketCreated(target)
+        });
+      }
     }
   }
 }
