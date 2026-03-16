@@ -40,6 +40,11 @@ appBadges.forEach(btn => {
     appBadges.forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedApp = btn.dataset.app;
+    const webProducts = ['dkey', 'assets', 'assets-beta'];
+    if (webProducts.includes(selectedApp)) {
+      platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'Web'));
+      selectedPlatform = 'Web';
+    }
   });
 });
 
@@ -85,6 +90,7 @@ function hideModalError() {
 }
 
 function closeModal() {
+  if (submitting) return;
   closeCamera();
   modal.classList.add('hidden');
   if (attachments) {
@@ -95,7 +101,7 @@ function closeModal() {
   descriptionEl.value = '';
   assetIdInput.value = '';
   appVersionInput.value = '';
-  submitBtn.disabled = false;
+  setSubmitting(false);
   submitBtn.textContent = UI.TICKET_BTN;
   resetProgress();
   hideModalError();
@@ -266,18 +272,31 @@ function hideMissingBanner() {
   submitBtn.classList.add('bg-accent', 'hover:bg-accent-hover');
 }
 
+let submitting = false;
+
+function setSubmitting(active) {
+  submitting = active;
+  submitBtn.disabled = active;
+  cancelBtn.disabled = active;
+  closeBtn.disabled = active;
+  cancelBtn.classList.toggle('opacity-40', active);
+  closeBtn.classList.toggle('opacity-40', active);
+  attachFileBtn.disabled = active;
+  attachCameraBtn.disabled = active;
+}
+
 async function executeSubmit() {
   hideMissingBanner();
   bannerShown = false;
   const name = titleInput.value.trim();
-  submitBtn.disabled = true;
+  setSubmitting(true);
   hideModalError();
   setProgress(10);
 
   const selectedBadge = modal.querySelector('#app-badges .badge-app.selected');
   const selectedAppLabel = selectedBadge ? selectedBadge.textContent.trim() : '';
   const bullets = descriptionEl.value;
-  let markdownDescription = bullets;
+  let markdownDescription = '**Resumen de la incidencia:**\n\n' + bullets;
   if (currentTranscript) {
     markdownDescription += '\n\n---\n\n**Transcripción completa:**\n\n' + currentTranscript;
   }
@@ -299,6 +318,7 @@ async function executeSubmit() {
     if (!ticketRes.ok) {
       const err = await ticketRes.json().catch(() => ({}));
       if (err.error === 'NO_MEMBER') {
+        submitting = false;
         closeModal();
         showToast(UI.TICKET_NO_MEMBER);
         return;
@@ -331,6 +351,7 @@ async function executeSubmit() {
             await uploadAttachments(createdTaskId, attachments.getFiles());
             setProgress(100);
             setTimeout(() => {
+              submitting = false;
               closeModal();
               showToast(UI.TICKET_ATTACHMENTS_OK);
             }, 400);
@@ -342,7 +363,7 @@ async function executeSubmit() {
         });
         modalError.after(retryBtn);
 
-        submitBtn.disabled = false;
+        setSubmitting(false);
         submitBtn.textContent = UI.TICKET_BTN;
         return;
       }
@@ -352,13 +373,14 @@ async function executeSubmit() {
     markCardAsSent(ticket.url, ticket.id);
 
     setTimeout(() => {
+      submitting = false;
       closeModal();
       showToastWithLink(UI.TICKET_CREATED, UI.TICKET_VIEW_CLICKUP, ticket.url);
     }, 400);
 
   } catch (err) {
     showModalError(err.message || apiError('UNKNOWN'));
-    submitBtn.disabled = false;
+    setSubmitting(false);
     resetProgress();
   }
 }
