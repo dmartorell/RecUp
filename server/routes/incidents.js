@@ -6,7 +6,7 @@ const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/api/incidents', (req, res, next) => {
+router.get('/', (req, res, next) => {
   try {
     const limit = Math.max(1, parseInt(req.query.limit) || 20);
     const offset = Math.max(0, parseInt(req.query.offset) || 0);
@@ -15,7 +15,7 @@ router.get('/api/incidents', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.post('/api/incidents', (req, res, next) => {
+router.post('/', (req, res, next) => {
   const { transcript } = req.body || {};
   if (!transcript || !transcript.trim()) {
     return res.status(400).json({ success: false, error: 'TRANSCRIPT_REQUIRED' });
@@ -26,7 +26,7 @@ router.post('/api/incidents', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.patch('/api/incidents/:id', (req, res, next) => {
+router.patch('/:id', (req, res, next) => {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
   try {
@@ -41,7 +41,7 @@ router.patch('/api/incidents/:id', (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.delete('/api/incidents/:id', (req, res, next) => {
+router.delete('/:id', (req, res, next) => {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
   try {

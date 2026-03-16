@@ -18,7 +18,7 @@ app.use(authRouter);
 app.use(summarizeRouter);
 app.use(ticketRouter);
 app.use(attachmentRouter);
-app.use(incidentsRouter);
+app.use('/api/incidents', incidentsRouter);
 app.use(errorHandler);
 
 export { app };
