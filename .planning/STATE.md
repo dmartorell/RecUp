@@ -78,6 +78,7 @@ Recent decisions affecting current work:
 - Refactorizar frontend y backend — poner orden y reutilizar (code-quality)
 - Evaluar domain knowledge de Alfred en prompt de resumen (api)
 - Implementar testing backend y frontend (testing)
+- Desplegar servidor en Railway para testing remoto (general)
 
 
 ### Roadmap Evolution
