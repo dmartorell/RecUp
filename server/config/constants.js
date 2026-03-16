@@ -15,7 +15,7 @@ export const CLAUDE_TEMPERATURE = 0.3;
 export const SUMMARIZE_TIMEOUT_MS = 30_000;
 
 // Auth
-export const JWT_EXPIRES_IN = '7d';
+export const JWT_EXPIRES_IN = '30d';
 
 // Rate limiting
 export const RATE_LIMIT_WINDOW_MS = 60_000;

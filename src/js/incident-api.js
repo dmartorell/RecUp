@@ -1,4 +1,4 @@
-import { authHeaders } from './auth.js';
+import { authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
 
 export async function persistIncident(payload) {
   try {
@@ -7,6 +7,7 @@ export async function persistIncident(payload) {
       headers: authHeaders(),
       body: JSON.stringify(payload)
     });
+    if (isUnauthorized(res)) { handleExpiredSession(); return null; }
     if (!res.ok) return null;
     const data = await res.json();
     return data.data?.incident?.id || null;
@@ -20,11 +21,12 @@ export async function saveIncidentResult(incident, payload, sourceType, duration
   const existingId = incident.dataset.incidentId;
   if (existingId) {
     try {
-      await fetch(`/api/incidents/${existingId}`, {
+      const res = await fetch(`/api/incidents/${existingId}`, {
         method: 'PATCH',
         headers: authHeaders(),
         body: JSON.stringify(payload),
       });
+      if (isUnauthorized(res)) handleExpiredSession();
     } catch { /* degradacion graceful */ }
   } else {
     const incidentId = await persistIncident({

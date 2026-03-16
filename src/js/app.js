@@ -1,7 +1,7 @@
 import { requestMicAccess, getStream, startRecording, stopRecording, releaseStream } from './recorder.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
 import { showToast } from './toast.js';
-import { getSession, authHeaders } from './auth.js';
+import { getSession, authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
 import { formatDuration, parseUTC, timeAgo } from './time.js';
 import { showConfirmModal } from './confirm-modal.js';
 import { createIncident, renderIncidentFromDB, updateEmptyState, resumePendingIncidents, buildOnTicketCreated } from './incident-renderer.js';
@@ -402,7 +402,9 @@ clearAllBtn.addEventListener('click', () => {
   showConfirmModal(UI.CLEAR_ALL_TITLE, UI.CLEAR_ALL_MSG, async () => {
     const incidents = feed.querySelectorAll('.incident[data-incident-id]');
     const deletePromises = Array.from(incidents).map(i =>
-      fetch(`/api/incidents/${i.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() }).catch(() => {})
+      fetch(`/api/incidents/${i.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() })
+        .then(res => { if (isUnauthorized(res)) { handleExpiredSession(); } })
+        .catch(() => {})
     );
     await Promise.all(deletePromises);
     feed.innerHTML = '';
@@ -421,6 +423,7 @@ async function loadIncidents(append = false) {
   }
   try {
     const res = await fetch(`/api/incidents?limit=${INCIDENTS_LIMIT}&offset=${incidentsOffset}`, { headers: authHeaders() });
+    if (isUnauthorized(res)) { handleExpiredSession(); return; }
     if (!res.ok) return;
     const data = await res.json();
     const incidents = data.data?.incidents || [];
