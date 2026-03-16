@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: unknown
-last_updated: "2026-03-16T17:52:19.591Z"
+last_updated: "2026-03-16T18:08:00Z"
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 12
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -23,10 +23,10 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 ## Current Position
 
 Phase: 03-refactorizar-backend
-Current Plan: 01 (de 3)
-Last activity: 2026-03-16 - Completed 03-01: Config foundation (constants.js, env.js, system prompt)
+Current Plan: 03 (de 3)
+Last activity: 2026-03-16 - Completed 03-03: ClickUpService + route refactor
 
-Progress: [████░░░░░░] 42%
+Progress: [█████░░░░░] 50%
 
 ## Accumulated Context
 
@@ -66,6 +66,9 @@ Recent decisions affecting current work:
 - [Phase 02-base-de-datos-simple-para-gesti-n-de-usuarios-y-asociaci-n-de-cards]: handleExtensionMode sin fallback 'local' — sin token en params muestra login (no sesion ficticia que rompe API)
 - [Phase 03-refactorizar-backend]: JWT_SECRET required (no insecure fallback) en env.js — server exits con FATAL si falta
 - [Phase 03-refactorizar-backend]: Config-first pattern: dotenv/config movido a env.js, todo acceso a env vars via config object
+- [Phase 03-refactorizar-backend]: ClickUpService como singleton object (no class) — encapsula toda la API de ClickUp con cache de miembros a nivel de módulo
+- [Phase 03-refactorizar-backend]: assertOwnership throws Error con status/code — capturado por errorHandler global, sin 403 inline en rutas
+- [Phase 03-refactorizar-backend]: createRateLimiter factory pattern — cada llamada obtiene su propio Map de intentos aislado
 
 ### Pending Todos
 
