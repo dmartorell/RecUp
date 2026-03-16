@@ -1,122 +1,56 @@
 import { Router } from 'express';
-import db, { logDbError } from '../db.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { IncidentService } from '../services/IncidentService.js';
 
 const router = Router();
 
 router.use(authMiddleware);
 
-router.get('/api/incidents', (req, res) => {
-  const limit = Math.max(1, parseInt(req.query.limit) || 20);
-  const offset = Math.max(0, parseInt(req.query.offset) || 0);
-
+router.get('/api/incidents', (req, res, next) => {
   try {
-    const incidents = db.prepare(
-      `SELECT * FROM incidents WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
-    ).all(req.user.id, limit, offset);
-
-    const total = db.prepare(
-      'SELECT COUNT(*) as count FROM incidents WHERE user_id = ?'
-    ).get(req.user.id).count;
-
-    const parsed = incidents.map(incident => ({
-      ...incident,
-      bullets: incident.bullets ? JSON.parse(incident.bullets) : [],
-    }));
-
-    return res.json({ success: true, data: { incidents: parsed, total } });
-  } catch (err) {
-    logDbError(err, 'GET /api/incidents');
-    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
-  }
+    const limit = Math.max(1, parseInt(req.query.limit) || 20);
+    const offset = Math.max(0, parseInt(req.query.offset) || 0);
+    const data = IncidentService.list(req.user.id, { limit, offset });
+    return res.json({ success: true, data });
+  } catch (err) { next(err); }
 });
 
-router.post('/api/incidents', (req, res) => {
-  const {
-    transcript, title, bullets, status, source_type,
-    duration_ms, clickup_task_id, clickup_task_url,
-  } = req.body || {};
-
+router.post('/api/incidents', (req, res, next) => {
+  const { transcript } = req.body || {};
   if (!transcript || !transcript.trim()) {
     return res.status(400).json({ success: false, error: 'TRANSCRIPT_REQUIRED' });
   }
-
   try {
-    const bulletsJson = Array.isArray(bullets) ? JSON.stringify(bullets) : (bullets || null);
-    const result = db.prepare(
-      `INSERT INTO incidents (user_id, transcript, title, bullets, status, source_type, duration_ms, clickup_task_id, clickup_task_url)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      req.user.id,
-      transcript.trim(),
-      title || null,
-      bulletsJson,
-      status || 'procesando',
-      source_type || null,
-      duration_ms || 0,
-      clickup_task_id || null,
-      clickup_task_url || null,
-    );
-
-    const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(result.lastInsertRowid);
-    incident.bullets = incident.bullets ? JSON.parse(incident.bullets) : [];
-
+    const incident = IncidentService.create(req.user.id, req.body);
     return res.status(201).json({ success: true, data: { incident } });
-  } catch (err) {
-    logDbError(err, 'POST /api/incidents');
-    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
-  }
+  } catch (err) { next(err); }
 });
 
-router.patch('/api/incidents/:id', (req, res) => {
+router.patch('/api/incidents/:id', (req, res, next) => {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
-
   try {
-    const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
+    const incident = IncidentService.getById(id);
     if (!incident) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
-    if (incident.user_id !== req.user.id) return res.status(403).json({ success: false, error: 'UNAUTHORIZED' });
-
-    const allowed = ['clickup_task_id', 'clickup_task_url', 'status', 'title', 'bullets', 'transcript'];
-    const fields = Object.keys(req.body || {}).filter(k => allowed.includes(k));
-    if (fields.length === 0) {
-      return res.status(400).json({ success: false, error: 'NO_VALID_FIELDS' });
-    }
-
-    const values = fields.map(k => {
-      if (k === 'bullets') return Array.isArray(req.body[k]) ? JSON.stringify(req.body[k]) : req.body[k];
-      return req.body[k];
-    });
-
-    db.prepare(
-      `UPDATE incidents SET ${fields.map(f => `${f} = ?`).join(', ')} WHERE id = ?`
-    ).run(...values, id);
-
-    const updated = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
-    updated.bullets = updated.bullets ? JSON.parse(updated.bullets) : [];
-
+    IncidentService.assertOwnership(incident, req.user.id);
+    const fields = Object.keys(req.body || {});
+    if (fields.length === 0) return res.status(400).json({ success: false, error: 'NO_VALID_FIELDS' });
+    const updated = IncidentService.update(id, req.body);
+    if (!updated) return res.status(400).json({ success: false, error: 'NO_VALID_FIELDS' });
     return res.json({ success: true, data: { incident: updated } });
-  } catch (err) {
-    logDbError(err, 'PATCH /api/incidents/:id');
-    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
-  }
+  } catch (err) { next(err); }
 });
 
-router.delete('/api/incidents/:id', (req, res) => {
+router.delete('/api/incidents/:id', (req, res, next) => {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
-
   try {
-    const incident = db.prepare('SELECT * FROM incidents WHERE id = ?').get(id);
+    const incident = IncidentService.getById(id);
     if (!incident) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
-    if (incident.user_id !== req.user.id) return res.status(403).json({ success: false, error: 'UNAUTHORIZED' });
-
-    db.prepare('DELETE FROM incidents WHERE id = ?').run(id);
+    IncidentService.assertOwnership(incident, req.user.id);
+    IncidentService.delete(id);
     return res.json({ success: true });
-  } catch (err) {
-    logDbError(err, 'DELETE /api/incidents/:id');
-    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
-  }
+  } catch (err) { next(err); }
 });
 
 export default router;
