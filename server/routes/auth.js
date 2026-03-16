@@ -1,28 +1,15 @@
 import { Router } from 'express';
-import db, { logDbError } from '../db.js';
+import db from '../db.js';
 import { signToken } from '../middleware/auth.js';
+import { createRateLimiter } from '../middleware/rateLimiter.js';
+import { config } from '../config/env.js';
 
 const router = Router();
+const rateLimit = createRateLimiter();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 10;
-const loginAttempts = new Map();
 
-function rateLimit(req, res, next) {
-  const ip = req.ip;
-  const now = Date.now();
-  const attempts = loginAttempts.get(ip) || [];
-  const recent = attempts.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT_MAX) {
-    return res.status(429).json({ success: false, error: 'RATE_LIMITED' });
-  }
-  recent.push(now);
-  loginAttempts.set(ip, recent);
-  next();
-}
-
-router.post('/api/auth/register', rateLimit, async (req, res) => {
+router.post('/api/auth/register', rateLimit, async (req, res, next) => {
   const { name, email, password } = req.body || {};
 
   if (!name || typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 100) {
@@ -35,9 +22,8 @@ router.post('/api/auth/register', rateLimit, async (req, res) => {
     return res.status(400).json({ success: false, error: 'WEAK_PASSWORD' });
   }
 
-  const allowedDomain = process.env.ALLOWED_EMAIL_DOMAIN;
-  if (allowedDomain) {
-    const domain = `@${allowedDomain.replace(/^@/, '')}`;
+  if (config.allowedEmailDomain) {
+    const domain = `@${config.allowedEmailDomain.replace(/^@/, '')}`;
     if (!email.toLowerCase().endsWith(domain.toLowerCase())) {
       return res.status(400).json({ success: false, error: 'EMAIL_DOMAIN' });
     }
@@ -61,12 +47,11 @@ router.post('/api/auth/register', rateLimit, async (req, res) => {
     if (err?.message?.includes('UNIQUE')) {
       return res.status(409).json({ success: false, error: 'EMAIL_TAKEN' });
     }
-    logDbError(err, 'POST /api/auth/register');
-    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
+    next(err);
   }
 });
 
-router.post('/api/auth/login', rateLimit, async (req, res) => {
+router.post('/api/auth/login', rateLimit, async (req, res, next) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
@@ -94,8 +79,7 @@ router.post('/api/auth/login', rateLimit, async (req, res) => {
       },
     });
   } catch (err) {
-    logDbError(err, 'POST /api/auth/login');
-    return res.status(500).json({ success: false, error: 'INTERNAL_ERROR' });
+    next(err);
   }
 });
 
