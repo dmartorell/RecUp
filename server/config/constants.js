@@ -14,6 +14,11 @@ export const CLAUDE_MAX_TOKENS = 1024;
 export const CLAUDE_TEMPERATURE = 0.3;
 export const SUMMARIZE_TIMEOUT_MS = 30_000;
 
+// OpenAI / Summarize
+export const OPENAI_MODEL = 'gpt-4o-mini';
+export const OPENAI_MAX_TOKENS = 1024;
+export const OPENAI_TEMPERATURE = 0.3;
+
 // Auth
 export const JWT_EXPIRES_IN = '30d';
 

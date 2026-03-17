@@ -105,7 +105,7 @@ describe('POST /api/summarize', () => {
     expect(Array.isArray(body.bullets)).toBe(true);
   });
 
-  test('con mock fetch error -> 401 + CLAUDE_API_ERROR', async () => {
+  test('con mock fetch error -> 401 + AI_API_ERROR', async () => {
     await setUserSettings({ anthropic_api_key: 'test-api-key' });
 
     global.fetch = mock(async (url, opts) => {
@@ -126,7 +126,7 @@ describe('POST /api/summarize', () => {
 
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe('CLAUDE_API_ERROR');
+    expect(body.error).toBe('AI_API_ERROR');
   });
 });
 
