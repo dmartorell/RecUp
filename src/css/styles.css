@@ -367,6 +367,8 @@ body {
   font-size: 0.8rem;
   cursor: pointer;
   color: #4b5563;
+  margin-top: 12px;
+  display: block;
 }
 
 .btn-retry:hover {
