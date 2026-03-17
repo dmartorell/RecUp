@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import db from '../db.js';
 
+const DEFAULT_CLICKUP_LIST_ID = '193679011';
+
 const router = Router();
 
 router.get('/api/settings', authMiddleware, async (req, res, next) => {
@@ -13,7 +15,7 @@ router.get('/api/settings', authMiddleware, async (req, res, next) => {
     const row = result.rows[0] || {};
     return res.json({
       clickup_api_key: row.clickup_api_key || '',
-      clickup_list_id: row.clickup_list_id || '',
+      clickup_list_id: row.clickup_list_id || DEFAULT_CLICKUP_LIST_ID,
       anthropic_api_key: row.anthropic_api_key || '',
       openai_api_key: row.openai_api_key || '',
       ai_provider: row.ai_provider || 'anthropic',

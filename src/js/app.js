@@ -444,11 +444,16 @@ clearAllBtn.addEventListener('click', () => {
 let incidentsOffset = 0;
 const INCIDENTS_LIMIT = 25;
 
+const feedSpinner = document.getElementById('feed-spinner');
+
 async function loadIncidents(append = false) {
   if (!append) {
     incidentsOffset = 0;
     document.getElementById('empty-state').classList.add('hidden');
     feed.innerHTML = '';
+    feedSpinner.classList.remove('hidden');
+    clearAllBtn.disabled = true;
+    clearAllBtn.classList.add('opacity-40', 'pointer-events-none');
   }
   try {
     const res = await fetch(`/api/incidents?limit=${INCIDENTS_LIMIT}&offset=${incidentsOffset}`, { headers: authHeaders() });
@@ -476,8 +481,10 @@ async function loadIncidents(append = false) {
       feed.appendChild(loadMoreBtn);
     }
 
+    feedSpinner.classList.add('hidden');
     updateEmptyState();
   } catch (e) {
+    feedSpinner.classList.add('hidden');
     console.warn('loadIncidents:', e);
   }
 }

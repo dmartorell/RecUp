@@ -32,7 +32,7 @@ const missingBanner = document.getElementById('missing-fields-banner');
 const missingList = document.getElementById('missing-fields-list');
 const missingCompleteBtn = document.getElementById('missing-banner-cta');
 let selectedApp = 'alfred';
-let selectedPlatform = 'iOS';
+let selectedPlatforms = ['iOS'];
 
 appBadges.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -44,20 +44,32 @@ appBadges.forEach(btn => {
     const iosProducts = ['alfred', 'nn', 'lavidda'];
     if (webProducts.includes(selectedApp)) {
       platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'Web'));
-      selectedPlatform = 'Web';
+      selectedPlatforms = ['Web'];
     } else if (iosProducts.includes(selectedApp)) {
       platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
-      selectedPlatform = 'iOS';
+      selectedPlatforms = ['iOS'];
     }
   });
 });
 
 platformBadges.forEach(btn => {
   btn.addEventListener('click', () => {
-    if (btn.classList.contains('selected')) return;
-    platformBadges.forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-    selectedPlatform = btn.dataset.platform;
+    const platform = btn.dataset.platform;
+    if (platform === 'Web') {
+      platformBadges.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedPlatforms = ['Web'];
+    } else {
+      const webBtn = [...platformBadges].find(b => b.dataset.platform === 'Web');
+      if (webBtn) webBtn.classList.remove('selected');
+      if (btn.classList.contains('selected')) {
+        btn.classList.remove('selected');
+        selectedPlatforms = selectedPlatforms.filter(p => p !== platform);
+      } else {
+        btn.classList.add('selected');
+        selectedPlatforms = [...selectedPlatforms.filter(p => p !== 'Web'), platform];
+      }
+    }
   });
 });
 
@@ -113,7 +125,7 @@ function closeModal() {
   appBadges.forEach(b => b.classList.remove('selected'));
   platformBadges.forEach(b => b.classList.remove('selected'));
   selectedApp = '';
-  selectedPlatform = '';
+  selectedPlatforms = [];
   currentIncidentElement = null;
   currentTranscript = '';
   createdTaskId = null;
@@ -137,7 +149,7 @@ export function openTicketModal(incidentData) {
   descriptionEl.value = bulletsText;
 
   selectedApp = 'alfred';
-  selectedPlatform = 'iOS';
+  selectedPlatforms = ['iOS'];
   appBadges.forEach(b => b.classList.toggle('selected', b.dataset.app === 'alfred'));
   platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
 
@@ -250,7 +262,7 @@ function getLoggedEmail() {
 function getMissingFields() {
   const missing = [];
   if (!selectedApp) missing.push(UI.TICKET_MISSING_APP);
-  if (!selectedPlatform) missing.push(UI.TICKET_MISSING_PLATFORM);
+  if (!selectedPlatforms.length) missing.push(UI.TICKET_MISSING_PLATFORM);
   if (!appVersionInput.value.trim()) missing.push(UI.TICKET_MISSING_APP_VERSION);
   if (!assetIdInput.value.trim()) missing.push(UI.TICKET_MISSING_ASSET_ID);
   return missing;
@@ -316,7 +328,7 @@ async function executeSubmit() {
         markdown_description: markdownDescription,
         reporterEmail: getLoggedEmail(),
         assetId: assetIdInput.value.trim(),
-        platform: selectedPlatform,
+        platform: selectedPlatforms.join(', '),
         product: selectedAppLabel,
         appVersion: appVersionInput.value.trim()
       })
@@ -416,7 +428,7 @@ missingCompleteBtn.addEventListener('click', () => {
   hideMissingBanner();
   bannerShown = false;
   const firstEmpty = !selectedApp ? appBadges[0]
-    : !selectedPlatform ? platformBadges[0]
+    : !selectedPlatforms.length ? platformBadges[0]
     : !appVersionInput.value.trim() ? appVersionInput
     : assetIdInput;
   firstEmpty.focus();

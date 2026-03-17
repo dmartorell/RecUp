@@ -13,13 +13,12 @@ const emptyState = document.getElementById('empty-state');
 const clearAllBtn = document.getElementById('clear-all-btn');
 
 export function updateEmptyState() {
-  if (feed.children.length === 0) {
-    emptyState.classList.remove('hidden');
-    clearAllBtn.classList.add('hidden');
-  } else {
-    emptyState.classList.add('hidden');
-    clearAllBtn.classList.remove('hidden');
-  }
+  const empty = feed.children.length === 0;
+  emptyState.classList.toggle('hidden', !empty);
+  clearAllBtn.disabled = empty;
+  clearAllBtn.classList.toggle('opacity-40', empty);
+  clearAllBtn.classList.toggle('cursor-not-allowed', empty);
+  clearAllBtn.classList.toggle('pointer-events-none', empty);
 }
 
 function buildIncidentHTML({ typeBadgeClass, typeBadgeLabel, statusBadge, durationBadge, timeLabel, transcript, showSpinner, noBugHTML }) {

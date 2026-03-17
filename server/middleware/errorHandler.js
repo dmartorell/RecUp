@@ -1,5 +1,6 @@
 export function errorHandler(err, req, res, next) {
-  const status = err.status || 500;
+  const rawStatus = err.status || 500;
+  const status = rawStatus === 401 ? 502 : rawStatus;
   const code = err.code || 'INTERNAL_ERROR';
   if (status >= 500) console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
   return res.status(status).json({ success: false, error: code });
