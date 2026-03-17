@@ -328,10 +328,12 @@ export function renderIncidentFromDB(dbIncident) {
 export function resumePendingIncidents() {
   const pendingIncidents = feed.querySelectorAll('.incident');
   pendingIncidents.forEach(incident => {
+    if (incident.dataset.summarizing) return;
     const badge = incident.querySelector('.js-status-badge');
     if (!badge || badge.textContent.trim() !== UI.STATUS_PROCESSING) return;
     const transcript = incident.dataset.transcript;
     if (!transcript) return;
+    incident.dataset.summarizing = '1';
     const sourceType = incident.dataset.sourceType || 'text';
     const durationMs = parseInt(incident.dataset.durationMs) || 0;
     runSummarize(incident, transcript, sourceType, durationMs);

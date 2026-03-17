@@ -559,7 +559,20 @@ function handlePostMessage(event) {
   if (token && email && !getSession()?.token) {
     localStorage.setItem('recup_session', JSON.stringify({ token, user: { email, ...(name && { name }) } }));
     showApp(email);
-    loadIncidents().then(() => resumePendingIncidents());
+    fetch('/api/auth/me', { headers: authHeaders() })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.data?.user) {
+          const session = getSession();
+          localStorage.setItem('recup_session', JSON.stringify({ ...session, user: { ...session.user, ...data.data.user } }));
+          showApp(data.data.user.email);
+        }
+      });
+    loadIncidents().then(() => {
+      resumePendingIncidents();
+      if (highlight) highlightTarget(highlight);
+    });
+    return;
   }
 
   if (!getSession()?.token) return;
@@ -570,22 +583,39 @@ function handlePostMessage(event) {
   }
 
   if (highlight) {
-    const target = feed.querySelector(`.incident[data-incident-id="${highlight}"]`);
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      target.classList.add('incident-highlight');
-      setTimeout(() => target.classList.remove('incident-highlight'), 3000);
-
-      if (target.dataset.summaryTitle && !target.querySelector('.badge-sent')) {
-        openTicketModal({
-          title: target.dataset.summaryTitle,
-          transcript: target.dataset.summaryTranscript,
-          bullets: JSON.parse(target.dataset.summaryBullets),
-          incidentElement: target,
-          onTicketCreated: buildOnTicketCreated(target)
+    const existing = feed.querySelector(`.incident[data-incident-id="${highlight}"]`);
+    if (existing) {
+      highlightTarget(highlight);
+    } else {
+      fetch(`/api/incidents/${highlight}`, { headers: authHeaders() })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data?.data?.incident) return;
+          const el = renderIncidentFromDB(data.data.incident);
+          feed.prepend(el);
+          updateEmptyState();
+          resumePendingIncidents();
+          highlightTarget(highlight);
         });
-      }
     }
+  }
+}
+
+function highlightTarget(id) {
+  const target = feed.querySelector(`.incident[data-incident-id="${id}"]`);
+  if (!target) return;
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  target.classList.add('incident-highlight');
+  setTimeout(() => target.classList.remove('incident-highlight'), 3000);
+
+  if (target.dataset.summaryTitle && !target.querySelector('.badge-sent')) {
+    openTicketModal({
+      title: target.dataset.summaryTitle,
+      transcript: target.dataset.summaryTranscript,
+      bullets: JSON.parse(target.dataset.summaryBullets),
+      incidentElement: target,
+      onTicketCreated: buildOnTicketCreated(target)
+    });
   }
 }
 

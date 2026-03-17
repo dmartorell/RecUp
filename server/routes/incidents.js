@@ -26,6 +26,17 @@ router.post('/', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+router.get('/:id', async (req, res, next) => {
+  const id = parseInt(req.params.id);
+  if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
+  try {
+    const incident = await IncidentService.getById(id);
+    if (!incident) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
+    IncidentService.assertOwnership(incident, req.user.id);
+    return res.json({ success: true, data: { incident } });
+  } catch (err) { next(err); }
+});
+
 router.patch('/:id', async (req, res, next) => {
   const id = parseInt(req.params.id);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });

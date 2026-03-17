@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { seedTestUser, cleanDb } from './setup.js';
 
-let app, server, baseUrl;
+let app, server, baseUrl, meToken;
 
 beforeAll(async () => {
   const mod = await import('../server/app.js');
@@ -129,5 +129,27 @@ describe('POST /api/auth/login', () => {
     expect(res.status).toBe(401);
     const body = await res.json();
     expect(body.error).toBe('INVALID_CREDENTIALS');
+  });
+});
+
+describe('GET /api/auth/me', () => {
+  beforeAll(async () => {
+    const user = await seedTestUser('Me User', 'me@example.com', 'password123');
+    meToken = user.token;
+  });
+
+  test('con token valido -> 200 + user', async () => {
+    const res = await fetch(`${baseUrl}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${meToken}` },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.user.email).toBe('me@example.com');
+  });
+
+  test('sin token -> 401', async () => {
+    const res = await fetch(`${baseUrl}/api/auth/me`);
+    expect(res.status).toBe(401);
   });
 });

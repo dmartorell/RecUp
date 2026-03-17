@@ -1,5 +1,15 @@
 importScripts('config.js');
 
+function injectPostMessage(tabId, msg, retries = 5, delay = 400) {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    func: (m) => window.postMessage(m, '*'),
+    args: [msg],
+  }).catch(() => {
+    if (retries > 0) setTimeout(() => injectPostMessage(tabId, msg, retries - 1, delay), delay);
+  });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'send-to-recup',
@@ -23,11 +33,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
       if (tabs.length > 0) {
         const tabId = tabs[0].id;
         const data = { type: 'recup:extension-data', contextText: selectionText, token, email, name };
-        chrome.scripting.executeScript({
-          target: { tabId },
-          func: (msg) => window.postMessage(msg, '*'),
-          args: [data],
-        });
+        injectPostMessage(tabId, data);
         chrome.tabs.update(tabId, { active: true });
         chrome.windows.update(tabs[0].windowId, { focused: true });
       } else {

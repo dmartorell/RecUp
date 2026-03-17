@@ -12,6 +12,16 @@ const API_ERRORS = {
 };
 function apiError(code) { return API_ERRORS[code] || API_ERRORS.UNKNOWN; }
 
+function injectPostMessage(tabId, msg, retries = 5, delay = 400) {
+  chrome.scripting.executeScript({
+    target: { tabId },
+    func: (m) => window.postMessage(m, '*'),
+    args: [msg],
+  }).catch(() => {
+    if (retries > 0) setTimeout(() => injectPostMessage(tabId, msg, retries - 1, delay), delay);
+  });
+}
+
 const UI = {
   LOGIN_BTN: 'Entrar',
   LOGIN_BTN_LOADING: 'Entrando...',
@@ -339,19 +349,14 @@ els.sendBtn.addEventListener('click', () => {
       const email = stored.recup_email || '';
       const name = stored.recup_name || '';
       chrome.tabs.query({ url: RECUP_URL + '/*' }, (tabs) => {
+        const msg = { type: 'recup:extension-data', token, email, name, highlight: incidentId || '' };
         if (tabs.length > 0) {
           const tabId = tabs[0].id;
-          const data = { type: 'recup:extension-data', token, email, name, highlight: incidentId || '' };
-          chrome.scripting.executeScript({
-            target: { tabId },
-            func: (msg) => window.postMessage(msg, '*'),
-            args: [data],
-          });
+          injectPostMessage(tabId, msg);
           chrome.tabs.update(tabId, { active: true });
           chrome.windows.update(tabs[0].windowId, { focused: true });
         } else {
-          const url = RECUP_URL + '/?highlight=' + (incidentId || '') + '&token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email) + '&name=' + encodeURIComponent(name);
-          chrome.tabs.create({ url });
+          chrome.tabs.create({ url: RECUP_URL + '/' });
         }
         window.close();
       });

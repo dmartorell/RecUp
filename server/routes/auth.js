@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import db from '../db.js';
-import { signToken } from '../middleware/auth.js';
+import { signToken, authMiddleware } from '../middleware/auth.js';
 import { createRateLimiter } from '../middleware/rateLimiter.js';
 import { config } from '../config/env.js';
 import { ClickUpService } from '../services/ClickUpService.js';
@@ -98,6 +98,15 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+router.get('/api/auth/me', authMiddleware, async (req, res, next) => {
+  try {
+    const result = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [req.user.id] });
+    const user = result.rows[0];
+    if (!user) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
+    return res.json({ success: true, data: { user: { name: user.name, email: user.email, avatar: user.avatar_url || null } } });
+  } catch (err) { next(err); }
 });
 
 export default router;

@@ -115,3 +115,41 @@ describe('Incidents CRUD', () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe('GET /api/incidents/:id', () => {
+  let detailId;
+
+  beforeAll(async () => {
+    const res = await fetch(`${baseUrl}/api/incidents`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+      body: JSON.stringify({ transcript: 'Incident para detail' }),
+    });
+    const body = await res.json();
+    detailId = body.data.incident.id;
+  });
+
+  test('GET /api/incidents/:id -> 200 + incident', async () => {
+    const res = await fetch(`${baseUrl}/api/incidents/${detailId}`, {
+      headers: { 'Authorization': `Bearer ${userToken}` },
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.incident.id).toBe(detailId);
+  });
+
+  test('GET /api/incidents/:id de otro user -> 403', async () => {
+    const res = await fetch(`${baseUrl}/api/incidents/${detailId}`, {
+      headers: { 'Authorization': `Bearer ${user2Token}` },
+    });
+    expect(res.status).toBe(403);
+  });
+
+  test('GET /api/incidents/:id inexistente -> 404', async () => {
+    const res = await fetch(`${baseUrl}/api/incidents/999999`, {
+      headers: { 'Authorization': `Bearer ${userToken}` },
+    });
+    expect(res.status).toBe(404);
+  });
+});
