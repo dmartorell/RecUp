@@ -12,7 +12,7 @@ Funciona como una web en el navegador (localhost:3000) y tiene una extension de 
 - **Web** — Lo que el usuario ve y usa en el navegador
 - **Extension Chrome** — Un atajo para enviar texto desde cualquier pagina
 - **Base de datos** — Un archivo SQLite donde se guardan usuarios e incidencias
-- **Claude (IA)** — Analiza el texto y decide si es un bug, le pone titulo y puntos clave
+- **IA** — Analiza el texto y decide si es un bug, le pone titulo y puntos clave. El usuario puede elegir entre Claude (Anthropic) o GPT-4o mini (OpenAI) desde Configuración
 - **ClickUp** — Donde se crean los tickets finales
 
 ---
@@ -85,8 +85,8 @@ Si alguien intenta hacer login o registro mas de 10 veces en un minuto desde la 
 
 ### Paso 3 — Analisis con IA
 
-1. La web envia la transcripcion al servidor, que la reenvia a Claude (IA de Anthropic)
-2. Claude analiza el texto y decide:
+1. La web envia la transcripcion al servidor, que la reenvia al proveedor de IA configurado (Anthropic o OpenAI)
+2. La IA analiza el texto y decide:
    - **Si es un bug**: devuelve un titulo corto y una lista de puntos clave (solo hechos, sin sugerencias)
    - **Si no es un bug** (por ejemplo, "hola, probando microfono"): lo marca como no-bug
 3. El servidor tiene 30 segundos para recibir respuesta. Si tarda mas, da error de timeout
@@ -187,20 +187,25 @@ Si el usuario adjunto fotos o archivos al ticket:
 
 ---
 
-## Como funciona la IA (Claude)
+## Como funciona la IA
 
-RecUp usa Claude Haiku 4.5 (un modelo rapido y economico) para analizar las transcripciones.
+RecUp puede usar dos proveedores de IA, ambos con modelos rapidos y economicos. El usuario elige cual usar desde Configuración (icono de perfil → Configuración → Proveedor de IA):
+
+- **Anthropic** — Claude Haiku 4.5 (opcion por defecto)
+- **OpenAI** — GPT-4o mini
+
+Cada proveedor usa su propia API key, que el usuario configura en la misma pantalla.
 
 ### Que hace exactamente
 
-Recibe el texto que dijo o escribio el usuario y responde con un JSON que dice:
+Ambos modelos reciben el mismo prompt de sistema. Reciben el texto que dijo o escribio el usuario y responden con un JSON que dice:
 
 - **Si es un bug**: titulo corto (maximo 10 palabras) + transcripcion corregida + lista de puntos clave
 - **Si no es un bug**: solo la transcripcion corregida
 
-### Reglas de la IA
+### Reglas del prompt
 
-- Es muy permisiva: si el usuario menciona que algo no funciona, falta, esta roto o le sale un error, lo cuenta como bug
+- Es muy permisivo: si el usuario menciona que algo no funciona, falta, esta roto o le sale un error, lo cuenta como bug
 - Solo marca como "no es bug" si el mensaje es un saludo, prueba de microfono o algo sin ninguna queja
 - Los puntos clave son solo hechos ("el usuario no puede iniciar sesion"), nunca hipotesis ni sugerencias ("posible problema de red")
 

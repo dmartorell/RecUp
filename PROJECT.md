@@ -12,7 +12,7 @@
 | Backend | Express 4 (ESM) |
 | Base de datos | Turso (@libsql/client) — SQLite remoto |
 | Auth | JWT (jsonwebtoken) + bcryptjs |
-| IA | Anthropic API (Claude Haiku 4.5) |
+| IA | Anthropic API (Claude Haiku 4.5) o OpenAI API (GPT-4o mini) — configurable por usuario |
 | Integraciones | ClickUp API v2 |
 | Frontend | Vanilla JS (ESM modules), HTML, CSS |
 | Extensión | Chrome Extension Manifest V3 |
@@ -25,7 +25,9 @@
                                                                     |
                                                           +---------+---------+
                                                           |                   |
-                                                   [Anthropic API]    [ClickUp API]
+                                          +-----------+-----------+    [ClickUp API]
+                                          |                       |
+                                   [Anthropic API]          [OpenAI API]
 ```
 
 ---
@@ -97,6 +99,8 @@ RecUp/
 | clickup_api_key | TEXT | nullable — API key personal de ClickUp |
 | clickup_list_id | TEXT | nullable — ID de la lista de ClickUp donde se crean los tickets |
 | anthropic_api_key | TEXT | nullable — API key personal de Anthropic |
+| openai_api_key | TEXT | nullable — API key personal de OpenAI |
+| ai_provider | TEXT | DEFAULT 'anthropic' — proveedor activo: `'anthropic'` o `'openai'` |
 | created_at | TEXT | DEFAULT datetime('now') |
 
 ### Tabla `incidents`
@@ -197,7 +201,7 @@ RecUp/
 
 | Metodo | Path | Auth | Body | Respuesta OK | Errores |
 |---|---|---|---|---|---|
-| POST | `/api/summarize` | No | `{ transcript }` | 200 `{ is_bug, title?, transcript, bullets[] }` | 400 TRANSCRIPT_REQUIRED; 500 API_KEY_MISSING; 502 EMPTY_RESPONSE, INVALID_JSON; 504 TIMEOUT (30s) |
+| POST | `/api/summarize` | Bearer | `{ transcript }` | 200 `{ is_bug, title?, transcript, bullets[] }` | 400 TRANSCRIPT_REQUIRED, SETTINGS_NOT_CONFIGURED; 502 EMPTY_RESPONSE, INVALID_JSON; 504 TIMEOUT (30s) |
 
 ### Ticket (ClickUp)
 
@@ -217,9 +221,10 @@ RecUp/
 
 ### Manifest V3
 
-- **Permisos:** `storage`, `tabs`, `contextMenus`
-- **Host permissions:** `http://localhost:3000/*`
+- **Permisos:** `storage`, `tabs`, `contextMenus`, `scripting`
+- **Host permissions:** `https://recup.onrender.com/*`, `http://localhost:3000/*`
 - **Service worker:** `background.js`
+- **Content script:** `content.js` — inyectado en las URLs de la app; escucha `recup:logout` postMessage y lo retransmite al background para limpiar `chrome.storage.local`
 - **Popup:** `popup.html` + `popup.js`
 
 ### Service worker (`background.js`)
@@ -365,13 +370,18 @@ DOMContentLoaded → loadIncidents()
 
 ---
 
-## 10. Integracion Claude
+## 10. Integracion IA
 
-### Modelo
+El usuario elige el proveedor desde Configuración. El servidor usa `ai_provider` de la BD para enrutar la llamada.
 
-- `claude-haiku-4-5-20251001`
+### Proveedores disponibles
 
-### Configuracion
+| Proveedor | Modelo | API endpoint |
+|---|---|---|
+| `anthropic` (default) | `claude-haiku-4-5-20251001` | `https://api.anthropic.com/v1/messages` |
+| `openai` | `gpt-4o-mini` | `https://api.openai.com/v1/chat/completions` |
+
+### Configuracion comun
 
 | Parametro | Valor |
 |---|---|
