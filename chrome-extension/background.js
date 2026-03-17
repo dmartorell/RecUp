@@ -19,16 +19,22 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     const email = stored.recup_email || '';
     const name = stored.recup_name || '';
 
-    let url = `${RECUP_URL}/?contextText=${contextText}`;
-    if (token && email) {
-      url += `&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
-    }
-
     chrome.tabs.query({ url: `${RECUP_URL}/*` }, (tabs) => {
       if (tabs.length > 0) {
-        chrome.tabs.update(tabs[0].id, { url, active: true });
+        const tabId = tabs[0].id;
+        const data = { type: 'recup:extension-data', contextText: selectionText, token, email, name };
+        chrome.scripting.executeScript({
+          target: { tabId },
+          func: (msg) => window.postMessage(msg, '*'),
+          args: [data],
+        });
+        chrome.tabs.update(tabId, { active: true });
         chrome.windows.update(tabs[0].windowId, { focused: true });
       } else {
+        let url = `${RECUP_URL}/?contextText=${contextText}`;
+        if (token && email) {
+          url += `&token=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}`;
+        }
         chrome.tabs.create({ url });
       }
     });
