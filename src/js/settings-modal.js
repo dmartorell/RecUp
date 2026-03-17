@@ -6,7 +6,7 @@ const modal = document.getElementById('settings-modal');
 const closeBtn = document.getElementById('settings-close-btn');
 const cancelBtn = document.getElementById('settings-cancel-btn');
 const saveBtn = document.getElementById('settings-save-btn');
-const providerSelect = document.getElementById('settings-ai-provider');
+const providerRadios = document.querySelectorAll('input[name="ai-provider"]');
 const anthropicSection = document.getElementById('settings-anthropic-section');
 const openaiSection = document.getElementById('settings-openai-section');
 const anthropicKeyInput = document.getElementById('settings-anthropic-key');
@@ -15,13 +15,17 @@ const clickupKeyInput = document.getElementById('settings-clickup-key');
 const clickupListInput = document.getElementById('settings-clickup-list');
 const errorEl = document.getElementById('settings-error');
 
+function getSelectedProvider() {
+  return document.querySelector('input[name="ai-provider"]:checked')?.value || 'anthropic';
+}
+
 function updateProviderVisibility() {
-  const isOpenAI = providerSelect.value === 'openai';
+  const isOpenAI = getSelectedProvider() === 'openai';
   anthropicSection.classList.toggle('hidden', isOpenAI);
   openaiSection.classList.toggle('hidden', !isOpenAI);
 }
 
-providerSelect.addEventListener('change', updateProviderVisibility);
+providerRadios.forEach(r => r.addEventListener('change', updateProviderVisibility));
 
 function showError(msg) {
   errorEl.textContent = msg;
@@ -37,7 +41,8 @@ async function loadSettings() {
   if (isUnauthorized(res)) { handleExpiredSession(); return; }
   if (!res.ok) return;
   const data = await res.json();
-  providerSelect.value = data.ai_provider || 'anthropic';
+  const provider = data.ai_provider || 'anthropic';
+  providerRadios.forEach(r => { r.checked = r.value === provider; });
   anthropicKeyInput.value = data.anthropic_api_key || '';
   openaiKeyInput.value = data.openai_api_key || '';
   clickupKeyInput.value = data.clickup_api_key || '';
@@ -67,7 +72,7 @@ saveBtn.addEventListener('click', async () => {
     method: 'PUT',
     headers: authHeaders(),
     body: JSON.stringify({
-      ai_provider: providerSelect.value,
+      ai_provider: getSelectedProvider(),
       anthropic_api_key: anthropicKeyInput.value.trim(),
       openai_api_key: openaiKeyInput.value.trim(),
       clickup_api_key: clickupKeyInput.value.trim(),
