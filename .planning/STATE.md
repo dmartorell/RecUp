@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 
 Phase: 03-refactorizar-backend
 Current Plan: 03 (de 3)
-Last activity: 2026-03-16 - Completed quick-13: tests de integración backend
+Last activity: 2026-03-17 - Completed quick task 14: la todo de postMessage
 
 Progress: [█████░░░░░] 50%
 
@@ -103,3 +103,4 @@ None.
 | 11 | Form labels, badges y auto-select plataforma Web | 2026-03-16 | 9c7c234 | [11-form-labels-badges-y-auto-select-platafo](./quick/11-form-labels-badges-y-auto-select-platafo/) |
 | 12 | Enviar a RecUp desde Chrome context menu + clipboard | 2026-03-16 | 04a8c06 | [12-enviar-a-recup-desde-chrome-context-menu](./quick/12-enviar-a-recup-desde-chrome-context-menu/) |
 | 13 | Tests de integración backend: auth, incidents CRUD, rutas proxy con mock fetch | 2026-03-16 | 3d6b0da | [13-implementar-testing-backend-tests-de-int](./quick/13-implementar-testing-backend-tests-de-int/) |
+| 14 | la todo de postMessage | 2026-03-17 | 71593be | [14-la-todo-de-postmessage](./quick/14-la-todo-de-postmessage/) |
