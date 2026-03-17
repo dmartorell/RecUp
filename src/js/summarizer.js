@@ -1,9 +1,10 @@
+import { authHeaders } from './auth.js';
 import { apiError } from './strings.js';
 
 export async function summarize(transcript) {
   const response = await fetch('/api/summarize', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: authHeaders(),
     body: JSON.stringify({ transcript }),
   });
 

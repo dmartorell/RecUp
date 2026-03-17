@@ -2,7 +2,8 @@ import { Router } from 'express';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { config } from '../config/env.js';
+import { authMiddleware } from '../middleware/auth.js';
+import { getUserSettings } from '../db.js';
 import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS, CLAUDE_TEMPERATURE, SUMMARIZE_TIMEOUT_MS } from '../config/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -11,16 +12,17 @@ const SYSTEM_PROMPT = readFileSync(join(__dirname, '..', 'config', 'prompts', 's
 
 const router = Router();
 
-router.post('/api/summarize', async (req, res, next) => {
+router.post('/api/summarize', authMiddleware, async (req, res, next) => {
   const { transcript } = req.body;
 
   if (!transcript || !transcript.trim()) {
     return res.status(400).json({ error: 'TRANSCRIPT_REQUIRED' });
   }
 
-  const apiKey = config.anthropicApiKey;
+  const settings = await getUserSettings(req.user.id);
+  const apiKey = settings.anthropic_api_key;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API_KEY_MISSING' });
+    return res.status(400).json({ error: 'SETTINGS_NOT_CONFIGURED' });
   }
 
   const controller = new AbortController();

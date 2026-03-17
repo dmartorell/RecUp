@@ -53,6 +53,17 @@ export async function initDb() {
   `);
 
   try { await db.execute('ALTER TABLE users ADD COLUMN avatar_url TEXT'); } catch {}
+  try { await db.execute('ALTER TABLE users ADD COLUMN clickup_api_key TEXT'); } catch {}
+  try { await db.execute('ALTER TABLE users ADD COLUMN clickup_list_id TEXT'); } catch {}
+  try { await db.execute('ALTER TABLE users ADD COLUMN anthropic_api_key TEXT'); } catch {}
+}
+
+export async function getUserSettings(userId) {
+  const result = await db.execute({
+    sql: 'SELECT clickup_api_key, clickup_list_id, anthropic_api_key FROM users WHERE id = ?',
+    args: [userId],
+  });
+  return result.rows[0] || {};
 }
 
 export default db;

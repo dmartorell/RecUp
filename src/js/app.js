@@ -6,6 +6,7 @@ import { formatDuration, parseUTC, timeAgo } from './time.js';
 import { showConfirmModal } from './confirm-modal.js';
 import { createIncident, renderIncidentFromDB, updateEmptyState, resumePendingIncidents, buildOnTicketCreated } from './incident-renderer.js';
 import { openTicketModal } from './ticket-modal.js';
+import { openSettingsModal } from './settings-modal.js';
 import { UI, apiError } from './strings.js';
 
 function scrollFeedToTop() {
@@ -197,7 +198,23 @@ loginPasswordInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') loginBtn.click();
 });
 
+const avatarMenuBtn = document.getElementById('btn-avatar-menu');
+const avatarDropdown = document.getElementById('avatar-dropdown');
+
+avatarMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  avatarDropdown.classList.toggle('hidden');
+});
+
+document.addEventListener('click', () => avatarDropdown.classList.add('hidden'));
+
+document.getElementById('btn-settings').addEventListener('click', () => {
+  avatarDropdown.classList.add('hidden');
+  openSettingsModal();
+});
+
 document.getElementById('btn-logout').addEventListener('click', () => {
+  avatarDropdown.classList.add('hidden');
   showConfirmModal(UI.LOGOUT_TITLE, UI.LOGOUT_MSG, () => {
     localStorage.removeItem('recup_session');
     location.reload();

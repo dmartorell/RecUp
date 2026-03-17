@@ -79,6 +79,11 @@ export const UI = {
   TEXT_INPUT_TITLE: 'Reportar incidencia',
   TEXT_INPUT_PLACEHOLDER: 'Sé tan descriptivo como puedas...',
 
+  SETTINGS_TITLE: 'Configuración',
+  SETTINGS_SAVED: 'Configuración guardada.',
+  SETTINGS_SAVE_ERROR: 'Error al guardar. Inténtalo de nuevo.',
+  SETTINGS_MENU_ITEM: 'Configuración',
+
 };
 
 export const API_ERRORS = {
@@ -97,6 +102,7 @@ export const API_ERRORS = {
   TRANSCRIPT_REQUIRED: 'Transcript es obligatorio',
   NAME_REQUIRED: 'Nombre es obligatorio',
   CLICKUP_NOT_CONFIGURED: 'ClickUp no está configurado en el servidor',
+  SETTINGS_NOT_CONFIGURED: 'Configura tus API keys en Configuración antes de continuar.',
   NO_MEMBER: 'No eres miembro del workspace de ClickUp',
   TASK_ID_REQUIRED: 'Task ID es obligatorio',
   FILE_REQUIRED: 'Se requiere al menos un archivo',

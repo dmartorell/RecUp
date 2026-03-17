@@ -1,20 +1,24 @@
 import { Router } from 'express';
 import { ClickUpService } from '../services/ClickUpService.js';
 import { CLICKUP_CUSTOM_FIELD_IDS } from '../config/constants.js';
-import { config } from '../config/env.js';
+import { authMiddleware, } from '../middleware/auth.js';
+import { getUserSettings } from '../db.js';
 
 const router = Router();
 
-router.post('/api/ticket', async (req, res, next) => {
+router.post('/api/ticket', authMiddleware, async (req, res, next) => {
   const { name, markdown_description, reporterEmail, assetId, platform, product, appVersion } = req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'NAME_REQUIRED' });
   }
 
-  if (!config.clickupApiKey || !config.clickupListId) {
-    return res.status(500).json({ error: 'CLICKUP_NOT_CONFIGURED' });
+  const settings = await getUserSettings(req.user.id);
+  if (!settings.clickup_api_key || !settings.clickup_list_id) {
+    return res.status(400).json({ error: 'SETTINGS_NOT_CONFIGURED' });
   }
+
+  const { clickup_api_key: apiKey, clickup_list_id: listId } = settings;
 
   const metadataLines = [
     product && `**Producto:** ${product}`,
@@ -42,7 +46,7 @@ router.post('/api/ticket', async (req, res, next) => {
   }
 
   try {
-    const reporterUserId = await ClickUpService.resolveEmailToUserId(reporterEmail);
+    const reporterUserId = await ClickUpService.resolveEmailToUserId(reporterEmail, apiKey);
 
     if (!reporterUserId) {
       return res.status(403).json({ error: 'NO_MEMBER' });
@@ -53,9 +57,11 @@ router.post('/api/ticket', async (req, res, next) => {
       markdown_description: finalDescription,
       priority: 3,
       custom_fields: customFields,
+      apiKey,
+      listId,
     });
 
-    await ClickUpService.setReporterField(data.id, reporterUserId);
+    await ClickUpService.setReporterField(data.id, reporterUserId, apiKey);
 
     return res.json({ id: data.id, url: data.url });
   } catch (err) {

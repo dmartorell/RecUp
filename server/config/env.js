@@ -16,9 +16,6 @@ function optional(key, fallback) {
 export const config = {
   port: optional('PORT', '3000'),
   jwtSecret: required('JWT_SECRET'),
-  anthropicApiKey: optional('ANTHROPIC_API_KEY', ''),
-  clickupApiKey: optional('CLICKUP_API_KEY', ''),
-  clickupListId: optional('CLICKUP_LIST_ID', ''),
   allowedEmailDomain: optional('ALLOWED_EMAIL_DOMAIN', ''),
   tursoUrl: required('TURSO_DATABASE_URL'),
   tursoAuthToken: optional('TURSO_AUTH_TOKEN', ''),

@@ -1,7 +1,7 @@
 import { AttachmentManager } from './attachments.js';
 import { capitalize, ensurePeriod } from './utils.js';
 import { showToast, showToastWithLink } from './toast.js';
-import { getSession, handleExpiredSession } from './auth.js';
+import { getSession, authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
 import { UI, apiError } from './strings.js';
 
 const modal = document.getElementById('ticket-modal');
@@ -310,7 +310,7 @@ async function executeSubmit() {
   try {
     const ticketRes = await fetch('/api/ticket', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({
         name,
         markdown_description: markdownDescription,
@@ -323,6 +323,7 @@ async function executeSubmit() {
     });
 
     if (!ticketRes.ok) {
+      if (isUnauthorized(ticketRes)) { handleExpiredSession(); return; }
       const err = await ticketRes.json().catch(() => ({}));
       if (err.error === 'NO_MEMBER') {
         submitting = false;

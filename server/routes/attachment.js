@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { authMiddleware } from '../middleware/auth.js';
 import { ClickUpService } from '../services/ClickUpService.js';
-import { config } from '../config/env.js';
+import { getUserSettings } from '../db.js';
 import { MULTER_MAX_FILE_SIZE, MULTER_MAX_FILES } from '../config/constants.js';
 
 const router = Router();
@@ -23,15 +23,16 @@ router.post('/api/attachment', authMiddleware, upload.array('attachment', MULTER
     return res.status(400).json({ error: 'FILE_REQUIRED' });
   }
 
-  if (!config.clickupApiKey) {
-    return res.status(500).json({ error: 'API_KEY_MISSING' });
+  const settings = await getUserSettings(req.user.id);
+  if (!settings.clickup_api_key) {
+    return res.status(400).json({ error: 'SETTINGS_NOT_CONFIGURED' });
   }
 
   const results = [];
 
   for (const file of req.files) {
     try {
-      const data = await ClickUpService.uploadAttachment(taskId, file);
+      const data = await ClickUpService.uploadAttachment(taskId, file, settings.clickup_api_key);
       results.push(data);
     } catch (err) {
       return res.status(err.status || 500).json({
