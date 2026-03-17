@@ -93,6 +93,10 @@ RecUp/
 | email | TEXT | UNIQUE NOT NULL |
 | password | TEXT | NOT NULL (bcrypt hash) |
 | clickup_user_id | TEXT | nullable |
+| avatar_url | TEXT | nullable |
+| clickup_api_key | TEXT | nullable — API key personal de ClickUp |
+| clickup_list_id | TEXT | nullable — ID de la lista de ClickUp donde se crean los tickets |
+| anthropic_api_key | TEXT | nullable — API key personal de Anthropic |
 | created_at | TEXT | DEFAULT datetime('now') |
 
 ### Tabla `incidents`

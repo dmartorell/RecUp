@@ -212,12 +212,12 @@ Para que RecUp funcione, necesitas configurar estas variables de entorno (en un 
 
 | Variable | Necesaria | Para que sirve |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Si | La clave para usar Claude (IA). Sin esto no se pueden analizar incidencias |
-| `CLICKUP_API_KEY` | Si | La clave para crear tickets en ClickUp |
-| `CLICKUP_LIST_ID` | Si | El ID de la lista de ClickUp donde se crean los tickets |
 | `JWT_SECRET` | Si | Una frase secreta para firmar los tokens de sesion. Puede ser cualquier texto largo y aleatorio |
+| `TURSO_DATABASE_URL` | Si | URL de la base de datos Turso |
 | `PORT` | No | En que puerto arranca el servidor. Si no se pone, usa el 3000 |
 | `ALLOWED_EMAIL_DOMAIN` | No | Si se pone (ej: `alfredsmart.com`), solo se pueden registrar emails de ese dominio |
+
+> **Nota:** `ANTHROPIC_API_KEY`, `CLICKUP_API_KEY` y `CLICKUP_LIST_ID` ya no son variables de entorno. Cada usuario configura sus propias claves desde el panel de Configuración (icono de perfil → Configuración). Se guardan en la base de datos asociadas a su cuenta.
 
 ---
 
