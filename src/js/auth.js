@@ -15,6 +15,7 @@ export function authHeaders() {
 
 export function handleExpiredSession() {
   localStorage.removeItem('recup_session');
+  window.postMessage({ type: 'recup:logout' }, '*');
   showToast(UI.SESSION_EXPIRED);
   setTimeout(() => location.reload(), 1500);
 }

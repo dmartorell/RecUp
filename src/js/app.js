@@ -217,6 +217,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
   avatarDropdown.classList.add('hidden');
   showConfirmModal(UI.LOGOUT_TITLE, UI.LOGOUT_MSG, () => {
     localStorage.removeItem('recup_session');
+    window.postMessage({ type: 'recup:logout' }, '*');
     location.reload();
   }, { okLabel: UI.LOGOUT_BTN, danger: false });
 });

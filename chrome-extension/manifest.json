@@ -20,5 +20,11 @@
   "host_permissions": ["https://recup.onrender.com/*", "http://localhost:3000/*"],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://recup.onrender.com/*", "http://localhost:3000/*"],
+      "js": ["content.js"]
+    }
+  ]
 }

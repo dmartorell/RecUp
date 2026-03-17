@@ -18,6 +18,12 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === 'recup:logout') {
+    chrome.storage.local.remove(['recup_token', 'recup_email', 'recup_name', 'recup_avatar']);
+  }
+});
+
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== 'send-to-recup') return;
 
