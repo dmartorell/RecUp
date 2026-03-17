@@ -551,6 +551,46 @@ async function handleExternalText() {
   return false;
 }
 
+function handlePostMessage(event) {
+  if (!event.data || event.data.type !== 'recup:extension-data') return;
+
+  const { token, email, name, highlight, contextText } = event.data;
+
+  if (token && email && !getSession()?.token) {
+    localStorage.setItem('recup_session', JSON.stringify({ token, user: { email, ...(name && { name }) } }));
+    showApp(email);
+    loadIncidents().then(() => resumePendingIncidents());
+  }
+
+  if (!getSession()?.token) return;
+
+  if (contextText) {
+    createIncident(contextText, null, 0);
+    scrollFeedToTop();
+  }
+
+  if (highlight) {
+    const target = feed.querySelector(`.incident[data-incident-id="${highlight}"]`);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('incident-highlight');
+      setTimeout(() => target.classList.remove('incident-highlight'), 3000);
+
+      if (target.dataset.summaryTitle && !target.querySelector('.badge-sent')) {
+        openTicketModal({
+          title: target.dataset.summaryTitle,
+          transcript: target.dataset.summaryTranscript,
+          bullets: JSON.parse(target.dataset.summaryBullets),
+          incidentElement: target,
+          onTicketCreated: buildOnTicketCreated(target)
+        });
+      }
+    }
+  }
+}
+
+window.addEventListener('message', handlePostMessage);
+
 document.addEventListener('DOMContentLoaded', async () => {
   adoptExtensionSession();
   handleHashRegister();
