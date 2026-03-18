@@ -14,3 +14,4 @@ logs/
 .claude/*
 !.claude/CLAUDE.md
 !.claude/settings.json
+.planning/STATE.md
