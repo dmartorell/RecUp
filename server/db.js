@@ -1,25 +1,8 @@
 import { createClient } from '@libsql/client';
-import { mkdirSync, appendFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { config } from './config/env.js';
 import { encrypt, decrypt, isEncrypted } from './services/crypto.js';
 
 const ENCRYPTED_FIELDS = ['clickup_api_key', 'anthropic_api_key', 'openai_api_key'];
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const PROJECT_ROOT = join(__dirname, '..');
-
-mkdirSync(join(PROJECT_ROOT, 'dbLogs'), { recursive: true });
-
-const LOG_PATH = join(PROJECT_ROOT, 'dbLogs', 'errors.log');
-
-export function logDbError(error, context = '') {
-  const timestamp = new Date().toISOString();
-  const line = `[${timestamp}] ${context}: ${error?.message || error}\n`;
-  appendFileSync(LOG_PATH, line);
-}
 
 const db = createClient({
   url: config.tursoUrl,

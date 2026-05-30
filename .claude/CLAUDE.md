@@ -39,7 +39,7 @@ RecUp is a voice/text bug-reporting webapp. Users record audio or type text → 
 - **`index.js`** — entry point, static file serving of `src/`
 - **`instrument.js`** — Sentry SDK init, loaded via `--import` / `--preload` before any other module
 - **`app.js`** — Express setup, route mounting, error handler (Sentry error handler before custom one)
-- **`db.js`** — Turso client, schema init (`users`, `incidents` tables), error logger to `dbLogs/`
+- **`db.js`** — Turso client, schema init (`users`, `incidents` tables)
 - **`config/env.js`** — env var validation
 - **`config/prompts/summarize-system.txt`** — AI system prompt for bug detection
 - **`middleware/auth.js`** — JWT sign/verify, `authMiddleware` (sets `req.user`)
