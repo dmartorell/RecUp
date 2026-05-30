@@ -14,6 +14,8 @@ export const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(express.json());
 app.use(authRouter);
 app.use(summarizeRouter);
