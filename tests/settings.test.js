@@ -43,8 +43,8 @@ describe('GET /api/settings', () => {
     });
     const data = await res.json();
 
-    expect(data.clickup_api_key).toEqual({ configured: true, hint: '••••AAAA' });
-    expect(data.anthropic_api_key).toEqual({ configured: true, hint: '••••BBBB' });
+    expect(data.clickup_api_key).toEqual({ configured: true, hint: '••••••••••••••••••••••••AAAA' });
+    expect(data.anthropic_api_key).toEqual({ configured: true, hint: '••••••••••••••••••••••••BBBB' });
     expect(data.openai_api_key).toEqual({ configured: false, hint: '' });
 
     const blob = JSON.stringify(data);

@@ -39,8 +39,10 @@ export function decrypt(value) {
   return Buffer.concat([decipher.update(ct), decipher.final()]).toString('utf8');
 }
 
+const HINT_MASK = '••••••••••••••••••••••••';
+
 export function hint(value) {
   if (!value) return '';
   const tail = value.slice(-4);
-  return `••••${tail}`;
+  return `${HINT_MASK}${tail}`;
 }

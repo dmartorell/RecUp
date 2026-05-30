@@ -42,7 +42,7 @@ describe('crypto service', () => {
   });
 
   test('hint masks all but the last 4 characters', () => {
-    expect(hint('pk_long_secret_key_ABCD')).toBe('••••ABCD');
+    expect(hint('pk_long_secret_key_ABCD')).toBe('••••••••••••••••••••••••ABCD');
     expect(hint('')).toBe('');
     expect(hint(null)).toBe('');
   });
