@@ -11,6 +11,7 @@ const router = Router();
 const rateLimit = createRateLimiter();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing-mitigation', 12);
 
 router.post('/api/auth/register', rateLimit, async (req, res, next) => {
   const { name, email, password } = req.body || {};
@@ -48,6 +49,8 @@ router.post('/api/auth/register', rateLimit, async (req, res, next) => {
       },
     });
   } catch (err) {
+    // Tradeoff: 409 expone enumeración. Limitado por ALLOWED_EMAIL_DOMAIN.
+    // Revisar cuando exista email transaccional para devolver 201 + notificar al titular.
     if (err?.message?.includes('UNIQUE')) {
       return res.status(409).json({ success: false, error: 'EMAIL_TAKEN' });
     }
@@ -70,6 +73,7 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
     const user = result.rows[0];
 
     if (!user) {
+      await bcrypt.compare(password, DUMMY_HASH);
       return res.status(401).json({ success: false, error: 'INVALID_CREDENTIALS' });
     }
 
