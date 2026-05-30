@@ -75,6 +75,11 @@ Two tables: `users` (with per-user `clickup_api_key`, `clickup_list_id`, `anthro
 
 `/api/summarize` reads `ai_provider` from the user's DB row and routes to either Anthropic (`claude-haiku-4-5-20251001`) or OpenAI (`gpt-4o-mini`). Both use `max_tokens: 1024`, `temperature: 0.3`, 30s timeout. The prompt is in `server/config/prompts/summarize-system.txt` and returns strict JSON (no markdown).
 
+### Security notes
+
+- **Login enumeration:** mitigated via a dummy `bcrypt.compare` when the user does not exist, equalizing response times (`server/routes/auth.js`).
+- **Register enumeration (accepted tradeoff):** `/api/auth/register` returns `409 EMAIL_TAKEN` when the email is already registered. This leaks which emails exist within `ALLOWED_EMAIL_DOMAIN`. Accepted because the domain is already known and there is no email transactional infra to notify the legitimate owner of a duplicate-registration attempt. Revisit when email infra exists (switch to a generic 201 + notification).
+
 ## Environment Variables
 
 | Variable | Required | Notes |
