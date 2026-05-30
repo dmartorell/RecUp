@@ -3,6 +3,9 @@ import { mkdirSync, appendFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config/env.js';
+import { encrypt, decrypt, isEncrypted } from './services/crypto.js';
+
+const ENCRYPTED_FIELDS = ['clickup_api_key', 'anthropic_api_key', 'openai_api_key'];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,6 +61,28 @@ export async function initDb() {
   try { await db.execute('ALTER TABLE users ADD COLUMN anthropic_api_key TEXT'); } catch {}
   try { await db.execute('ALTER TABLE users ADD COLUMN openai_api_key TEXT'); } catch {}
   try { await db.execute("ALTER TABLE users ADD COLUMN ai_provider TEXT DEFAULT 'anthropic'"); } catch {}
+
+  await migrateEncryptApiKeys();
+}
+
+async function migrateEncryptApiKeys() {
+  const rows = await db.execute(`SELECT id, ${ENCRYPTED_FIELDS.join(', ')} FROM users`);
+  for (const row of rows.rows) {
+    const updates = {};
+    for (const field of ENCRYPTED_FIELDS) {
+      const value = row[field];
+      if (value && !isEncrypted(value)) {
+        updates[field] = encrypt(value);
+      }
+    }
+    const fields = Object.keys(updates);
+    if (fields.length === 0) continue;
+    const setClause = fields.map((f) => `${f} = ?`).join(', ');
+    await db.execute({
+      sql: `UPDATE users SET ${setClause} WHERE id = ?`,
+      args: [...fields.map((f) => updates[f]), row.id],
+    });
+  }
 }
 
 export async function getUserSettings(userId) {
@@ -65,7 +90,14 @@ export async function getUserSettings(userId) {
     sql: 'SELECT clickup_api_key, clickup_list_id, anthropic_api_key, openai_api_key, ai_provider FROM users WHERE id = ?',
     args: [userId],
   });
-  return result.rows[0] || {};
+  const row = result.rows[0];
+  if (!row) return {};
+  return {
+    ...row,
+    clickup_api_key: decrypt(row.clickup_api_key),
+    anthropic_api_key: decrypt(row.anthropic_api_key),
+    openai_api_key: decrypt(row.openai_api_key),
+  };
 }
 
 export default db;

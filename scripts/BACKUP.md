@@ -24,6 +24,16 @@ En `Settings → Secrets and variables → Actions`:
 
 No hay secrets adicionales: el upload a Releases usa el `GITHUB_TOKEN` built-in.
 
+## ⚠️ Dependencia crítica: `CRYPTO_SECRET`
+
+A partir del PR de cifrado de API keys, los campos `users.clickup_api_key`, `anthropic_api_key` y `openai_api_key` van **cifrados con AES-256-GCM** usando la env var `CRYPTO_SECRET` del servidor.
+
+- Los `.sql.gz` de Releases contienen los **valores cifrados**, no los originales.
+- Para restaurar un dump y que la app pueda volver a usar esas keys, necesitas **el mismo `CRYPTO_SECRET`** con el que se cifraron.
+- Si pierdes el secret, los dumps siguen sirviendo para usuarios/incidencias pero las API keys habrá que reintroducirlas a mano.
+
+Guarda `CRYPTO_SECRET` en al menos: Render env, tu `.env` local y un gestor de secretos (1Password/Bitwarden).
+
 ## Restore manual
 
 ```bash

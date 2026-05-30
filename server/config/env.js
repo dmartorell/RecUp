@@ -16,6 +16,7 @@ function optional(key, fallback) {
 export const config = {
   port: optional('PORT', '3000'),
   jwtSecret: required('JWT_SECRET'),
+  cryptoSecret: required('CRYPTO_SECRET'),
   allowedEmailDomain: optional('ALLOWED_EMAIL_DOMAIN', ''),
   tursoUrl: required('TURSO_DATABASE_URL'),
   tursoAuthToken: optional('TURSO_AUTH_TOKEN', ''),

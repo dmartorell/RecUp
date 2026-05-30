@@ -1,5 +1,6 @@
 process.env.TURSO_DATABASE_URL = 'file::memory:';
 process.env.JWT_SECRET = 'test-secret-for-testing';
+process.env.CRYPTO_SECRET = 'test-crypto-secret-for-testing';
 process.env.PORT = '0';
 process.env.ALLOWED_EMAIL_DOMAIN = '';
 process.env.ANTHROPIC_API_KEY = '';
