@@ -32,6 +32,12 @@ export const ClickUpService = {
     return members.find(m => m.email === email.toLowerCase())?.id ?? null;
   },
 
+  async isWorkspaceMember(email, apiKey) {
+    if (!email) return false;
+    const members = await this.getWorkspaceMembers(apiKey);
+    return members.some(m => m.email === email.toLowerCase());
+  },
+
   async resolveAvatarByEmail(email, apiKey) {
     if (!email) return null;
     const members = await this.getWorkspaceMembers(apiKey);

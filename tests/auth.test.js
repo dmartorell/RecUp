@@ -1,5 +1,6 @@
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
+import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, spyOn } from 'bun:test';
 import { seedTestUser, cleanDb } from './setup.js';
+import { ClickUpService } from '../server/services/ClickUpService.js';
 
 let app, server, baseUrl, meToken;
 
@@ -62,6 +63,56 @@ describe('POST /api/auth/register', () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toBe('WEAK_PASSWORD');
+  });
+
+  describe('ClickUp workspace validation', () => {
+    const ORIGINAL_KEY = process.env.CLICKUP_API_KEY;
+    let spy;
+
+    beforeEach(() => {
+      process.env.CLICKUP_API_KEY = 'test-clickup-key';
+    });
+
+    afterEach(() => {
+      process.env.CLICKUP_API_KEY = ORIGINAL_KEY;
+      spy?.mockRestore();
+    });
+
+    test('email no es miembro del workspace -> 400 EMAIL_NOT_IN_WORKSPACE', async () => {
+      spy = spyOn(ClickUpService, 'isWorkspaceMember').mockResolvedValue(false);
+      const res = await fetch(`${baseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '10.0.0.1' },
+        body: JSON.stringify({ name: 'Outsider', email: 'outsider@example.com', password: 'password123' }),
+      });
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.error).toBe('EMAIL_NOT_IN_WORKSPACE');
+      expect(spy).toHaveBeenCalledWith('outsider@example.com', 'test-clickup-key');
+    });
+
+    test('email es miembro del workspace -> 201', async () => {
+      spy = spyOn(ClickUpService, 'isWorkspaceMember').mockResolvedValue(true);
+      const res = await fetch(`${baseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '10.0.0.2' },
+        body: JSON.stringify({ name: 'Insider', email: 'insider@example.com', password: 'password123' }),
+      });
+      expect(res.status).toBe(201);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(body.data.user.email).toBe('insider@example.com');
+    });
+
+    test('ClickUp falla -> fail-open, registro continua', async () => {
+      spy = spyOn(ClickUpService, 'isWorkspaceMember').mockRejectedValue(new Error('network down'));
+      const res = await fetch(`${baseUrl}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '10.0.0.3' },
+        body: JSON.stringify({ name: 'FailOpen', email: 'failopen@example.com', password: 'password123' }),
+      });
+      expect(res.status).toBe(201);
+    });
   });
 
   test('email duplicado -> 409 EMAIL_TAKEN', async () => {
