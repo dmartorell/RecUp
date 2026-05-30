@@ -7,8 +7,8 @@ dbLogs/*.log
 
 # Planificación interna y documentación privada
 .planning/
-docs/
 logs/
+docs/app-map.html
 
 # Claude Code — solo trackear CLAUDE.md y settings.json
 .claude/*
