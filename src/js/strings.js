@@ -93,6 +93,7 @@ export const API_ERRORS = {
   WEAK_PASSWORD: 'Contraseña: mínimo 8 caracteres',
   EMAIL_DOMAIN: 'Email debe ser del dominio permitido',
   EMAIL_TAKEN: 'Email ya registrado',
+  EMAIL_NOT_IN_WORKSPACE: 'Este email no pertenece al workspace de ClickUp',
   INVALID_CREDENTIALS: 'Credenciales incorrectas',
   REQUIRED_FIELDS: 'Email y contraseña son obligatorios',
   UNAUTHORIZED: 'No autorizado',

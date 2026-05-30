@@ -37,8 +37,9 @@ RecUp is a voice/text bug-reporting webapp. Users record audio or type text → 
 ### Backend (`server/`)
 
 - **`index.js`** — entry point, static file serving of `src/`
-- **`app.js`** — Express setup, route mounting, error handler
-- **`db.js`** — Turso client, schema init (`users`, `incidents` tables), error logger to `dbLogs/`
+- **`instrument.js`** — Sentry SDK init, loaded via `--import` / `--preload` before any other module
+- **`app.js`** — Express setup, route mounting, error handler (Sentry error handler before custom one)
+- **`db.js`** — Turso client, schema init (`users`, `incidents` tables)
 - **`config/env.js`** — env var validation
 - **`config/prompts/summarize-system.txt`** — AI system prompt for bug detection
 - **`middleware/auth.js`** — JWT sign/verify, `authMiddleware` (sets `req.user`)
@@ -92,4 +93,6 @@ Two tables: `users` (with per-user `clickup_api_key`, `clickup_list_id`, `anthro
 | `JWT_SECRET` | Yes (prod) | Fallback: `dev-secret-change-me` |
 | `CRYPTO_SECRET` | Yes | AES-256-GCM key for encrypting `users.*_api_key` columns. Generate with `openssl rand -base64 32`. Losing it makes existing encrypted keys unrecoverable. |
 | `ALLOWED_EMAIL_DOMAIN` | No | Restrict registration (e.g. `empresa.com`) |
+| `SENTRY_DSN` | No | If set, errors are reported to Sentry. Omit in dev to disable. |
+| `SENTRY_ENVIRONMENT` | No | Sentry environment tag. Default: `development`. |
 | `PORT` | No | Default: `3000` |

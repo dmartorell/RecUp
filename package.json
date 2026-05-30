@@ -3,13 +3,17 @@
   "version": "2.1.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "bun --watch server/index.js",
+    "start": "node --import ./server/instrument.js server/index.js",
+    "dev": "bun --preload ./server/instrument.js --watch server/index.js",
     "seed-users": "bun scripts/seed-users.js"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
+    "@sentry/node": "^10.55.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
