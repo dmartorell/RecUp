@@ -1,0 +1,57 @@
+name: Turso Backup
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: turso-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dump + verify
+        env:
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          OUT_DIR: ${{ runner.temp }}/backup
+        run: ./scripts/backup-turso.sh
+
+      - name: Compute tag
+        id: tag
+        run: echo "name=backup-$(date -u +%Y-%m-%d-%H%M)" >> "$GITHUB_OUTPUT"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUT_DIR: ${{ runner.temp }}/backup
+        run: |
+          gh release create "${{ steps.tag.outputs.name }}" \
+            "$OUT_DIR"/recup-*.sql.gz \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Backup ${{ steps.tag.outputs.name }}" \
+            --notes "Automated weekly Turso backup. Restore: see scripts/BACKUP.md"
+
+      - name: Rotate (keep last 12)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 200 --json tagName --jq '.[].tagName' \
+            | grep '^backup-' \
+            | sort -r \
+            | tail -n +13 \
+            | while read -r tag; do
+                echo "Deleting old release $tag"
+                gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag
+              done
