@@ -53,11 +53,11 @@ describe('POST /api/auth/register', () => {
     expect(body.error).toBe('INVALID_EMAIL');
   });
 
-  test('password < 6 chars -> 400 WEAK_PASSWORD', async () => {
+  test('password < 8 chars -> 400 WEAK_PASSWORD', async () => {
     const res = await fetch(`${baseUrl}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'User', email: 'b@example.com', password: '123' }),
+      body: JSON.stringify({ name: 'User', email: 'b@example.com', password: '1234567' }),
     });
     expect(res.status).toBe(400);
     const body = await res.json();

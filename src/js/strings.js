@@ -90,7 +90,7 @@ export const API_ERRORS = {
   RATE_LIMITED: 'Demasiados intentos. Espera un minuto.',
   INVALID_NAME: 'Nombre inválido (1-100 caracteres)',
   INVALID_EMAIL: 'Email inválido',
-  WEAK_PASSWORD: 'Contraseña: mínimo 6 caracteres',
+  WEAK_PASSWORD: 'Contraseña: mínimo 8 caracteres',
   EMAIL_DOMAIN: 'Email debe ser del dominio permitido',
   EMAIL_TAKEN: 'Email ya registrado',
   INVALID_CREDENTIALS: 'Credenciales incorrectas',

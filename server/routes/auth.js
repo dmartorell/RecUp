@@ -21,7 +21,7 @@ router.post('/api/auth/register', rateLimit, async (req, res, next) => {
   if (!email || !EMAIL_RE.test(email)) {
     return res.status(400).json({ success: false, error: 'INVALID_EMAIL' });
   }
-  if (!password || password.length < 6) {
+  if (!password || password.length < 8) {
     return res.status(400).json({ success: false, error: 'WEAK_PASSWORD' });
   }
 
@@ -33,7 +33,7 @@ router.post('/api/auth/register', rateLimit, async (req, res, next) => {
   }
 
   try {
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 12);
     const result = await db.execute({
       sql: 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
       args: [name.trim(), email.toLowerCase(), hashed],
