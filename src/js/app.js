@@ -1,7 +1,7 @@
 import { requestMicAccess, getStream, startRecording, stopRecording, releaseStream } from './recorder.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
 import { showToast } from './toast.js';
-import { getSession, authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
+import { getSession, authHeaders, handleExpiredSession, isUnauthorized, tagSentryUser } from './auth.js';
 import { formatDuration, parseUTC, timeAgo } from './time.js';
 import { showConfirmModal } from './confirm-modal.js';
 import { createIncident, renderIncidentFromDB, updateEmptyState, resumePendingIncidents, buildOnTicketCreated } from './incident-renderer.js';
@@ -182,6 +182,7 @@ loginBtn.addEventListener('click', async () => {
     }
 
     localStorage.setItem('recup_session', JSON.stringify({ token: data.data.token, user: data.data.user }));
+    tagSentryUser();
     loginBtn.disabled = false;
     loginBtn.textContent = originalText;
     showApp(data.data.user.email);
@@ -534,6 +535,7 @@ function adoptExtensionSession() {
   const name = params.get('name');
   if (token && email && !getSession()?.token) {
     localStorage.setItem('recup_session', JSON.stringify({ token, user: { email, ...(name && { name }) } }));
+    tagSentryUser();
   }
   if (token || email) {
     params.delete('token');
@@ -566,6 +568,7 @@ function handlePostMessage(event) {
 
   if (token && email && !getSession()?.token) {
     localStorage.setItem('recup_session', JSON.stringify({ token, user: { email, ...(name && { name }) } }));
+    tagSentryUser();
     showApp(email);
     fetch('/api/auth/me', { headers: authHeaders() })
       .then(r => r.ok ? r.json() : null)
@@ -573,6 +576,7 @@ function handlePostMessage(event) {
         if (data?.data?.user) {
           const session = getSession();
           localStorage.setItem('recup_session', JSON.stringify({ ...session, user: { ...session.user, ...data.data.user } }));
+          tagSentryUser();
           showApp(data.data.user.email);
         }
       });
