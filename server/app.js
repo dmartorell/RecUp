@@ -1,6 +1,7 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import * as Sentry from '@sentry/node';
 import './db.js';
 import summarizeRouter from './routes/summarize.js';
 import ticketRouter from './routes/ticket.js';
@@ -23,6 +24,9 @@ app.use(ticketRouter);
 app.use(attachmentRouter);
 app.use('/api/incidents', incidentsRouter);
 app.use(settingsRouter);
+
+Sentry.setupExpressErrorHandler(app);
+
 app.use(errorHandler);
 
 export { app };

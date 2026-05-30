@@ -5,6 +5,12 @@ export function getSession() {
   try { return JSON.parse(localStorage.getItem('recup_session')); } catch { return null; }
 }
 
+export function tagSentryUser() {
+  if (!window.Sentry) return;
+  const email = getSession()?.user?.email;
+  window.Sentry.setUser(email ? { email } : null);
+}
+
 export function authHeaders() {
   const session = getSession();
   return {
