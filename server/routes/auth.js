@@ -33,6 +33,18 @@ router.post('/api/auth/register', rateLimit, async (req, res, next) => {
     }
   }
 
+  const serverClickUpKey = process.env.CLICKUP_API_KEY;
+  if (serverClickUpKey) {
+    try {
+      const isMember = await ClickUpService.isWorkspaceMember(email, serverClickUpKey);
+      if (!isMember) {
+        return res.status(400).json({ success: false, error: 'EMAIL_NOT_IN_WORKSPACE' });
+      }
+    } catch (err) {
+      console.warn('[register] ClickUp workspace check failed, allowing register (fail-open):', err?.message);
+    }
+  }
+
   try {
     const hashed = await bcrypt.hash(password, 12);
     const result = await db.execute({
