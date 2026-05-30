@@ -562,6 +562,7 @@ async function handleExternalText() {
 }
 
 function handlePostMessage(event) {
+  if (event.origin !== window.location.origin) return;
   if (!event.data || event.data.type !== 'recup:extension-data') return;
 
   const { token, email, name, highlight, contextText } = event.data;
