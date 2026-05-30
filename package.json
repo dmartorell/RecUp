@@ -3,6 +3,9 @@
   "version": "2.1.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "start": "node --import ./server/instrument.js server/index.js",
     "dev": "bun --preload ./server/instrument.js --watch server/index.js",
