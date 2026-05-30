@@ -84,7 +84,7 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
         const clickupAvatar = await ClickUpService.resolveAvatarByEmail(user.email, user.clickup_api_key);
         if (clickupAvatar) {
           avatar = clickupAvatar;
-          db.execute({ sql: 'UPDATE users SET avatar_url = ? WHERE id = ?', args: [avatar, user.id] });
+          await db.execute({ sql: 'UPDATE users SET avatar_url = ? WHERE id = ?', args: [avatar, user.id] });
         }
       } catch {}
     }
