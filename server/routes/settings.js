@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
 import db from '../db.js';
+import { encrypt, decrypt, hint } from '../services/crypto.js';
 
 const DEFAULT_CLICKUP_LIST_ID = '193679011';
+const ENCRYPTED_FIELDS = ['clickup_api_key', 'anthropic_api_key', 'openai_api_key'];
 
 const router = Router();
 
@@ -13,38 +15,47 @@ router.get('/api/settings', authMiddleware, async (req, res, next) => {
       args: [req.user.id],
     });
     const row = result.rows[0] || {};
-    return res.json({
-      clickup_api_key: row.clickup_api_key || '',
+    const payload = {
       clickup_list_id: row.clickup_list_id || DEFAULT_CLICKUP_LIST_ID,
-      anthropic_api_key: row.anthropic_api_key || '',
-      openai_api_key: row.openai_api_key || '',
       ai_provider: row.ai_provider || 'anthropic',
-    });
+    };
+    for (const field of ENCRYPTED_FIELDS) {
+      const plain = decrypt(row[field]);
+      payload[field] = {
+        configured: Boolean(plain),
+        hint: hint(plain),
+      };
+    }
+    return res.json(payload);
   } catch (err) {
     next(err);
   }
 });
 
 router.put('/api/settings', authMiddleware, async (req, res, next) => {
-  const { clickup_api_key, clickup_list_id, anthropic_api_key, openai_api_key, ai_provider } = req.body;
+  const { clickup_api_key, clickup_list_id, anthropic_api_key, openai_api_key, ai_provider } = req.body || {};
   const provider = ['anthropic', 'openai'].includes(ai_provider) ? ai_provider : 'anthropic';
+
+  const sets = ['clickup_list_id = ?', 'ai_provider = ?'];
+  const args = [clickup_list_id?.trim() || null, provider];
+
+  for (const [field, value] of [
+    ['clickup_api_key', clickup_api_key],
+    ['anthropic_api_key', anthropic_api_key],
+    ['openai_api_key', openai_api_key],
+  ]) {
+    if (typeof value !== 'string') continue;
+    const trimmed = value.trim();
+    sets.push(`${field} = ?`);
+    args.push(trimmed ? encrypt(trimmed) : null);
+  }
+
+  args.push(req.user.id);
+
   try {
     await db.execute({
-      sql: `UPDATE users SET
-        clickup_api_key = ?,
-        clickup_list_id = ?,
-        anthropic_api_key = ?,
-        openai_api_key = ?,
-        ai_provider = ?
-        WHERE id = ?`,
-      args: [
-        clickup_api_key?.trim() || null,
-        clickup_list_id?.trim() || null,
-        anthropic_api_key?.trim() || null,
-        openai_api_key?.trim() || null,
-        provider,
-        req.user.id,
-      ],
+      sql: `UPDATE users SET ${sets.join(', ')} WHERE id = ?`,
+      args,
     });
     return res.json({ ok: true });
   } catch (err) {

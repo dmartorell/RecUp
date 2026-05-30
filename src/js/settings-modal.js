@@ -36,6 +36,11 @@ function hideError() {
   errorEl.classList.add('hidden');
 }
 
+function applyKeyField(input, meta) {
+  input.value = '';
+  input.placeholder = meta?.configured ? meta.hint : '';
+}
+
 async function loadSettings() {
   const res = await fetch('/api/settings', { headers: authHeaders() });
   if (isUnauthorized(res)) { handleExpiredSession(); return; }
@@ -43,9 +48,9 @@ async function loadSettings() {
   const data = await res.json();
   const provider = data.ai_provider || 'anthropic';
   providerRadios.forEach(r => { r.checked = r.value === provider; });
-  anthropicKeyInput.value = data.anthropic_api_key || '';
-  openaiKeyInput.value = data.openai_api_key || '';
-  clickupKeyInput.value = data.clickup_api_key || '';
+  applyKeyField(anthropicKeyInput, data.anthropic_api_key);
+  applyKeyField(openaiKeyInput, data.openai_api_key);
+  applyKeyField(clickupKeyInput, data.clickup_api_key);
   clickupListInput.value = data.clickup_list_id || '';
   updateProviderVisibility();
 }
@@ -68,16 +73,18 @@ saveBtn.addEventListener('click', async () => {
   hideError();
   saveBtn.disabled = true;
 
+  const body = {
+    ai_provider: getSelectedProvider(),
+    clickup_list_id: clickupListInput.value.trim(),
+  };
+  if (anthropicKeyInput.value.trim()) body.anthropic_api_key = anthropicKeyInput.value.trim();
+  if (openaiKeyInput.value.trim()) body.openai_api_key = openaiKeyInput.value.trim();
+  if (clickupKeyInput.value.trim()) body.clickup_api_key = clickupKeyInput.value.trim();
+
   const res = await fetch('/api/settings', {
     method: 'PUT',
     headers: authHeaders(),
-    body: JSON.stringify({
-      ai_provider: getSelectedProvider(),
-      anthropic_api_key: anthropicKeyInput.value.trim(),
-      openai_api_key: openaiKeyInput.value.trim(),
-      clickup_api_key: clickupKeyInput.value.trim(),
-      clickup_list_id: clickupListInput.value.trim(),
-    }),
+    body: JSON.stringify(body),
   });
 
   saveBtn.disabled = false;

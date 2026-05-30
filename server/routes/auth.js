@@ -5,6 +5,7 @@ import { signToken, authMiddleware } from '../middleware/auth.js';
 import { createRateLimiter } from '../middleware/rateLimiter.js';
 import { config } from '../config/env.js';
 import { ClickUpService } from '../services/ClickUpService.js';
+import { decrypt } from '../services/crypto.js';
 
 const router = Router();
 const rateLimit = createRateLimiter();
@@ -79,9 +80,10 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
 
     const token = signToken(Number(user.id), user.name, user.email);
     let avatar = user.avatar_url || null;
-    if (user.clickup_api_key) {
+    const clickupApiKey = decrypt(user.clickup_api_key);
+    if (clickupApiKey) {
       try {
-        const clickupAvatar = await ClickUpService.resolveAvatarByEmail(user.email, user.clickup_api_key);
+        const clickupAvatar = await ClickUpService.resolveAvatarByEmail(user.email, clickupApiKey);
         if (clickupAvatar) {
           avatar = clickupAvatar;
           await db.execute({ sql: 'UPDATE users SET avatar_url = ? WHERE id = ?', args: [avatar, user.id] });
