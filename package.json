@@ -9,7 +9,13 @@
   "scripts": {
     "start": "node --import ./server/instrument.js server/index.js",
     "dev": "bun --preload ./server/instrument.js --watch server/index.js",
-    "seed-users": "bun scripts/seed-users.js"
+    "seed-users": "bun scripts/seed-users.js",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "check:fix": "biome check --write ."
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",
@@ -19,5 +25,8 @@
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.16"
   }
 }
