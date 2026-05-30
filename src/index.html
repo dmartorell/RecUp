@@ -18,7 +18,13 @@
       rel="stylesheet"
     />
 
-    <script src="https://browser.sentry-cdn.com/10.55.0/bundle.min.js" crossorigin="anonymous"></script>
+    <!-- SRI hash pinned to 10.55.0. Regenerate when bumping version:
+         curl -sSL "<URL>" | openssl dgst -sha384 -binary | openssl base64 -A -->
+    <script
+      src="https://browser.sentry-cdn.com/10.55.0/bundle.min.js"
+      integrity="sha384-WOI/I8Ir8uIDmVB2kynxzvWoaZMTqdHKMoerOS8hHq8WM31mFzLnxmt8OVHVZucu"
+      crossorigin="anonymous"
+    ></script>
     <script>
       (function () {
         if (!window.Sentry) return;
