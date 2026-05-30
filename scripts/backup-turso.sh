@@ -4,6 +4,22 @@ set -euo pipefail
 : "${TURSO_DATABASE_URL:?missing TURSO_DATABASE_URL}"
 : "${TURSO_AUTH_TOKEN:?missing TURSO_AUTH_TOKEN}"
 
+strip() {
+  local s="$1"
+  s="${s//$'\r'/}"
+  s="${s//$'\n'/}"
+  s="${s#"${s%%[![:space:]]*}"}"
+  s="${s%"${s##*[![:space:]]}"}"
+  printf '%s' "$s"
+}
+TURSO_DATABASE_URL="$(strip "$TURSO_DATABASE_URL")"
+TURSO_AUTH_TOKEN="$(strip "$TURSO_AUTH_TOKEN")"
+
+if [[ "$TURSO_DATABASE_URL" != libsql://* ]]; then
+  echo "ERROR: TURSO_DATABASE_URL must start with libsql:// (got: '${TURSO_DATABASE_URL:0:20}...')"
+  exit 1
+fi
+
 OUT_DIR="${OUT_DIR:-.}"
 STAMP="$(date -u +%Y-%m-%d-%H%M)"
 BASE_URL="${TURSO_DATABASE_URL/libsql:\/\//https://}"
