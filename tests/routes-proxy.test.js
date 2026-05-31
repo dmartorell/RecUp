@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeAll, afterAll, mock } from 'bun:test';
-import { seedTestUser, cleanDb } from './setup.js';
+import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test';
+import { cleanDb, seedTestUser } from './setup.js';
 
 let app, server, baseUrl, authToken, userId;
 const originalFetch = global.fetch;
@@ -35,7 +35,10 @@ afterAll(async () => {
   server?.close();
 });
 
-const authHeader = () => ({ 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' });
+const authHeader = () => ({
+  Authorization: `Bearer ${authToken}`,
+  'Content-Type': 'application/json',
+});
 
 describe('POST /api/summarize', () => {
   test('sin auth -> 401', async () => {
@@ -82,9 +85,12 @@ describe('POST /api/summarize', () => {
 
     global.fetch = mock(async (url, opts) => {
       if (typeof url === 'string' && url.includes('anthropic')) {
-        return new Response(JSON.stringify({
-          content: [{ text: JSON.stringify(mockResponse) }],
-        }), { status: 200 });
+        return new Response(
+          JSON.stringify({
+            content: [{ text: JSON.stringify(mockResponse) }],
+          }),
+          { status: 200 },
+        );
       }
       return originalFetch(url, opts);
     });
@@ -172,7 +178,10 @@ describe('POST /api/ticket', () => {
 
     global.fetch = mock(async (url, opts) => {
       if (typeof url === 'string' && url.includes('clickup')) {
-        return new Response(JSON.stringify({ id: 'task-abc', url: 'https://app.clickup.com/t/task-abc' }), { status: 200 });
+        return new Response(
+          JSON.stringify({ id: 'task-abc', url: 'https://app.clickup.com/t/task-abc' }),
+          { status: 200 },
+        );
       }
       return originalFetch(url, opts);
     });
@@ -208,7 +217,7 @@ describe('POST /api/attachment', () => {
 
     const res = await fetch(`${baseUrl}/api/attachment`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}` },
+      headers: { Authorization: `Bearer ${authToken}` },
       body: formData,
     });
     expect(res.status).toBe(400);
@@ -222,7 +231,7 @@ describe('POST /api/attachment', () => {
 
     const res = await fetch(`${baseUrl}/api/attachment`, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${authToken}` },
+      headers: { Authorization: `Bearer ${authToken}` },
       body: formData,
     });
     expect(res.status).toBe(400);

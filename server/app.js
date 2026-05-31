@@ -1,15 +1,15 @@
-import express from 'express';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import * as Sentry from '@sentry/node';
+import express from 'express';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import './db.js';
-import summarizeRouter from './routes/summarize.js';
-import ticketRouter from './routes/ticket.js';
+import { errorHandler } from './middleware/errorHandler.js';
 import attachmentRouter from './routes/attachment.js';
 import authRouter from './routes/auth.js';
 import incidentsRouter from './routes/incidents.js';
 import settingsRouter from './routes/settings.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import summarizeRouter from './routes/summarize.js';
+import ticketRouter from './routes/ticket.js';
 
 export const __dirname = dirname(fileURLToPath(import.meta.url));
 

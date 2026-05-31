@@ -1,4 +1,4 @@
-import { CLICKUP_CUSTOM_FIELD_IDS, CLICKUP_CACHE_TTL } from '../config/constants.js';
+import { CLICKUP_CACHE_TTL, CLICKUP_CUSTOM_FIELD_IDS } from '../config/constants.js';
 
 const BASE_URL = 'https://api.clickup.com/api/v2';
 const membersCache = new Map();
@@ -19,7 +19,12 @@ export const ClickUpService = {
     for (const team of data.teams || []) {
       for (const m of team.members || []) {
         const u = m.user || {};
-        if (u.email) members.push({ id: u.id, email: u.email.toLowerCase(), avatar: u.profilePicture || null });
+        if (u.email)
+          members.push({
+            id: u.id,
+            email: u.email.toLowerCase(),
+            avatar: u.profilePicture || null,
+          });
       }
     }
     membersCache.set(apiKey, { members, time: Date.now() });
@@ -29,29 +34,41 @@ export const ClickUpService = {
   async resolveEmailToUserId(email, apiKey) {
     if (!email) return null;
     const members = await this.getWorkspaceMembers(apiKey);
-    return members.find(m => m.email === email.toLowerCase())?.id ?? null;
+    return members.find((m) => m.email === email.toLowerCase())?.id ?? null;
   },
 
   async isWorkspaceMember(email, apiKey) {
     if (!email) return false;
     const members = await this.getWorkspaceMembers(apiKey);
-    return members.some(m => m.email === email.toLowerCase());
+    return members.some((m) => m.email === email.toLowerCase());
   },
 
   async resolveAvatarByEmail(email, apiKey) {
     if (!email) return null;
     const members = await this.getWorkspaceMembers(apiKey);
-    return members.find(m => m.email === email.toLowerCase())?.avatar ?? null;
+    return members.find((m) => m.email === email.toLowerCase())?.avatar ?? null;
   },
 
-  async createTask({ name, markdown_description, priority = 0, custom_fields = [], apiKey, listId }) {
+  async createTask({
+    name,
+    markdown_description,
+    priority = 0,
+    custom_fields = [],
+    apiKey,
+    listId,
+  }) {
     const res = await fetch(`${BASE_URL}/list/${listId}/task`, {
       method: 'POST',
       headers: headers(apiKey, 'application/json'),
       body: JSON.stringify({ name, markdown_description, priority, custom_fields }),
     });
     const data = await res.json();
-    if (!res.ok) { const err = new Error('CLICKUP_API_ERROR'); err.status = res.status; err.code = 'CLICKUP_API_ERROR'; throw err; }
+    if (!res.ok) {
+      const err = new Error('CLICKUP_API_ERROR');
+      err.status = res.status;
+      err.code = 'CLICKUP_API_ERROR';
+      throw err;
+    }
     return data;
   },
 
@@ -65,15 +82,27 @@ export const ClickUpService = {
 
   async uploadAttachment(taskId, file, apiKey) {
     const formData = new FormData();
-    formData.append('attachment', new Blob([file.buffer], { type: file.mimetype }), file.originalname);
+    formData.append(
+      'attachment',
+      new Blob([file.buffer], { type: file.mimetype }),
+      file.originalname,
+    );
     const res = await fetch(
       `${BASE_URL}/task/${taskId}/attachment?custom_field_id=${CLICKUP_CUSTOM_FIELD_IDS.captura}`,
-      { method: 'POST', headers: headers(apiKey), body: formData }
+      { method: 'POST', headers: headers(apiKey), body: formData },
     );
     const data = await res.json();
-    if (!res.ok) { const err = new Error('CLICKUP_UPLOAD_ERROR'); err.status = res.status; err.code = 'CLICKUP_UPLOAD_ERROR'; err.data = data; throw err; }
+    if (!res.ok) {
+      const err = new Error('CLICKUP_UPLOAD_ERROR');
+      err.status = res.status;
+      err.code = 'CLICKUP_UPLOAD_ERROR';
+      err.data = data;
+      throw err;
+    }
     return data;
   },
 
-  get fieldIds() { return CLICKUP_CUSTOM_FIELD_IDS; },
+  get fieldIds() {
+    return CLICKUP_CUSTOM_FIELD_IDS;
+  },
 };

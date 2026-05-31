@@ -1,13 +1,31 @@
-import { requestMicAccess, getStream, startRecording, stopRecording, releaseStream } from './recorder.js';
-import { startTranscription, stopTranscription } from './transcriber.js';
-import { showToast } from './toast.js';
-import { getSession, authHeaders, handleExpiredSession, isUnauthorized, tagSentryUser } from './auth.js';
-import { formatDuration, parseUTC, timeAgo } from './time.js';
+import {
+  authHeaders,
+  getSession,
+  handleExpiredSession,
+  isUnauthorized,
+  tagSentryUser,
+} from './auth.js';
 import { showConfirmModal } from './confirm-modal.js';
-import { createIncident, renderIncidentFromDB, updateEmptyState, resumePendingIncidents, buildOnTicketCreated } from './incident-renderer.js';
-import { openTicketModal } from './ticket-modal.js';
+import {
+  buildOnTicketCreated,
+  createIncident,
+  renderIncidentFromDB,
+  resumePendingIncidents,
+  updateEmptyState,
+} from './incident-renderer.js';
+import {
+  getStream,
+  releaseStream,
+  requestMicAccess,
+  startRecording,
+  stopRecording,
+} from './recorder.js';
 import { openSettingsModal } from './settings-modal.js';
-import { UI, apiError } from './strings.js';
+import { apiError, UI } from './strings.js';
+import { openTicketModal } from './ticket-modal.js';
+import { formatDuration, parseUTC, timeAgo } from './time.js';
+import { showToast } from './toast.js';
+import { startTranscription, stopTranscription } from './transcriber.js';
 
 function scrollFeedToTop() {
   const scrollEl = document.getElementById('app');
@@ -128,11 +146,12 @@ function showLoginError(msg) {
   loginError.classList.add('visible');
 }
 
-[loginEmailInput, loginPasswordInput, loginNameInput].forEach(input => {
-  if (input) input.addEventListener('focus', () => {
-    loginError.classList.remove('visible');
-    loginError.classList.add('invisible');
-  });
+[loginEmailInput, loginPasswordInput, loginNameInput].forEach((input) => {
+  if (input)
+    input.addEventListener('focus', () => {
+      loginError.classList.remove('visible');
+      loginError.classList.add('invisible');
+    });
 });
 
 loginBtn.addEventListener('click', async () => {
@@ -148,7 +167,8 @@ loginBtn.addEventListener('click', async () => {
 
   const originalText = loginBtn.textContent;
   loginBtn.disabled = true;
-  loginBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
+  loginBtn.innerHTML =
+    '<svg class="animate-spin h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>';
 
   try {
     let body, endpoint;
@@ -170,7 +190,7 @@ loginBtn.addEventListener('click', async () => {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
     const data = await res.json();
 
@@ -181,7 +201,10 @@ loginBtn.addEventListener('click', async () => {
       return;
     }
 
-    localStorage.setItem('recup_session', JSON.stringify({ token: data.data.token, user: data.data.user }));
+    localStorage.setItem(
+      'recup_session',
+      JSON.stringify({ token: data.data.token, user: data.data.user }),
+    );
     tagSentryUser();
     loginBtn.disabled = false;
     loginBtn.textContent = originalText;
@@ -216,11 +239,16 @@ document.getElementById('btn-settings').addEventListener('click', () => {
 
 document.getElementById('btn-logout').addEventListener('click', () => {
   avatarDropdown.classList.add('hidden');
-  showConfirmModal(UI.LOGOUT_TITLE, UI.LOGOUT_MSG, () => {
-    localStorage.removeItem('recup_session');
-    window.postMessage({ type: 'recup:logout' }, '*');
-    location.reload();
-  }, { okLabel: UI.LOGOUT_BTN, danger: false });
+  showConfirmModal(
+    UI.LOGOUT_TITLE,
+    UI.LOGOUT_MSG,
+    () => {
+      localStorage.removeItem('recup_session');
+      window.postMessage({ type: 'recup:logout' }, '*');
+      location.reload();
+    },
+    { okLabel: UI.LOGOUT_BTN, danger: false },
+  );
 });
 
 const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
@@ -251,13 +279,8 @@ const modeIconMic = document.getElementById('mode-icon-mic');
 let inputMode = localStorage.getItem('recup_input_mode') || 'mic';
 
 function setPageInteractive(enabled) {
-  const targets = [
-    modeToggleBtn,
-    clearAllBtn,
-    userAvatar,
-    ...feed.querySelectorAll('button, a'),
-  ];
-  targets.forEach(el => {
+  const targets = [modeToggleBtn, clearAllBtn, userAvatar, ...feed.querySelectorAll('button, a')];
+  targets.forEach((el) => {
     if (!el) return;
     el.classList.toggle('ui-disabled', !enabled);
   });
@@ -336,7 +359,7 @@ function animateWaveform() {
   const WAVEFORM_MIN_HEIGHT = 3;
   const normalized = Math.min(1, peak / WAVEFORM_PEAK_DIVISOR);
   const height = Math.max(WAVEFORM_MIN_HEIGHT, normalized * WAVEFORM_MAX_HEIGHT);
-  waveformBars.forEach(bar => bar.style.height = height + 'px');
+  waveformBars.forEach((bar) => (bar.style.height = height + 'px'));
   animFrameId = requestAnimationFrame(animateWaveform);
 }
 
@@ -349,8 +372,11 @@ function forceCleanup() {
   recordBtn.classList.remove('bg-accent-hover');
   recordBtn.classList.add('bg-accent');
   cancelAnimationFrame(animFrameId);
-  if (audioCtx) { audioCtx.close(); audioCtx = null; }
-  waveformBars.forEach(bar => bar.style.height = '3px');
+  if (audioCtx) {
+    audioCtx.close();
+    audioCtx = null;
+  }
+  waveformBars.forEach((bar) => (bar.style.height = '3px'));
   clearInterval(timerInterval);
   clearTimeout(recordingTimeoutId);
   recordingTimeoutId = null;
@@ -411,8 +437,11 @@ async function toggleRecording() {
     recordBtn.classList.remove('bg-accent-hover');
     recordBtn.classList.add('bg-accent');
     cancelAnimationFrame(animFrameId);
-    if (audioCtx) { audioCtx.close(); audioCtx = null; }
-    waveformBars.forEach(bar => bar.style.height = '3px');
+    if (audioCtx) {
+      audioCtx.close();
+      audioCtx = null;
+    }
+    waveformBars.forEach((bar) => (bar.style.height = '3px'));
 
     clearInterval(timerInterval);
     const duration = Date.now() - startTime;
@@ -431,10 +460,14 @@ recordBtn.addEventListener('click', toggleRecording);
 clearAllBtn.addEventListener('click', () => {
   showConfirmModal(UI.CLEAR_ALL_TITLE, UI.CLEAR_ALL_MSG, async () => {
     const incidents = feed.querySelectorAll('.incident[data-incident-id]');
-    const deletePromises = Array.from(incidents).map(i =>
+    const deletePromises = Array.from(incidents).map((i) =>
       fetch(`/api/incidents/${i.dataset.incidentId}`, { method: 'DELETE', headers: authHeaders() })
-        .then(res => { if (isUnauthorized(res)) { handleExpiredSession(); } })
-        .catch(() => {})
+        .then((res) => {
+          if (isUnauthorized(res)) {
+            handleExpiredSession();
+          }
+        })
+        .catch(() => {}),
     );
     await Promise.all(deletePromises);
     feed.innerHTML = '';
@@ -457,14 +490,19 @@ async function loadIncidents(append = false) {
     clearAllBtn.classList.add('opacity-40', 'pointer-events-none');
   }
   try {
-    const res = await fetch(`/api/incidents?limit=${INCIDENTS_LIMIT}&offset=${incidentsOffset}`, { headers: authHeaders() });
-    if (isUnauthorized(res)) { handleExpiredSession(); return; }
+    const res = await fetch(`/api/incidents?limit=${INCIDENTS_LIMIT}&offset=${incidentsOffset}`, {
+      headers: authHeaders(),
+    });
+    if (isUnauthorized(res)) {
+      handleExpiredSession();
+      return;
+    }
     if (!res.ok) return;
     const data = await res.json();
     const incidents = data.data?.incidents || [];
     const total = data.data?.total || 0;
 
-    incidents.forEach(dbIncident => {
+    incidents.forEach((dbIncident) => {
       feed.appendChild(renderIncidentFromDB(dbIncident));
     });
 
@@ -476,7 +514,8 @@ async function loadIncidents(append = false) {
     if (incidentsOffset < total) {
       const loadMoreBtn = document.createElement('button');
       loadMoreBtn.id = 'load-more-btn';
-      loadMoreBtn.className = 'mx-auto block py-2 px-4 text-sm text-gray-400 hover:text-accent cursor-pointer';
+      loadMoreBtn.className =
+        'mx-auto block py-2 px-4 text-sm text-gray-400 hover:text-accent cursor-pointer';
       loadMoreBtn.textContent = UI.LOAD_MORE;
       loadMoreBtn.addEventListener('click', () => loadIncidents(true));
       feed.appendChild(loadMoreBtn);
@@ -508,7 +547,7 @@ function handleExtensionMode() {
           transcript: target.dataset.summaryTranscript,
           bullets: JSON.parse(target.dataset.summaryBullets),
           incidentElement: target,
-          onTicketCreated: buildOnTicketCreated(target)
+          onTicketCreated: buildOnTicketCreated(target),
         });
       }
     }
@@ -534,7 +573,10 @@ function adoptExtensionSession() {
   const email = params.get('email');
   const name = params.get('name');
   if (token && email && !getSession()?.token) {
-    localStorage.setItem('recup_session', JSON.stringify({ token, user: { email, ...(name && { name }) } }));
+    localStorage.setItem(
+      'recup_session',
+      JSON.stringify({ token, user: { email, ...(name && { name }) } }),
+    );
     tagSentryUser();
   }
   if (token || email) {
@@ -568,15 +610,21 @@ function handlePostMessage(event) {
   const { token, email, name, highlight, contextText } = event.data;
 
   if (token && email && !getSession()?.token) {
-    localStorage.setItem('recup_session', JSON.stringify({ token, user: { email, ...(name && { name }) } }));
+    localStorage.setItem(
+      'recup_session',
+      JSON.stringify({ token, user: { email, ...(name && { name }) } }),
+    );
     tagSentryUser();
     showApp(email);
     fetch('/api/auth/me', { headers: authHeaders() })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
         if (data?.data?.user) {
           const session = getSession();
-          localStorage.setItem('recup_session', JSON.stringify({ ...session, user: { ...session.user, ...data.data.user } }));
+          localStorage.setItem(
+            'recup_session',
+            JSON.stringify({ ...session, user: { ...session.user, ...data.data.user } }),
+          );
           tagSentryUser();
           showApp(data.data.user.email);
         }
@@ -601,8 +649,8 @@ function handlePostMessage(event) {
       highlightTarget(highlight);
     } else {
       fetch(`/api/incidents/${highlight}`, { headers: authHeaders() })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
           if (!data?.data?.incident) return;
           const el = renderIncidentFromDB(data.data.incident);
           feed.prepend(el);
@@ -627,7 +675,7 @@ function highlightTarget(id) {
       transcript: target.dataset.summaryTranscript,
       bullets: JSON.parse(target.dataset.summaryBullets),
       incidentElement: target,
-      onTicketCreated: buildOnTicketCreated(target)
+      onTicketCreated: buildOnTicketCreated(target),
     });
   }
 }

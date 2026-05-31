@@ -1,9 +1,9 @@
-import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import db from '../db.js';
-import { signToken, authMiddleware } from '../middleware/auth.js';
-import { createRateLimiter } from '../middleware/rateLimiter.js';
+import { Router } from 'express';
 import { config } from '../config/env.js';
+import db from '../db.js';
+import { authMiddleware, signToken } from '../middleware/auth.js';
+import { createRateLimiter } from '../middleware/rateLimiter.js';
 import { ClickUpService } from '../services/ClickUpService.js';
 import { decrypt } from '../services/crypto.js';
 
@@ -41,7 +41,10 @@ router.post('/api/auth/register', rateLimit, async (req, res, next) => {
         return res.status(400).json({ success: false, error: 'EMAIL_NOT_IN_WORKSPACE' });
       }
     } catch (err) {
-      console.warn('[register] ClickUp workspace check failed, allowing register (fail-open):', err?.message);
+      console.warn(
+        '[register] ClickUp workspace check failed, allowing register (fail-open):',
+        err?.message,
+      );
     }
   }
 
@@ -102,7 +105,10 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
         const clickupAvatar = await ClickUpService.resolveAvatarByEmail(user.email, clickupApiKey);
         if (clickupAvatar) {
           avatar = clickupAvatar;
-          await db.execute({ sql: 'UPDATE users SET avatar_url = ? WHERE id = ?', args: [avatar, user.id] });
+          await db.execute({
+            sql: 'UPDATE users SET avatar_url = ? WHERE id = ?',
+            args: [avatar, user.id],
+          });
         }
       } catch {}
     }
@@ -120,11 +126,19 @@ router.post('/api/auth/login', rateLimit, async (req, res, next) => {
 
 router.get('/api/auth/me', authMiddleware, async (req, res, next) => {
   try {
-    const result = await db.execute({ sql: 'SELECT * FROM users WHERE id = ?', args: [req.user.id] });
+    const result = await db.execute({
+      sql: 'SELECT * FROM users WHERE id = ?',
+      args: [req.user.id],
+    });
     const user = result.rows[0];
     if (!user) return res.status(404).json({ success: false, error: 'NOT_FOUND' });
-    return res.json({ success: true, data: { user: { name: user.name, email: user.email, avatar: user.avatar_url || null } } });
-  } catch (err) { next(err); }
+    return res.json({
+      success: true,
+      data: { user: { name: user.name, email: user.email, avatar: user.avatar_url || null } },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;

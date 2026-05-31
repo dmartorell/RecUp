@@ -1,13 +1,14 @@
 import { Router } from 'express';
-import { ClickUpService } from '../services/ClickUpService.js';
 import { CLICKUP_CUSTOM_FIELD_IDS } from '../config/constants.js';
-import { authMiddleware, } from '../middleware/auth.js';
 import { getUserSettings } from '../db.js';
+import { authMiddleware } from '../middleware/auth.js';
+import { ClickUpService } from '../services/ClickUpService.js';
 
 const router = Router();
 
 router.post('/api/ticket', authMiddleware, async (req, res, next) => {
-  const { name, markdown_description, reporterEmail, assetId, platform, product, appVersion } = req.body;
+  const { name, markdown_description, reporterEmail, assetId, platform, product, appVersion } =
+    req.body;
 
   if (!name || !name.trim()) {
     return res.status(400).json({ error: 'NAME_REQUIRED' });

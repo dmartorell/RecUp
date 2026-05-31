@@ -23,7 +23,7 @@ export class AttachmentManager {
     const incoming = Array.from(fileList);
 
     for (const file of incoming) {
-      if (!ALLOWED_TYPES.some(t => file.type.startsWith(t))) {
+      if (!ALLOWED_TYPES.some((t) => file.type.startsWith(t))) {
         return UI.ATTACH_TYPE_NOT_ALLOWED(file.name);
       }
       if (file.size > MAX_SIZE_BYTES) {
@@ -51,14 +51,14 @@ export class AttachmentManager {
   }
 
   clear() {
-    this._objectUrls.forEach(url => URL.revokeObjectURL(url));
+    this._objectUrls.forEach((url) => URL.revokeObjectURL(url));
     this._files = [];
     this._objectUrls = [];
     this._container.innerHTML = '';
   }
 
   render() {
-    this._objectUrls.forEach(url => URL.revokeObjectURL(url));
+    this._objectUrls.forEach((url) => URL.revokeObjectURL(url));
     this._objectUrls = [];
     this._container.innerHTML = '';
 
@@ -94,9 +94,7 @@ export class AttachmentManager {
 
       const name = document.createElement('span');
       name.className = 'attachment-name';
-      const displayName = file.name.length > 15
-        ? file.name.slice(0, 12) + '...'
-        : file.name;
+      const displayName = file.name.length > 15 ? file.name.slice(0, 12) + '...' : file.name;
       name.textContent = displayName;
       thumb.appendChild(name);
 

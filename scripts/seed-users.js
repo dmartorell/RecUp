@@ -1,7 +1,7 @@
+import bcrypt from 'bcryptjs';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
-import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const PROJECT_ROOT = join(__filename, '..', '..');

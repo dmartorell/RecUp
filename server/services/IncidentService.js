@@ -5,7 +5,7 @@ function parseBullets(incident) {
 }
 
 function serializeBullets(bullets) {
-  return Array.isArray(bullets) ? JSON.stringify(bullets) : (bullets || null);
+  return Array.isArray(bullets) ? JSON.stringify(bullets) : bullets || null;
 }
 
 export const IncidentService = {
@@ -25,9 +25,17 @@ export const IncidentService = {
     const result = await db.execute({
       sql: `INSERT INTO incidents (user_id, transcript, title, bullets, status, source_type, duration_ms, clickup_task_id, clickup_task_url)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [userId, data.transcript.trim(), data.title || null, serializeBullets(data.bullets),
-        data.status || 'procesando', data.source_type || null, data.duration_ms || 0,
-        data.clickup_task_id || null, data.clickup_task_url || null],
+      args: [
+        userId,
+        data.transcript.trim(),
+        data.title || null,
+        serializeBullets(data.bullets),
+        data.status || 'procesando',
+        data.source_type || null,
+        data.duration_ms || 0,
+        data.clickup_task_id || null,
+        data.clickup_task_url || null,
+      ],
     });
     const row = await db.execute({
       sql: 'SELECT * FROM incidents WHERE id = ?',
@@ -45,12 +53,19 @@ export const IncidentService = {
   },
 
   async update(id, fields) {
-    const allowed = ['clickup_task_id', 'clickup_task_url', 'status', 'title', 'bullets', 'transcript'];
-    const valid = Object.keys(fields).filter(k => allowed.includes(k));
+    const allowed = [
+      'clickup_task_id',
+      'clickup_task_url',
+      'status',
+      'title',
+      'bullets',
+      'transcript',
+    ];
+    const valid = Object.keys(fields).filter((k) => allowed.includes(k));
     if (valid.length === 0) return null;
-    const values = valid.map(k => k === 'bullets' ? serializeBullets(fields[k]) : fields[k]);
+    const values = valid.map((k) => (k === 'bullets' ? serializeBullets(fields[k]) : fields[k]));
     await db.execute({
-      sql: `UPDATE incidents SET ${valid.map(f => `${f} = ?`).join(', ')} WHERE id = ?`,
+      sql: `UPDATE incidents SET ${valid.map((f) => `${f} = ?`).join(', ')} WHERE id = ?`,
       args: [...values, id],
     });
     const result = await db.execute({

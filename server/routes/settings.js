@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/auth.js';
 import db from '../db.js';
-import { encrypt, decrypt, hint } from '../services/crypto.js';
+import { authMiddleware } from '../middleware/auth.js';
+import { decrypt, encrypt, hint } from '../services/crypto.js';
 
 const DEFAULT_CLICKUP_LIST_ID = '193679011';
 const ENCRYPTED_FIELDS = ['clickup_api_key', 'anthropic_api_key', 'openai_api_key'];
@@ -33,7 +33,8 @@ router.get('/api/settings', authMiddleware, async (req, res, next) => {
 });
 
 router.put('/api/settings', authMiddleware, async (req, res, next) => {
-  const { clickup_api_key, clickup_list_id, anthropic_api_key, openai_api_key, ai_provider } = req.body || {};
+  const { clickup_api_key, clickup_list_id, anthropic_api_key, openai_api_key, ai_provider } =
+    req.body || {};
   const provider = ['anthropic', 'openai'].includes(ai_provider) ? ai_provider : 'anthropic';
 
   const sets = ['clickup_list_id = ?', 'ai_provider = ?'];

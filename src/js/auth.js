@@ -1,8 +1,12 @@
-import { showToast } from './toast.js';
 import { UI } from './strings.js';
+import { showToast } from './toast.js';
 
 export function getSession() {
-  try { return JSON.parse(localStorage.getItem('recup_session')); } catch { return null; }
+  try {
+    return JSON.parse(localStorage.getItem('recup_session'));
+  } catch {
+    return null;
+  }
 }
 
 export function tagSentryUser() {
@@ -14,8 +18,8 @@ export function tagSentryUser() {
 export function authHeaders() {
   const session = getSession();
   return {
-    'Authorization': 'Bearer ' + (session?.token || ''),
-    'Content-Type': 'application/json'
+    Authorization: 'Bearer ' + (session?.token || ''),
+    'Content-Type': 'application/json',
   };
 }
 

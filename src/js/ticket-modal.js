@@ -1,8 +1,8 @@
 import { AttachmentManager } from './attachments.js';
-import { capitalize, ensurePeriod } from './utils.js';
+import { authHeaders, getSession, handleExpiredSession, isUnauthorized } from './auth.js';
+import { apiError, UI } from './strings.js';
 import { showToast, showToastWithLink } from './toast.js';
-import { getSession, authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
-import { UI, apiError } from './strings.js';
+import { capitalize, ensurePeriod } from './utils.js';
 
 const modal = document.getElementById('ticket-modal');
 const titleInput = document.getElementById('ticket-title');
@@ -34,40 +34,40 @@ const missingCompleteBtn = document.getElementById('missing-banner-cta');
 let selectedApp = 'alfred';
 let selectedPlatforms = ['iOS'];
 
-appBadges.forEach(btn => {
+appBadges.forEach((btn) => {
   btn.addEventListener('click', () => {
     if (btn.classList.contains('selected')) return;
-    appBadges.forEach(b => b.classList.remove('selected'));
+    appBadges.forEach((b) => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedApp = btn.dataset.app;
     const webProducts = ['dkey', 'assets', 'assets-beta'];
     const iosProducts = ['alfred', 'nn', 'lavidda'];
     if (webProducts.includes(selectedApp)) {
-      platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'Web'));
+      platformBadges.forEach((b) => b.classList.toggle('selected', b.dataset.platform === 'Web'));
       selectedPlatforms = ['Web'];
     } else if (iosProducts.includes(selectedApp)) {
-      platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
+      platformBadges.forEach((b) => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
       selectedPlatforms = ['iOS'];
     }
   });
 });
 
-platformBadges.forEach(btn => {
+platformBadges.forEach((btn) => {
   btn.addEventListener('click', () => {
     const platform = btn.dataset.platform;
     if (platform === 'Web') {
-      platformBadges.forEach(b => b.classList.remove('selected'));
+      platformBadges.forEach((b) => b.classList.remove('selected'));
       btn.classList.add('selected');
       selectedPlatforms = ['Web'];
     } else {
-      const webBtn = [...platformBadges].find(b => b.dataset.platform === 'Web');
+      const webBtn = [...platformBadges].find((b) => b.dataset.platform === 'Web');
       if (webBtn) webBtn.classList.remove('selected');
       if (btn.classList.contains('selected')) {
         btn.classList.remove('selected');
-        selectedPlatforms = selectedPlatforms.filter(p => p !== platform);
+        selectedPlatforms = selectedPlatforms.filter((p) => p !== platform);
       } else {
         btn.classList.add('selected');
-        selectedPlatforms = [...selectedPlatforms.filter(p => p !== 'Web'), platform];
+        selectedPlatforms = [...selectedPlatforms.filter((p) => p !== 'Web'), platform];
       }
     }
   });
@@ -122,8 +122,8 @@ function closeModal() {
   resetProgress();
   hideModalError();
   attachmentError.classList.add('invisible');
-  appBadges.forEach(b => b.classList.remove('selected'));
-  platformBadges.forEach(b => b.classList.remove('selected'));
+  appBadges.forEach((b) => b.classList.remove('selected'));
+  platformBadges.forEach((b) => b.classList.remove('selected'));
   selectedApp = '';
   selectedPlatforms = [];
   currentIncidentElement = null;
@@ -145,19 +145,20 @@ export function openTicketModal(incidentData) {
 
   titleInput.value = incidentData.title || '';
 
-  const bulletsText = (incidentData.bullets || []).map(b => '- ' + ensurePeriod(capitalize(b))).join('\n');
+  const bulletsText = (incidentData.bullets || [])
+    .map((b) => '- ' + ensurePeriod(capitalize(b)))
+    .join('\n');
   descriptionEl.value = bulletsText;
 
   selectedApp = 'alfred';
   selectedPlatforms = ['iOS'];
-  appBadges.forEach(b => b.classList.toggle('selected', b.dataset.app === 'alfred'));
-  platformBadges.forEach(b => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
+  appBadges.forEach((b) => b.classList.toggle('selected', b.dataset.app === 'alfred'));
+  platformBadges.forEach((b) => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
 
   attachments = new AttachmentManager(previewsContainer);
 
   modal.classList.remove('hidden');
   modal.querySelector('.modal-panel').scrollTop = 0;
-
 }
 
 attachFileBtn.addEventListener('click', () => fileInput.click());
@@ -173,7 +174,7 @@ fileInput.addEventListener('change', () => {
 async function openCamera() {
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
     });
     cameraViewfinder.srcObject = cameraStream;
     cameraOverlay.classList.remove('hidden');
@@ -184,7 +185,7 @@ async function openCamera() {
 
 function closeCamera() {
   if (cameraStream) {
-    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream.getTracks().forEach((t) => t.stop());
     cameraStream = null;
   }
   cameraViewfinder.srcObject = null;
@@ -197,18 +198,22 @@ function capturePhoto() {
   cameraCanvas.height = video.videoHeight;
   const ctx = cameraCanvas.getContext('2d');
   ctx.drawImage(video, 0, 0);
-  cameraCanvas.toBlob((blob) => {
-    if (!blob) {
-      showAttachmentError(UI.TICKET_PHOTO_ERROR);
+  cameraCanvas.toBlob(
+    (blob) => {
+      if (!blob) {
+        showAttachmentError(UI.TICKET_PHOTO_ERROR);
+        closeCamera();
+        return;
+      }
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const file = new File([blob], `foto-${timestamp}.jpg`, { type: 'image/jpeg' });
+      const err = attachments.addFiles([file]);
+      if (err) showAttachmentError(err);
       closeCamera();
-      return;
-    }
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const file = new File([blob], `foto-${timestamp}.jpg`, { type: 'image/jpeg' });
-    const err = attachments.addFiles([file]);
-    if (err) showAttachmentError(err);
-    closeCamera();
-  }, 'image/jpeg', 0.92);
+    },
+    'image/jpeg',
+    0.92,
+  );
 }
 
 attachCameraBtn.addEventListener('click', openCamera);
@@ -237,19 +242,21 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-
 async function uploadAttachments(taskId, files) {
   const formData = new FormData();
   formData.append('taskId', taskId);
-  files.forEach(f => formData.append('attachment', f));
+  files.forEach((f) => formData.append('attachment', f));
 
   const session = getSession();
   const res = await fetch('/api/attachment', {
     method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + (session?.token || '') },
+    headers: { Authorization: 'Bearer ' + (session?.token || '') },
     body: formData,
   });
-  if (res.status === 401) { handleExpiredSession(); return; }
+  if (res.status === 401) {
+    handleExpiredSession();
+    return;
+  }
   const data = await res.json();
   if (!res.ok) throw { partial: data.uploaded.length > 0, data };
   return data;
@@ -270,7 +277,7 @@ function getMissingFields() {
 
 function showMissingBanner(fields) {
   missingList.innerHTML = '';
-  fields.forEach(f => {
+  fields.forEach((f) => {
     const li = document.createElement('li');
     li.textContent = f;
     missingList.appendChild(li);
@@ -330,12 +337,15 @@ async function executeSubmit() {
         assetId: assetIdInput.value.trim(),
         platform: selectedPlatforms.join(', '),
         product: selectedAppLabel,
-        appVersion: appVersionInput.value.trim()
-      })
+        appVersion: appVersionInput.value.trim(),
+      }),
     });
 
     if (!ticketRes.ok) {
-      if (isUnauthorized(ticketRes)) { handleExpiredSession(); return; }
+      if (isUnauthorized(ticketRes)) {
+        handleExpiredSession();
+        return;
+      }
       const err = await ticketRes.json().catch(() => ({}));
       if (err.error === 'NO_MEMBER') {
         submitting = false;
@@ -361,7 +371,8 @@ async function executeSubmit() {
         showModalError(UI.TICKET_ATTACHMENTS_PARTIAL);
 
         const retryBtn = document.createElement('button');
-        retryBtn.className = 'btn-retry-attachments text-sm px-3 py-1.5 border border-accent text-accent rounded-lg hover:bg-accent/5 cursor-pointer mt-2';
+        retryBtn.className =
+          'btn-retry-attachments text-sm px-3 py-1.5 border border-accent text-accent rounded-lg hover:bg-accent/5 cursor-pointer mt-2';
         retryBtn.textContent = UI.TICKET_ATTACHMENTS_RETRY;
         retryBtn.addEventListener('click', async () => {
           retryBtn.disabled = true;
@@ -397,7 +408,6 @@ async function executeSubmit() {
       closeModal();
       showToastWithLink(UI.TICKET_CREATED, UI.TICKET_VIEW_CLICKUP, ticket.url);
     }, 400);
-
   } catch (err) {
     showModalError(err.message || apiError('UNKNOWN'));
     setSubmitting(false);
@@ -427,10 +437,13 @@ submitBtn.addEventListener('click', () => {
 missingCompleteBtn.addEventListener('click', () => {
   hideMissingBanner();
   bannerShown = false;
-  const firstEmpty = !selectedApp ? appBadges[0]
-    : !selectedPlatforms.length ? platformBadges[0]
-    : !appVersionInput.value.trim() ? appVersionInput
-    : assetIdInput;
+  const firstEmpty = !selectedApp
+    ? appBadges[0]
+    : !selectedPlatforms.length
+      ? platformBadges[0]
+      : !appVersionInput.value.trim()
+        ? appVersionInput
+        : assetIdInput;
   firstEmpty.focus();
   firstEmpty.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
@@ -459,4 +472,3 @@ function markCardAsSent(ticketUrl, taskId) {
     footer.appendChild(link);
   }
 }
-

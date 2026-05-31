@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = 'test-secret-for-testing';
 
@@ -11,11 +11,7 @@ export async function createTestApp() {
 }
 
 export function getAuthToken(userId, name, email) {
-  return jwt.sign(
-    { sub: userId, name, email },
-    JWT_SECRET,
-    { expiresIn: '1h' }
-  );
+  return jwt.sign({ sub: userId, name, email }, JWT_SECRET, { expiresIn: '1h' });
 }
 
 export async function seedTestUser(name, email, password) {

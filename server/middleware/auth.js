@@ -1,13 +1,9 @@
 import jwt from 'jsonwebtoken';
-import { config } from '../config/env.js';
 import { JWT_EXPIRES_IN } from '../config/constants.js';
+import { config } from '../config/env.js';
 
 export function signToken(userId, name, email) {
-  return jwt.sign(
-    { sub: userId, name, email },
-    config.jwtSecret,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
+  return jwt.sign({ sub: userId, name, email }, config.jwtSecret, { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function authMiddleware(req, res, next) {

@@ -1,6 +1,6 @@
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
-import { seedTestUser, cleanDb } from './setup.js';
-import { encrypt, decrypt, isEncrypted } from '../server/services/crypto.js';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { decrypt, encrypt, isEncrypted } from '../server/services/crypto.js';
+import { cleanDb, seedTestUser } from './setup.js';
 
 let app, server, baseUrl, authToken, userId;
 
@@ -43,8 +43,14 @@ describe('GET /api/settings', () => {
     });
     const data = await res.json();
 
-    expect(data.clickup_api_key).toEqual({ configured: true, hint: '••••••••••••••••••••••••AAAA' });
-    expect(data.anthropic_api_key).toEqual({ configured: true, hint: '••••••••••••••••••••••••BBBB' });
+    expect(data.clickup_api_key).toEqual({
+      configured: true,
+      hint: '••••••••••••••••••••••••AAAA',
+    });
+    expect(data.anthropic_api_key).toEqual({
+      configured: true,
+      hint: '••••••••••••••••••••••••BBBB',
+    });
     expect(data.openai_api_key).toEqual({ configured: false, hint: '' });
 
     const blob = JSON.stringify(data);

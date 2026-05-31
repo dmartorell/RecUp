@@ -1,6 +1,6 @@
 import { authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
-import { showToast } from './toast.js';
 import { UI } from './strings.js';
+import { showToast } from './toast.js';
 
 const modal = document.getElementById('settings-modal');
 const closeBtn = document.getElementById('settings-close-btn');
@@ -25,7 +25,7 @@ function updateProviderVisibility() {
   openaiSection.classList.toggle('hidden', !isOpenAI);
 }
 
-providerRadios.forEach(r => r.addEventListener('change', updateProviderVisibility));
+providerRadios.forEach((r) => r.addEventListener('change', updateProviderVisibility));
 
 function showError(msg) {
   errorEl.textContent = msg;
@@ -43,11 +43,16 @@ function applyKeyField(input, meta) {
 
 async function loadSettings() {
   const res = await fetch('/api/settings', { headers: authHeaders() });
-  if (isUnauthorized(res)) { handleExpiredSession(); return; }
+  if (isUnauthorized(res)) {
+    handleExpiredSession();
+    return;
+  }
   if (!res.ok) return;
   const data = await res.json();
   const provider = data.ai_provider || 'anthropic';
-  providerRadios.forEach(r => { r.checked = r.value === provider; });
+  providerRadios.forEach((r) => {
+    r.checked = r.value === provider;
+  });
   applyKeyField(anthropicKeyInput, data.anthropic_api_key);
   applyKeyField(openaiKeyInput, data.openai_api_key);
   applyKeyField(clickupKeyInput, data.clickup_api_key);
@@ -67,7 +72,9 @@ function closeModal() {
 
 closeBtn.addEventListener('click', closeModal);
 cancelBtn.addEventListener('click', closeModal);
-modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) closeModal();
+});
 
 saveBtn.addEventListener('click', async () => {
   hideError();
@@ -89,8 +96,14 @@ saveBtn.addEventListener('click', async () => {
 
   saveBtn.disabled = false;
 
-  if (isUnauthorized(res)) { handleExpiredSession(); return; }
-  if (!res.ok) { showError(UI.SETTINGS_SAVE_ERROR); return; }
+  if (isUnauthorized(res)) {
+    handleExpiredSession();
+    return;
+  }
+  if (!res.ok) {
+    showError(UI.SETTINGS_SAVE_ERROR);
+    return;
+  }
 
   showToast(UI.SETTINGS_SAVED);
   closeModal();

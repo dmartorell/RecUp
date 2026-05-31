@@ -11,7 +11,12 @@ let confirmAbort = null;
 const RED_CLASSES = ['bg-red-500', 'hover:bg-red-600'];
 const BLUE_CLASSES = ['bg-accent', 'hover:bg-accent-hover'];
 
-export function showConfirmModal(title, message, onConfirm, { okLabel = UI.CONFIRM_DELETE, danger = true } = {}) {
+export function showConfirmModal(
+  title,
+  message,
+  onConfirm,
+  { okLabel = UI.CONFIRM_DELETE, danger = true } = {},
+) {
   if (confirmAbort) confirmAbort.abort();
   confirmAbort = new AbortController();
   const { signal } = confirmAbort;
@@ -22,9 +27,19 @@ export function showConfirmModal(title, message, onConfirm, { okLabel = UI.CONFI
   confirmOk.classList.remove(...RED_CLASSES, ...BLUE_CLASSES);
   confirmOk.classList.add(...(danger ? RED_CLASSES : BLUE_CLASSES));
   confirmModal.classList.remove('hidden');
-  const cleanup = () => { confirmModal.classList.add('hidden'); confirmAbort.abort(); };
+  const cleanup = () => {
+    confirmModal.classList.add('hidden');
+    confirmAbort.abort();
+  };
   confirmCancel.addEventListener('click', cleanup, { signal });
-  confirmOk.addEventListener('click', () => { cleanup(); onConfirm(); }, { signal });
+  confirmOk.addEventListener(
+    'click',
+    () => {
+      cleanup();
+      onConfirm();
+    },
+    { signal },
+  );
 }
 
 export function hideConfirmModal() {
