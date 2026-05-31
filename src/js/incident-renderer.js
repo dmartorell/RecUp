@@ -27,7 +27,6 @@ function buildIncidentHTML({
   statusBadge,
   durationBadge,
   timeLabel,
-  transcript,
   showSpinner,
   noBugHTML,
 }) {
@@ -247,7 +246,6 @@ export function createIncident(transcript, audioBlob, duration) {
       typeBadgeLabel,
       durationBadge: hasAudio ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
       timeLabel: timeAgo(createdAt),
-      transcript: UI.NO_VOICE,
     });
     incident.querySelector('.incident-text').textContent = UI.NO_VOICE;
     attachDeleteHandler(incident, false);
