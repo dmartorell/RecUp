@@ -19,6 +19,14 @@ bun test --test-name-pattern "POST /api/auth"  # filter by name
 
 # Seed users
 bun scripts/seed-users.js
+
+# Lint + format (Biome)
+bun run check           # lint + format report (no writes)
+bun run check:fix       # apply safe fixes
+bun run lint            # lint only
+bun run lint:fix        # lint with safe auto-fixes
+bun run format          # format write
+bun run format:check    # format check (no writes)
 ```
 
 ## Architecture
