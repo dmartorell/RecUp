@@ -381,7 +381,7 @@ export function resumePendingIncidents() {
     if (!transcript) return;
     incident.dataset.summarizing = '1';
     const sourceType = incident.dataset.sourceType || 'text';
-    const durationMs = parseInt(incident.dataset.durationMs) || 0;
+    const durationMs = parseInt(incident.dataset.durationMs, 10) || 0;
     runSummarize(incident, transcript, sourceType, durationMs);
   });
 }

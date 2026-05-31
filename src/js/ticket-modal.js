@@ -81,7 +81,7 @@ let onTicketCreatedCallback = null;
 
 function setProgress(percent) {
   progressContainer.classList.remove('hidden');
-  progressBar.style.width = percent + '%';
+  progressBar.style.width = `${percent}%`;
 }
 
 function resetProgress() {
@@ -146,7 +146,7 @@ export function openTicketModal(incidentData) {
   titleInput.value = incidentData.title || '';
 
   const bulletsText = (incidentData.bullets || [])
-    .map((b) => '- ' + ensurePeriod(capitalize(b)))
+    .map((b) => `- ${ensurePeriod(capitalize(b))}`)
     .join('\n');
   descriptionEl.value = bulletsText;
 
@@ -250,7 +250,7 @@ async function uploadAttachments(taskId, files) {
   const session = getSession();
   const res = await fetch('/api/attachment', {
     method: 'POST',
-    headers: { Authorization: 'Bearer ' + (session?.token || '') },
+    headers: { Authorization: `Bearer ${session?.token || ''}` },
     body: formData,
   });
   if (res.status === 401) {
@@ -321,9 +321,9 @@ async function executeSubmit() {
   const selectedBadge = modal.querySelector('#app-badges .badge-app.selected');
   const selectedAppLabel = selectedBadge ? selectedBadge.textContent.trim() : '';
   const bullets = descriptionEl.value;
-  let markdownDescription = '**Resumen de la incidencia:**\n\n' + bullets;
+  let markdownDescription = `**Resumen de la incidencia:**\n\n${bullets}`;
   if (currentTranscript) {
-    markdownDescription += '\n\n---\n\n**Transcripción completa:**\n\n' + currentTranscript;
+    markdownDescription += `\n\n---\n\n**Transcripción completa:**\n\n${currentTranscript}`;
   }
 
   try {
@@ -365,7 +365,7 @@ async function executeSubmit() {
       try {
         await uploadAttachments(ticket.id, files);
         setProgress(90);
-      } catch (attErr) {
+      } catch (_attErr) {
         setProgress(90);
         markCardAsSent(ticket.url, ticket.id);
         showModalError(UI.TICKET_ATTACHMENTS_PARTIAL);

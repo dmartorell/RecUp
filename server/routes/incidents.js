@@ -8,8 +8,8 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res, next) => {
   try {
-    const limit = Math.max(1, parseInt(req.query.limit) || 20);
-    const offset = Math.max(0, parseInt(req.query.offset) || 0);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 20);
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
     const data = await IncidentService.list(req.user.id, { limit, offset });
     return res.json({ success: true, data });
   } catch (err) {
@@ -19,7 +19,7 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   const { transcript } = req.body || {};
-  if (!transcript || !transcript.trim()) {
+  if (!transcript?.trim()) {
     return res.status(400).json({ success: false, error: 'TRANSCRIPT_REQUIRED' });
   }
   try {
@@ -31,7 +31,7 @@ router.post('/', async (req, res, next) => {
 });
 
 router.get('/:id', async (req, res, next) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
   try {
     const incident = await IncidentService.getById(id);
@@ -44,7 +44,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 router.patch('/:id', async (req, res, next) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
   try {
     const incident = await IncidentService.getById(id);
@@ -62,7 +62,7 @@ router.patch('/:id', async (req, res, next) => {
 });
 
 router.delete('/:id', async (req, res, next) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
   if (!id) return res.status(400).json({ success: false, error: 'INVALID_ID' });
   try {
     const incident = await IncidentService.getById(id);

@@ -18,7 +18,7 @@ export function tagSentryUser() {
 export function authHeaders() {
   const session = getSession();
   return {
-    Authorization: 'Bearer ' + (session?.token || ''),
+    Authorization: `Bearer ${session?.token || ''}`,
     'Content-Type': 'application/json',
   };
 }

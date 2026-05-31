@@ -1,5 +1,5 @@
 export function parseUTC(ts) {
-  return new Date(ts.endsWith('Z') ? ts : ts + 'Z');
+  return new Date(ts.endsWith('Z') ? ts : `${ts}Z`);
 }
 
 export function timeAgo(date) {

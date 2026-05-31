@@ -11,7 +11,7 @@ export function showToast(message, durationMs = 4000) {
 export function showToastWithLink(text, linkText, linkUrl, durationMs = 6000) {
   const toast = document.createElement('div');
   toast.className = 'toast';
-  toast.append(text + ' ');
+  toast.append(`${text} `);
   const a = document.createElement('a');
   a.href = linkUrl;
   a.target = '_blank';

@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener((info, _tab) => {
   if (info.menuItemId !== 'send-to-recup') return;
 
   const selectionText = info.selectionText || '';

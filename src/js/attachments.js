@@ -94,7 +94,7 @@ export class AttachmentManager {
 
       const name = document.createElement('span');
       name.className = 'attachment-name';
-      const displayName = file.name.length > 15 ? file.name.slice(0, 12) + '...' : file.name;
+      const displayName = file.name.length > 15 ? `${file.name.slice(0, 12)}...` : file.name;
       name.textContent = displayName;
       thumb.appendChild(name);
 

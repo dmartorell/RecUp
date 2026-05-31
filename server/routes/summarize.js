@@ -1,7 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Router } from 'express';
-import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
 import {
   CLAUDE_MAX_TOKENS,
   CLAUDE_MODEL,
@@ -26,7 +26,7 @@ const router = Router();
 router.post('/api/summarize', authMiddleware, async (req, res, next) => {
   const { transcript } = req.body;
 
-  if (!transcript || !transcript.trim()) {
+  if (!transcript?.trim()) {
     return res.status(400).json({ error: 'TRANSCRIPT_REQUIRED' });
   }
 

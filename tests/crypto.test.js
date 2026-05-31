@@ -30,7 +30,7 @@ describe('crypto service', () => {
 
   test('decrypt throws on tampered ciphertext (auth tag verification)', () => {
     const enc = encrypt('secret-payload');
-    const tampered = enc.slice(0, -4) + 'AAAA';
+    const tampered = `${enc.slice(0, -4)}AAAA`;
     expect(() => decrypt(tampered)).toThrow();
   });
 

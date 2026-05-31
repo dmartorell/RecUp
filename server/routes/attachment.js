@@ -16,7 +16,7 @@ router.post(
   '/api/attachment',
   authMiddleware,
   upload.array('attachment', MULTER_MAX_FILES),
-  async (req, res, next) => {
+  async (req, res) => {
     const { taskId } = req.body;
 
     if (!taskId) {

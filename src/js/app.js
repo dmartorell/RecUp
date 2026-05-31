@@ -359,7 +359,7 @@ function animateWaveform() {
   const WAVEFORM_MIN_HEIGHT = 3;
   const normalized = Math.min(1, peak / WAVEFORM_PEAK_DIVISOR);
   const height = Math.max(WAVEFORM_MIN_HEIGHT, normalized * WAVEFORM_MAX_HEIGHT);
-  for (const bar of waveformBars) bar.style.height = height + 'px';
+  for (const bar of waveformBars) bar.style.height = `${height}px`;
   animFrameId = requestAnimationFrame(animateWaveform);
 }
 
@@ -584,7 +584,7 @@ function adoptExtensionSession() {
     params.delete('email');
     params.delete('name');
     const qs = params.toString();
-    history.replaceState({}, '', location.pathname + (qs ? '?' + qs : ''));
+    history.replaceState({}, '', location.pathname + (qs ? `?${qs}` : ''));
   }
 }
 
@@ -594,7 +594,7 @@ async function handleExternalText() {
   if (contextText) {
     params.delete('contextText');
     const qs = params.toString();
-    history.replaceState({}, '', location.pathname + (qs ? '?' + qs : ''));
+    history.replaceState({}, '', location.pathname + (qs ? `?${qs}` : ''));
     createIncident(contextText, null, 0);
     scrollFeedToTop();
     return true;
@@ -605,7 +605,7 @@ async function handleExternalText() {
 
 function handlePostMessage(event) {
   if (event.origin !== window.location.origin) return;
-  if (!event.data || event.data.type !== 'recup:extension-data') return;
+  if (event.data?.type !== 'recup:extension-data') return;
 
   const { token, email, name, highlight, contextText } = event.data;
 

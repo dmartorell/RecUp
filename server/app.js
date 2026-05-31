@@ -1,7 +1,7 @@
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as Sentry from '@sentry/node';
 import express from 'express';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
 import './db.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import attachmentRouter from './routes/attachment.js';

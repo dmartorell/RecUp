@@ -7,8 +7,8 @@ export function signToken(userId, name, email) {
 }
 
 export function authMiddleware(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, error: 'UNAUTHORIZED' });
   }
 

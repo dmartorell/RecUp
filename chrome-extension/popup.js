@@ -136,7 +136,7 @@ function updateTimer() {
   const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(elapsed % 60).padStart(2, '0');
-  document.getElementById('timer-display').textContent = mm + ':' + ss;
+  document.getElementById('timer-display').textContent = `${mm}:${ss}`;
 }
 
 function animateWaveform() {
@@ -150,7 +150,7 @@ function animateWaveform() {
   }
   const height = Math.max(3, Math.min(1, peak / 15) * 26);
   document.querySelectorAll('.waveform-bar').forEach((bar) => {
-    bar.style.height = height + 'px';
+    bar.style.height = `${height}px`;
   });
   waveformAnimId = requestAnimationFrame(animateWaveform);
 }
@@ -370,7 +370,7 @@ els.sendBtn.addEventListener('click', () => {
 
       const email = stored.recup_email || '';
       const name = stored.recup_name || '';
-      chrome.tabs.query({ url: RECUP_URL + '/*' }, (tabs) => {
+      chrome.tabs.query({ url: `${RECUP_URL}/*` }, (tabs) => {
         const msg = {
           type: 'recup:extension-data',
           token,
@@ -384,7 +384,7 @@ els.sendBtn.addEventListener('click', () => {
           chrome.tabs.update(tabId, { active: true });
           chrome.windows.update(tabs[0].windowId, { focused: true });
         } else {
-          chrome.tabs.create({ url: RECUP_URL + '/' });
+          chrome.tabs.create({ url: `${RECUP_URL}/` });
         }
         window.close();
       });
