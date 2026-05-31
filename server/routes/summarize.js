@@ -26,7 +26,7 @@ const router = Router();
 router.post('/api/summarize', authMiddleware, async (req, res, next) => {
   const { transcript } = req.body;
 
-  if (!transcript?.trim()) {
+  if (typeof transcript !== 'string' || !transcript.trim()) {
     return res.status(400).json({ error: 'TRANSCRIPT_REQUIRED' });
   }
 

@@ -19,7 +19,7 @@ router.get('/', async (req, res, next) => {
 
 router.post('/', async (req, res, next) => {
   const { transcript } = req.body || {};
-  if (!transcript?.trim()) {
+  if (typeof transcript !== 'string' || !transcript.trim()) {
     return res.status(400).json({ success: false, error: 'TRANSCRIPT_REQUIRED' });
   }
   try {

@@ -10,7 +10,7 @@ router.post('/api/ticket', authMiddleware, async (req, res, next) => {
   const { name, markdown_description, reporterEmail, assetId, platform, product, appVersion } =
     req.body;
 
-  if (!name?.trim()) {
+  if (typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({ error: 'NAME_REQUIRED' });
   }
 
