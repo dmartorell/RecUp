@@ -25,7 +25,7 @@ function updateProviderVisibility() {
   openaiSection.classList.toggle('hidden', !isOpenAI);
 }
 
-providerRadios.forEach((r) => r.addEventListener('change', updateProviderVisibility));
+for (const r of providerRadios) r.addEventListener('change', updateProviderVisibility);
 
 function showError(msg) {
   errorEl.textContent = msg;

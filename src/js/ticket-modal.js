@@ -37,16 +37,16 @@ let selectedPlatforms = ['iOS'];
 appBadges.forEach((btn) => {
   btn.addEventListener('click', () => {
     if (btn.classList.contains('selected')) return;
-    appBadges.forEach((b) => b.classList.remove('selected'));
+    for (const b of appBadges) b.classList.remove('selected');
     btn.classList.add('selected');
     selectedApp = btn.dataset.app;
     const webProducts = ['dkey', 'assets', 'assets-beta'];
     const iosProducts = ['alfred', 'nn', 'lavidda'];
     if (webProducts.includes(selectedApp)) {
-      platformBadges.forEach((b) => b.classList.toggle('selected', b.dataset.platform === 'Web'));
+      for (const b of platformBadges) b.classList.toggle('selected', b.dataset.platform === 'Web');
       selectedPlatforms = ['Web'];
     } else if (iosProducts.includes(selectedApp)) {
-      platformBadges.forEach((b) => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
+      for (const b of platformBadges) b.classList.toggle('selected', b.dataset.platform === 'iOS');
       selectedPlatforms = ['iOS'];
     }
   });
@@ -56,7 +56,7 @@ platformBadges.forEach((btn) => {
   btn.addEventListener('click', () => {
     const platform = btn.dataset.platform;
     if (platform === 'Web') {
-      platformBadges.forEach((b) => b.classList.remove('selected'));
+      for (const b of platformBadges) b.classList.remove('selected');
       btn.classList.add('selected');
       selectedPlatforms = ['Web'];
     } else {
@@ -122,8 +122,8 @@ function closeModal() {
   resetProgress();
   hideModalError();
   attachmentError.classList.add('invisible');
-  appBadges.forEach((b) => b.classList.remove('selected'));
-  platformBadges.forEach((b) => b.classList.remove('selected'));
+  for (const b of appBadges) b.classList.remove('selected');
+  for (const b of platformBadges) b.classList.remove('selected');
   selectedApp = '';
   selectedPlatforms = [];
   currentIncidentElement = null;
@@ -152,8 +152,8 @@ export function openTicketModal(incidentData) {
 
   selectedApp = 'alfred';
   selectedPlatforms = ['iOS'];
-  appBadges.forEach((b) => b.classList.toggle('selected', b.dataset.app === 'alfred'));
-  platformBadges.forEach((b) => b.classList.toggle('selected', b.dataset.platform === 'iOS'));
+  for (const b of appBadges) b.classList.toggle('selected', b.dataset.app === 'alfred');
+  for (const b of platformBadges) b.classList.toggle('selected', b.dataset.platform === 'iOS');
 
   attachments = new AttachmentManager(previewsContainer);
 
@@ -185,7 +185,7 @@ async function openCamera() {
 
 function closeCamera() {
   if (cameraStream) {
-    cameraStream.getTracks().forEach((t) => t.stop());
+    for (const t of cameraStream.getTracks()) t.stop();
     cameraStream = null;
   }
   cameraViewfinder.srcObject = null;
@@ -245,7 +245,7 @@ document.addEventListener('keydown', (e) => {
 async function uploadAttachments(taskId, files) {
   const formData = new FormData();
   formData.append('taskId', taskId);
-  files.forEach((f) => formData.append('attachment', f));
+  for (const f of files) formData.append('attachment', f);
 
   const session = getSession();
   const res = await fetch('/api/attachment', {

@@ -359,7 +359,7 @@ function animateWaveform() {
   const WAVEFORM_MIN_HEIGHT = 3;
   const normalized = Math.min(1, peak / WAVEFORM_PEAK_DIVISOR);
   const height = Math.max(WAVEFORM_MIN_HEIGHT, normalized * WAVEFORM_MAX_HEIGHT);
-  waveformBars.forEach((bar) => (bar.style.height = height + 'px'));
+  for (const bar of waveformBars) bar.style.height = height + 'px';
   animFrameId = requestAnimationFrame(animateWaveform);
 }
 
@@ -376,7 +376,7 @@ function forceCleanup() {
     audioCtx.close();
     audioCtx = null;
   }
-  waveformBars.forEach((bar) => (bar.style.height = '3px'));
+  for (const bar of waveformBars) bar.style.height = '3px';
   clearInterval(timerInterval);
   clearTimeout(recordingTimeoutId);
   recordingTimeoutId = null;
@@ -441,7 +441,7 @@ async function toggleRecording() {
       audioCtx.close();
       audioCtx = null;
     }
-    waveformBars.forEach((bar) => (bar.style.height = '3px'));
+    for (const bar of waveformBars) bar.style.height = '3px';
 
     clearInterval(timerInterval);
     const duration = Date.now() - startTime;

@@ -80,7 +80,7 @@ togglePasswordBtn.addEventListener('click', () => {
 });
 
 function hideAllViews() {
-  Object.values(views).forEach((v) => v.classList.add('hidden'));
+  for (const v of Object.values(views)) v.classList.add('hidden');
 }
 
 function showLogin() {
@@ -162,7 +162,7 @@ function forceCleanup() {
   recordingTimeoutId = null;
   recordingStartTime = null;
   if (mediaStream) {
-    mediaStream.getTracks().forEach((t) => t.stop());
+    for (const t of mediaStream.getTracks()) t.stop();
     mediaStream = null;
   }
   if (audioContext) {
@@ -238,7 +238,9 @@ async function stopRecording() {
   lastRecordingDuration = recordingStartTime ? Date.now() - recordingStartTime : 0;
   recordingStartTime = null;
 
-  if (mediaStream) mediaStream.getTracks().forEach((t) => t.stop());
+  if (mediaStream) {
+    for (const t of mediaStream.getTracks()) t.stop();
+  }
   if (audioContext) audioContext.close();
 
   const micBtn = document.getElementById('mic-btn');
@@ -416,7 +418,7 @@ document.getElementById('stop-btn').addEventListener('click', stopRecording);
 document.getElementById('btn-grant-mic').addEventListener('click', async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((t) => t.stop());
+    for (const t of stream.getTracks()) t.stop();
     chrome.storage.local.get(['recup_email'], (result) => {
       showIdle(result.recup_email || '');
     });

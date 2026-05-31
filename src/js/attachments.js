@@ -51,14 +51,14 @@ export class AttachmentManager {
   }
 
   clear() {
-    this._objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    for (const url of this._objectUrls) URL.revokeObjectURL(url);
     this._files = [];
     this._objectUrls = [];
     this._container.innerHTML = '';
   }
 
   render() {
-    this._objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    for (const url of this._objectUrls) URL.revokeObjectURL(url);
     this._objectUrls = [];
     this._container.innerHTML = '';
 
