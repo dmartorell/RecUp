@@ -55,9 +55,9 @@ function stopRecording() {
 
 function releaseStream() {
   if (stream) {
-    stream.getTracks().forEach(t => t.stop());
+    for (const t of stream.getTracks()) t.stop();
     stream = null;
   }
 }
 
-export { requestMicAccess, getStream, startRecording, stopRecording, releaseStream };
+export { getStream, releaseStream, requestMicAccess, startRecording, stopRecording };

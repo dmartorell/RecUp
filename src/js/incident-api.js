@@ -5,9 +5,12 @@ export async function persistIncident(payload) {
     const res = await fetch('/api/incidents', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
-    if (isUnauthorized(res)) { handleExpiredSession(); return null; }
+    if (isUnauthorized(res)) {
+      handleExpiredSession();
+      return null;
+    }
     if (!res.ok) return null;
     const data = await res.json();
     return data.data?.incident?.id || null;
@@ -27,7 +30,9 @@ export async function saveIncidentResult(incident, payload, sourceType, duration
         body: JSON.stringify(payload),
       });
       if (isUnauthorized(res)) handleExpiredSession();
-    } catch { /* degradacion graceful */ }
+    } catch {
+      /* degradacion graceful */
+    }
   } else {
     const incidentId = await persistIncident({
       ...payload,

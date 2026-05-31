@@ -26,7 +26,7 @@
       crossorigin="anonymous"
     ></script>
     <script>
-      (function () {
+      (() => {
         if (!window.Sentry) return;
         var isProd = location.hostname !== 'localhost' && !location.hostname.startsWith('127.');
         Sentry.init({
@@ -50,8 +50,8 @@
           ],
         });
         try {
-          var s = JSON.parse(localStorage.getItem('recup_session'));
-          if (s && s.user && s.user.email) Sentry.setUser({ email: s.user.email });
+          const s = JSON.parse(localStorage.getItem('recup_session'));
+          if (s?.user?.email) Sentry.setUser({ email: s.user.email });
         } catch (_) {}
       })();
     </script>
@@ -88,6 +88,7 @@
     >
       <div style="max-width: 420px">
         <svg
+          aria-hidden="true"
           style="
             width: 64px;
             height: 64px;
@@ -126,6 +127,7 @@
         <a
           id="unsupported-cta"
           href="https://www.google.com/chrome/"
+          aria-label="Descargar navegador compatible"
           style="
             display: inline-block;
             background: #245e83;
@@ -212,6 +214,7 @@
                   aria-label="Mostrar contraseña"
                 >
                   <svg
+                    aria-hidden="true"
                     id="eye-icon"
                     class="w-5 h-5"
                     fill="none"
@@ -231,6 +234,7 @@
                     />
                   </svg>
                   <svg
+                    aria-hidden="true"
                     id="eye-off-icon"
                     class="w-5 h-5 hidden"
                     fill="none"
@@ -295,11 +299,14 @@
               style="display: none"
             ></span>
             <button
+              type="button"
               id="btn-avatar-menu"
+              aria-label="Menú de usuario"
               class="cursor-pointer bg-transparent border-none px-1.5 pt-1.5 flex items-center justify-center rounded-full"
             >
               <img id="avatar-img" class="hidden w-6 h-6 rounded-full object-cover" alt="" />
               <svg
+                aria-hidden="true"
                 id="avatar-fallback"
                 class="w-6 h-6 text-gray-400"
                 fill="none"
@@ -367,11 +374,13 @@
           class="mx-auto max-w-3xl px-4 flex items-center justify-center relative"
         >
           <button
+            type="button"
             id="clear-all-btn"
             class="absolute left-4 text-gray-400 hover:text-black cursor-pointer transition-colors"
             aria-label="Limpiar todo"
           >
             <svg
+              aria-hidden="true"
               class="w-6 h-6"
               fill="none"
               viewBox="0 0 24 24"
@@ -386,11 +395,13 @@
             </svg>
           </button>
           <button
+            type="button"
             id="text-input-btn"
             class="hidden w-16 h-16 rounded-full bg-accent hover:bg-accent-hover text-white flex items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-0"
             aria-label="Reportar por texto"
           >
             <svg
+              aria-hidden="true"
               class="w-6 h-6"
               fill="none"
               viewBox="0 0 24 24"
@@ -418,10 +429,13 @@
             </svg>
           </button>
           <button
+            type="button"
             id="record-btn"
             class="w-16 h-16 rounded-full bg-accent hover:bg-accent-hover text-white flex flex-col items-center justify-center shadow-lg transition-all cursor-pointer focus:outline-none focus:ring-0"
+            aria-label="Grabar"
           >
             <svg
+              aria-hidden="true"
               id="mic-icon"
               class="w-6 h-6"
               fill="none"
@@ -451,11 +465,13 @@
             </div>
           </button>
           <button
+            type="button"
             id="mode-toggle-btn"
             class="absolute right-4 text-gray-400 hover:text-black cursor-pointer transition-colors"
             aria-label="Cambiar modo de entrada"
           >
             <svg
+              aria-hidden="true"
               id="mode-icon-keyboard"
               class="w-6 h-6"
               fill="none"
@@ -483,6 +499,7 @@
               />
             </svg>
             <svg
+              aria-hidden="true"
               id="mode-icon-mic"
               class="hidden w-6 h-6"
               fill="none"
@@ -520,6 +537,7 @@
         >
           <h2 class="text-lg font-medium text-[var(--color-text)]">Configuración</h2>
           <button
+            type="button"
             id="settings-close-btn"
             class="text-gray-400 hover:text-gray-600 text-2xl leading-none cursor-pointer"
             aria-label="Cerrar"
@@ -629,6 +647,7 @@
             ></p>
           </div>
           <button
+            type="button"
             id="ticket-close-btn"
             class="text-gray-400 hover:text-gray-600 text-2xl leading-none cursor-pointer"
             aria-label="Cerrar"
@@ -904,12 +923,14 @@
         <hr class="border-gray-100 mt-8 mb-4 -mx-6" />
         <div class="flex gap-3 justify-end">
           <button
+            type="button"
             id="confirm-modal-cancel"
             class="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 cursor-pointer"
           >
             Cancelar
           </button>
           <button
+            type="button"
             id="confirm-modal-ok"
             class="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 cursor-pointer"
           >
@@ -923,6 +944,7 @@
       id="camera-overlay"
       class="hidden fixed inset-0 z-[60] bg-black flex flex-col items-center justify-center"
     >
+      <!-- biome-ignore lint/a11y/useMediaCaption: live camera viewfinder, captions not applicable -->
       <video
         id="camera-viewfinder"
         autoplay

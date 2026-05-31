@@ -1,5 +1,5 @@
-import { describe, test, expect } from 'bun:test';
-import { encrypt, decrypt, isEncrypted, hint } from '../server/services/crypto.js';
+import { describe, expect, test } from 'bun:test';
+import { decrypt, encrypt, hint, isEncrypted } from '../server/services/crypto.js';
 
 describe('crypto service', () => {
   test('round-trip preserves the plaintext', () => {
@@ -30,7 +30,7 @@ describe('crypto service', () => {
 
   test('decrypt throws on tampered ciphertext (auth tag verification)', () => {
     const enc = encrypt('secret-payload');
-    const tampered = enc.slice(0, -4) + 'AAAA';
+    const tampered = `${enc.slice(0, -4)}AAAA`;
     expect(() => decrypt(tampered)).toThrow();
   });
 

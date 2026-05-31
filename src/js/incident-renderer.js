@@ -1,12 +1,12 @@
-import { capitalize, ensurePeriod } from './utils.js';
-import { timeAgo, parseUTC, formatDuration } from './time.js';
-import { saveIncidentResult } from './incident-api.js';
 import { authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
+import { icons } from './icons.js';
+import { saveIncidentResult } from './incident-api.js';
+import { UI } from './strings.js';
 import { summarize } from './summarizer.js';
 import { openTicketModal } from './ticket-modal.js';
+import { formatDuration, parseUTC, timeAgo } from './time.js';
 import { showToast } from './toast.js';
-import { icons } from './icons.js';
-import { UI } from './strings.js';
+import { capitalize, ensurePeriod } from './utils.js';
 
 const feed = document.getElementById('feed');
 const emptyState = document.getElementById('empty-state');
@@ -21,7 +21,15 @@ export function updateEmptyState() {
   clearAllBtn.classList.toggle('pointer-events-none', empty);
 }
 
-function buildIncidentHTML({ typeBadgeClass, typeBadgeLabel, statusBadge, durationBadge, timeLabel, transcript, showSpinner, noBugHTML }) {
+function buildIncidentHTML({
+  typeBadgeClass,
+  typeBadgeLabel,
+  statusBadge,
+  durationBadge,
+  timeLabel,
+  showSpinner,
+  noBugHTML,
+}) {
   return `
     <div class="incident-header">
       <div class="incident-badges">
@@ -50,10 +58,16 @@ export function buildOnTicketCreated(incident) {
         const res = await fetch(`/api/incidents/${incidentId}`, {
           method: 'PATCH',
           headers: authHeaders(),
-          body: JSON.stringify({ clickup_task_id: taskId, clickup_task_url: taskUrl, status: 'completado' })
+          body: JSON.stringify({
+            clickup_task_id: taskId,
+            clickup_task_url: taskUrl,
+            status: 'completado',
+          }),
         });
         if (isUnauthorized(res)) handleExpiredSession();
-      } catch (e) { console.warn('degradacion graceful:', e); }
+      } catch (e) {
+        console.warn('degradacion graceful:', e);
+      }
     }
   };
 }
@@ -67,7 +81,7 @@ function attachTicketButton(incident, footer) {
       transcript: incident.dataset.summaryTranscript,
       bullets: JSON.parse(incident.dataset.summaryBullets),
       incidentElement: incident,
-      onTicketCreated: buildOnTicketCreated(incident)
+      onTicketCreated: buildOnTicketCreated(incident),
     });
   });
 }
@@ -77,9 +91,17 @@ function attachDeleteHandler(incident, hasId) {
     const incidentId = incident.dataset.incidentId;
     if (hasId && incidentId) {
       try {
-        const res = await fetch(`/api/incidents/${incidentId}`, { method: 'DELETE', headers: authHeaders() });
-        if (isUnauthorized(res)) { handleExpiredSession(); return; }
-      } catch (e) { console.warn('delete incident:', e); }
+        const res = await fetch(`/api/incidents/${incidentId}`, {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
+        if (isUnauthorized(res)) {
+          handleExpiredSession();
+          return;
+        }
+      } catch (e) {
+        console.warn('delete incident:', e);
+      }
     }
     incident.remove();
     updateEmptyState();
@@ -125,7 +147,12 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
 
       incident.dataset.summaryTranscript = rawText;
 
-      await saveIncidentResult(incident, { transcript: rawText, status: 'completado' }, sourceType, durationMs);
+      await saveIncidentResult(
+        incident,
+        { transcript: rawText, status: 'completado' },
+        sourceType,
+        durationMs,
+      );
       return;
     }
 
@@ -153,16 +180,20 @@ export async function runSummarize(incident, rawText, sourceType, durationMs) {
       transcript: result.transcript,
       bullets: result.bullets,
       incidentElement: incident,
-      onTicketCreated: buildOnTicketCreated(incident)
+      onTicketCreated: buildOnTicketCreated(incident),
     });
 
-    await saveIncidentResult(incident, {
-      transcript: rawText,
-      title: result.title,
-      bullets: JSON.stringify(result.bullets),
-      status: 'completado',
-    }, sourceType, durationMs);
-
+    await saveIncidentResult(
+      incident,
+      {
+        transcript: rawText,
+        title: result.title,
+        bullets: JSON.stringify(result.bullets),
+        status: 'completado',
+      },
+      sourceType,
+      durationMs,
+    );
   } catch (err) {
     const badge = incident.querySelector('.js-status-badge');
     badge.textContent = UI.STATUS_ERROR;
@@ -215,7 +246,6 @@ export function createIncident(transcript, audioBlob, duration) {
       typeBadgeLabel,
       durationBadge: hasAudio ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
       timeLabel: timeAgo(createdAt),
-      transcript: UI.NO_VOICE,
     });
     incident.querySelector('.incident-text').textContent = UI.NO_VOICE;
     attachDeleteHandler(incident, false);
@@ -259,7 +289,11 @@ export function renderIncidentFromDB(dbIncident) {
 
   const isPending = dbIncident.status === 'procesando';
   const statusBadgeClass = isPending ? 'badge-processing' : 'badge-neutral';
-  const statusLabel = isPending ? UI.STATUS_PROCESSING : (dbIncident.status === 'error' ? UI.STATUS_ERROR : UI.STATUS_COMPLETED);
+  const statusLabel = isPending
+    ? UI.STATUS_PROCESSING
+    : dbIncident.status === 'error'
+      ? UI.STATUS_ERROR
+      : UI.STATUS_COMPLETED;
 
   const hasBullets = dbIncident.bullets && dbIncident.title;
   const displayText = capitalize(dbIncident.transcript || '');
@@ -276,7 +310,15 @@ export function renderIncidentFromDB(dbIncident) {
   if (isPending) {
     // spinner shown via buildIncidentHTML
   } else if (hasBullets) {
-    parsedBullets = Array.isArray(dbIncident.bullets) ? dbIncident.bullets : (() => { try { return JSON.parse(dbIncident.bullets); } catch { return []; } })();
+    parsedBullets = Array.isArray(dbIncident.bullets)
+      ? dbIncident.bullets
+      : (() => {
+          try {
+            return JSON.parse(dbIncident.bullets);
+          } catch {
+            return [];
+          }
+        })();
     incident.dataset.summaryTitle = dbIncident.title;
     incident.dataset.summaryTranscript = dbIncident.transcript;
     incident.dataset.summaryBullets = JSON.stringify(dbIncident.bullets);
@@ -293,7 +335,10 @@ export function renderIncidentFromDB(dbIncident) {
     typeBadgeClass,
     typeBadgeLabel,
     statusBadge: sentBadge,
-    durationBadge: sourceType !== 'text' && dbIncident.duration_ms ? `<span class="badge badge-neutral">${durationStr}</span>` : '',
+    durationBadge:
+      sourceType !== 'text' && dbIncident.duration_ms
+        ? `<span class="badge badge-neutral">${durationStr}</span>`
+        : '',
     timeLabel: timeAgo(createdAt),
     showSpinner: isPending,
     noBugHTML,
@@ -305,7 +350,7 @@ export function renderIncidentFromDB(dbIncident) {
   if (parsedBullets.length > 0) {
     const ul = document.createElement('ul');
     ul.className = 'incident-bullets';
-    parsedBullets.forEach(b => {
+    parsedBullets.forEach((b) => {
       const li = document.createElement('li');
       li.textContent = ensurePeriod(capitalize(b));
       ul.appendChild(li);
@@ -326,7 +371,7 @@ export function renderIncidentFromDB(dbIncident) {
 
 export function resumePendingIncidents() {
   const pendingIncidents = feed.querySelectorAll('.incident');
-  pendingIncidents.forEach(incident => {
+  pendingIncidents.forEach((incident) => {
     if (incident.dataset.summarizing) return;
     const badge = incident.querySelector('.js-status-badge');
     if (!badge || badge.textContent.trim() !== UI.STATUS_PROCESSING) return;
@@ -334,7 +379,7 @@ export function resumePendingIncidents() {
     if (!transcript) return;
     incident.dataset.summarizing = '1';
     const sourceType = incident.dataset.sourceType || 'text';
-    const durationMs = parseInt(incident.dataset.durationMs) || 0;
+    const durationMs = parseInt(incident.dataset.durationMs, 10) || 0;
     runSummarize(incident, transcript, sourceType, durationMs);
   });
 }

@@ -10,16 +10,20 @@ const API_ERRORS = {
   INTERNAL_ERROR: 'Error interno',
   UNKNOWN: 'Ha ocurrido un error',
 };
-function apiError(code) { return API_ERRORS[code] || API_ERRORS.UNKNOWN; }
+function apiError(code) {
+  return API_ERRORS[code] || API_ERRORS.UNKNOWN;
+}
 
 function injectPostMessage(tabId, msg, retries = 5, delay = 400) {
-  chrome.scripting.executeScript({
-    target: { tabId },
-    func: (m) => window.postMessage(m, '*'),
-    args: [msg],
-  }).catch(() => {
-    if (retries > 0) setTimeout(() => injectPostMessage(tabId, msg, retries - 1, delay), delay);
-  });
+  chrome.scripting
+    .executeScript({
+      target: { tabId },
+      func: (m) => window.postMessage(m, '*'),
+      args: [msg],
+    })
+    .catch(() => {
+      if (retries > 0) setTimeout(() => injectPostMessage(tabId, msg, retries - 1, delay), delay);
+    });
 }
 
 const UI = {
@@ -76,7 +80,7 @@ togglePasswordBtn.addEventListener('click', () => {
 });
 
 function hideAllViews() {
-  Object.values(views).forEach(v => v.classList.add('hidden'));
+  for (const v of Object.values(views)) v.classList.add('hidden');
 }
 
 function showLogin() {
@@ -132,7 +136,7 @@ function updateTimer() {
   const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
   const ss = String(elapsed % 60).padStart(2, '0');
-  document.getElementById('timer-display').textContent = mm + ':' + ss;
+  document.getElementById('timer-display').textContent = `${mm}:${ss}`;
 }
 
 function animateWaveform() {
@@ -145,8 +149,8 @@ function animateWaveform() {
     if (v > peak) peak = v;
   }
   const height = Math.max(3, Math.min(1, peak / 15) * 26);
-  document.querySelectorAll('.waveform-bar').forEach(bar => {
-    bar.style.height = height + 'px';
+  document.querySelectorAll('.waveform-bar').forEach((bar) => {
+    bar.style.height = `${height}px`;
   });
   waveformAnimId = requestAnimationFrame(animateWaveform);
 }
@@ -157,11 +161,20 @@ function forceCleanup() {
   clearTimeout(recordingTimeoutId);
   recordingTimeoutId = null;
   recordingStartTime = null;
-  if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
-  if (audioContext) { audioContext.close(); audioContext = null; analyser = null; }
+  if (mediaStream) {
+    for (const t of mediaStream.getTracks()) t.stop();
+    mediaStream = null;
+  }
+  if (audioContext) {
+    audioContext.close();
+    audioContext = null;
+    analyser = null;
+  }
   document.getElementById('mic-idle').classList.remove('hidden');
   document.getElementById('mic-recording').classList.add('hidden');
-  document.querySelectorAll('.waveform-bar').forEach(bar => { bar.style.height = '3px'; });
+  document.querySelectorAll('.waveform-bar').forEach((bar) => {
+    bar.style.height = '3px';
+  });
   window.stopTranscription?.().catch?.(() => {});
 }
 
@@ -171,9 +184,8 @@ async function startRecording() {
     mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (err) {
     const errEl = document.getElementById('mic-error');
-    errEl.textContent = err.name === 'NotAllowedError'
-      ? UI.MIC_DENIED
-      : UI.MIC_ERROR_PREFIX + err.name;
+    errEl.textContent =
+      err.name === 'NotAllowedError' ? UI.MIC_DENIED : UI.MIC_ERROR_PREFIX + err.name;
     errEl.classList.remove('hidden');
     return;
   }
@@ -226,15 +238,21 @@ async function stopRecording() {
   lastRecordingDuration = recordingStartTime ? Date.now() - recordingStartTime : 0;
   recordingStartTime = null;
 
-  if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+  if (mediaStream) {
+    for (const t of mediaStream.getTracks()) t.stop();
+  }
   if (audioContext) audioContext.close();
 
   const micBtn = document.getElementById('mic-btn');
   micBtn.style.transition = 'none';
   document.getElementById('mic-idle').classList.remove('hidden');
   document.getElementById('mic-recording').classList.add('hidden');
-  requestAnimationFrame(() => { micBtn.style.transition = ''; });
-  document.querySelectorAll('.waveform-bar').forEach(bar => { bar.style.height = '3px'; });
+  requestAnimationFrame(() => {
+    micBtn.style.transition = '';
+  });
+  document.querySelectorAll('.waveform-bar').forEach((bar) => {
+    bar.style.height = '3px';
+  });
 
   const transcript = await window.stopTranscription();
   if (transcript) {
@@ -272,7 +290,11 @@ async function handleLogin() {
     const json = await res.json();
 
     if (json.success) {
-      const storageData = { recup_token: json.data.token, recup_email: json.data.user.email, recup_name: json.data.user.name || '' };
+      const storageData = {
+        recup_token: json.data.token,
+        recup_email: json.data.user.email,
+        recup_name: json.data.user.name || '',
+      };
       if (json.data.user.avatar) storageData.recup_avatar = json.data.user.avatar;
       chrome.storage.local.set(storageData, () => checkMicPermission(json.data.user.email));
     } else {
@@ -297,7 +319,7 @@ function handleLogout() {
 els.btnLogin.addEventListener('click', handleLogin);
 els.btnLogout.addEventListener('click', handleLogout);
 
-[els.email, els.password].forEach(input => {
+[els.email, els.password].forEach((input) => {
   input.addEventListener('focus', () => els.loginError.classList.remove('visible'));
 });
 
@@ -331,7 +353,7 @@ els.sendBtn.addEventListener('click', () => {
       const res = await fetch(`${RECUP_URL}/api/incidents`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -348,15 +370,21 @@ els.sendBtn.addEventListener('click', () => {
 
       const email = stored.recup_email || '';
       const name = stored.recup_name || '';
-      chrome.tabs.query({ url: RECUP_URL + '/*' }, (tabs) => {
-        const msg = { type: 'recup:extension-data', token, email, name, highlight: incidentId || '' };
+      chrome.tabs.query({ url: `${RECUP_URL}/*` }, (tabs) => {
+        const msg = {
+          type: 'recup:extension-data',
+          token,
+          email,
+          name,
+          highlight: incidentId || '',
+        };
         if (tabs.length > 0) {
           const tabId = tabs[0].id;
           injectPostMessage(tabId, msg);
           chrome.tabs.update(tabId, { active: true });
           chrome.windows.update(tabs[0].windowId, { focused: true });
         } else {
-          chrome.tabs.create({ url: RECUP_URL + '/' });
+          chrome.tabs.create({ url: `${RECUP_URL}/` });
         }
         window.close();
       });
@@ -390,7 +418,7 @@ document.getElementById('stop-btn').addEventListener('click', stopRecording);
 document.getElementById('btn-grant-mic').addEventListener('click', async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(t => t.stop());
+    for (const t of stream.getTracks()) t.stop();
     chrome.storage.local.get(['recup_email'], (result) => {
       showIdle(result.recup_email || '');
     });
@@ -402,7 +430,7 @@ document.getElementById('btn-grant-mic').addEventListener('click', async () => {
 async function validateToken(token, email) {
   try {
     const res = await fetch(`${RECUP_URL}/api/incidents?limit=1`, {
-      headers: { 'Authorization': `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (res.status === 401) {
       chrome.storage.local.remove(['recup_token', 'recup_email'], () => showLogin());

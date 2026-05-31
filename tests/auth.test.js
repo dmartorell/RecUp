@@ -1,6 +1,15 @@
-import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, spyOn } from 'bun:test';
-import { seedTestUser, cleanDb } from './setup.js';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  spyOn,
+  test,
+} from 'bun:test';
 import { ClickUpService } from '../server/services/ClickUpService.js';
+import { cleanDb, seedTestUser } from './setup.js';
 
 let app, server, baseUrl, meToken;
 
@@ -23,7 +32,11 @@ describe('POST /api/auth/register', () => {
     const res = await fetch(`${baseUrl}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Test User', email: 'test@example.com', password: 'password123' }),
+      body: JSON.stringify({
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'password123',
+      }),
     });
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -83,7 +96,11 @@ describe('POST /api/auth/register', () => {
       const res = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '10.0.0.1' },
-        body: JSON.stringify({ name: 'Outsider', email: 'outsider@example.com', password: 'password123' }),
+        body: JSON.stringify({
+          name: 'Outsider',
+          email: 'outsider@example.com',
+          password: 'password123',
+        }),
       });
       expect(res.status).toBe(400);
       const body = await res.json();
@@ -96,7 +113,11 @@ describe('POST /api/auth/register', () => {
       const res = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '10.0.0.2' },
-        body: JSON.stringify({ name: 'Insider', email: 'insider@example.com', password: 'password123' }),
+        body: JSON.stringify({
+          name: 'Insider',
+          email: 'insider@example.com',
+          password: 'password123',
+        }),
       });
       expect(res.status).toBe(201);
       const body = await res.json();
@@ -109,7 +130,11 @@ describe('POST /api/auth/register', () => {
       const res = await fetch(`${baseUrl}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': '10.0.0.3' },
-        body: JSON.stringify({ name: 'FailOpen', email: 'failopen@example.com', password: 'password123' }),
+        body: JSON.stringify({
+          name: 'FailOpen',
+          email: 'failopen@example.com',
+          password: 'password123',
+        }),
       });
       expect(res.status).toBe(201);
     });
@@ -191,7 +216,7 @@ describe('GET /api/auth/me', () => {
 
   test('con token valido -> 200 + user', async () => {
     const res = await fetch(`${baseUrl}/api/auth/me`, {
-      headers: { 'Authorization': `Bearer ${meToken}` },
+      headers: { Authorization: `Bearer ${meToken}` },
     });
     expect(res.status).toBe(200);
     const body = await res.json();

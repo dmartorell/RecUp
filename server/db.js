@@ -1,6 +1,6 @@
 import { createClient } from '@libsql/client';
 import { config } from './config/env.js';
-import { encrypt, decrypt, isEncrypted } from './services/crypto.js';
+import { decrypt, encrypt, isEncrypted } from './services/crypto.js';
 
 const ENCRYPTED_FIELDS = ['clickup_api_key', 'anthropic_api_key', 'openai_api_key'];
 
@@ -38,12 +38,24 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_incidents_user_id ON incidents(user_id);
   `);
 
-  try { await db.execute('ALTER TABLE users ADD COLUMN avatar_url TEXT'); } catch {}
-  try { await db.execute('ALTER TABLE users ADD COLUMN clickup_api_key TEXT'); } catch {}
-  try { await db.execute('ALTER TABLE users ADD COLUMN clickup_list_id TEXT'); } catch {}
-  try { await db.execute('ALTER TABLE users ADD COLUMN anthropic_api_key TEXT'); } catch {}
-  try { await db.execute('ALTER TABLE users ADD COLUMN openai_api_key TEXT'); } catch {}
-  try { await db.execute("ALTER TABLE users ADD COLUMN ai_provider TEXT DEFAULT 'anthropic'"); } catch {}
+  try {
+    await db.execute('ALTER TABLE users ADD COLUMN avatar_url TEXT');
+  } catch {}
+  try {
+    await db.execute('ALTER TABLE users ADD COLUMN clickup_api_key TEXT');
+  } catch {}
+  try {
+    await db.execute('ALTER TABLE users ADD COLUMN clickup_list_id TEXT');
+  } catch {}
+  try {
+    await db.execute('ALTER TABLE users ADD COLUMN anthropic_api_key TEXT');
+  } catch {}
+  try {
+    await db.execute('ALTER TABLE users ADD COLUMN openai_api_key TEXT');
+  } catch {}
+  try {
+    await db.execute("ALTER TABLE users ADD COLUMN ai_provider TEXT DEFAULT 'anthropic'");
+  } catch {}
 
   await migrateEncryptApiKeys();
 }

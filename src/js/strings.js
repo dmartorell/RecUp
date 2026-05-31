@@ -54,7 +54,8 @@ export const UI = {
   TICKET_MISSING_APP_VERSION: 'Versión',
   TICKET_MISSING_ASSET_ID: 'ID de Asset o Proyecto',
 
-  ATTACH_TYPE_NOT_ALLOWED: (name) => `Tipo de archivo no permitido: ${name}. Solo imágenes y vídeos.`,
+  ATTACH_TYPE_NOT_ALLOWED: (name) =>
+    `Tipo de archivo no permitido: ${name}. Solo imágenes y vídeos.`,
   ATTACH_TOO_LARGE: (name) => `${name} excede el límite de 50 MB.`,
   ATTACH_MAX_FILES: (max, current) => `Máximo ${max} archivos. Ya tienes ${current}.`,
 
@@ -64,16 +65,19 @@ export const UI = {
   EMPTY_STATE_MSG: 'Envía un audio y cuéntanos qué está fallando',
 
   UNSUPPORTED_TITLE: 'Navegador no compatible',
-  UNSUPPORTED_MSG: 'RecUp necesita APIs que solo están disponibles en navegadores basados en Chromium. Por favor, usa Chrome o Edge.',
+  UNSUPPORTED_MSG:
+    'RecUp necesita APIs que solo están disponibles en navegadores basados en Chromium. Por favor, usa Chrome o Edge.',
   UNSUPPORTED_CTA: 'Descargar Chrome',
 
   LOGIN_TAGLINE: 'Graba, habla y envía<br>en sólo un par de clics.',
-  LOGIN_DESC: 'Describe la incidencia en voz alta y RecUp hace el resto: transcribe tu audio, genera un resumen conciso y crea el ticket en ClickUp automáticamente, listo para que el equipo empiece a investigar.',
+  LOGIN_DESC:
+    'Describe la incidencia en voz alta y RecUp hace el resto: transcribe tu audio, genera un resumen conciso y crea el ticket en ClickUp automáticamente, listo para que el equipo empiece a investigar.',
 
   TICKET_MODAL_TITLE: 'Crear ticket',
   TICKET_MODAL_SUBTITLE: 'Genera un ticket en ClickUp a partir de este audio',
   TICKET_MISSING_BANNER_TITLE: 'Te faltan datos',
-  TICKET_MISSING_BANNER_MSG: 'Sin estos campos, al equipo de IT le costará un poco más detectar el problema.',
+  TICKET_MISSING_BANNER_MSG:
+    'Sin estos campos, al equipo de IT le costará un poco más detectar el problema.',
   TICKET_MISSING_BANNER_CTA: 'Completar campos',
 
   TEXT_INPUT_TITLE: 'Reportar incidencia',
@@ -83,7 +87,6 @@ export const UI = {
   SETTINGS_SAVED: 'Configuración guardada.',
   SETTINGS_SAVE_ERROR: 'Error al guardar. Inténtalo de nuevo.',
   SETTINGS_MENU_ITEM: 'Configuración',
-
 };
 
 export const API_ERRORS = {

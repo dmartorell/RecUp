@@ -1,8 +1,8 @@
-import { config } from './config/env.js';
+import { join } from 'node:path';
 import express from 'express';
-import { join } from 'path';
+import { __dirname, app } from './app.js';
+import { config } from './config/env.js';
 import { initDb } from './db.js';
-import { app, __dirname } from './app.js';
 
 app.use(express.static(join(__dirname, '..', 'src')));
 

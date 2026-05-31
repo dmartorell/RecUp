@@ -1,21 +1,32 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Router } from 'express';
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { authMiddleware } from '../middleware/auth.js';
+import {
+  CLAUDE_MAX_TOKENS,
+  CLAUDE_MODEL,
+  CLAUDE_TEMPERATURE,
+  OPENAI_MAX_TOKENS,
+  OPENAI_MODEL,
+  OPENAI_TEMPERATURE,
+  SUMMARIZE_TIMEOUT_MS,
+} from '../config/constants.js';
 import { getUserSettings } from '../db.js';
-import { CLAUDE_MODEL, CLAUDE_MAX_TOKENS, CLAUDE_TEMPERATURE, SUMMARIZE_TIMEOUT_MS, OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_TEMPERATURE } from '../config/constants.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const SYSTEM_PROMPT = readFileSync(join(__dirname, '..', 'config', 'prompts', 'summarize-system.txt'), 'utf-8');
+const SYSTEM_PROMPT = readFileSync(
+  join(__dirname, '..', 'config', 'prompts', 'summarize-system.txt'),
+  'utf-8',
+);
 
 const router = Router();
 
 router.post('/api/summarize', authMiddleware, async (req, res, next) => {
   const { transcript } = req.body;
 
-  if (!transcript || !transcript.trim()) {
+  if (typeof transcript !== 'string' || !transcript.trim()) {
     return res.status(400).json({ error: 'TRANSCRIPT_REQUIRED' });
   }
 
@@ -36,7 +47,7 @@ router.post('/api/summarize', authMiddleware, async (req, res, next) => {
       response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -63,9 +74,7 @@ router.post('/api/summarize', authMiddleware, async (req, res, next) => {
           max_tokens: CLAUDE_MAX_TOKENS,
           temperature: CLAUDE_TEMPERATURE,
           system: SYSTEM_PROMPT,
-          messages: [
-            { role: 'user', content: transcript.trim() },
-          ],
+          messages: [{ role: 'user', content: transcript.trim() }],
         }),
         signal: controller.signal,
       });
@@ -79,9 +88,8 @@ router.post('/api/summarize', authMiddleware, async (req, res, next) => {
     }
 
     const data = await response.json();
-    const rawText = provider === 'openai'
-      ? data.choices?.[0]?.message?.content
-      : data.content?.[0]?.text;
+    const rawText =
+      provider === 'openai' ? data.choices?.[0]?.message?.content : data.content?.[0]?.text;
 
     if (!rawText) {
       return res.status(502).json({ error: 'EMPTY_RESPONSE' });
@@ -89,7 +97,10 @@ router.post('/api/summarize', authMiddleware, async (req, res, next) => {
 
     let parsed;
     try {
-      const cleaned = rawText.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
+      const cleaned = rawText
+        .replace(/^```(?:json)?\s*\n?/i, '')
+        .replace(/\n?```\s*$/, '')
+        .trim();
       parsed = JSON.parse(cleaned);
     } catch {
       return res.status(502).json({ error: 'INVALID_JSON' });

@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
-import { seedTestUser, cleanDb } from './setup.js';
+import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
+import { cleanDb, seedTestUser } from './setup.js';
 
 let app, server, baseUrl, userToken, user2Token, incidentId;
 
@@ -34,7 +34,7 @@ describe('Incidents CRUD', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}`,
+        Authorization: `Bearer ${userToken}`,
       },
       body: JSON.stringify({ transcript: 'El boton de login no responde al hacer click' }),
     });
@@ -50,7 +50,7 @@ describe('Incidents CRUD', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}`,
+        Authorization: `Bearer ${userToken}`,
       },
       body: JSON.stringify({}),
     });
@@ -61,7 +61,7 @@ describe('Incidents CRUD', () => {
 
   test('GET /api/incidents -> 200 + lista con incident creado', async () => {
     const res = await fetch(`${baseUrl}/api/incidents`, {
-      headers: { 'Authorization': `Bearer ${userToken}` },
+      headers: { Authorization: `Bearer ${userToken}` },
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -75,7 +75,7 @@ describe('Incidents CRUD', () => {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userToken}`,
+        Authorization: `Bearer ${userToken}`,
       },
       body: JSON.stringify({ title: 'Titulo actualizado' }),
     });
@@ -90,7 +90,7 @@ describe('Incidents CRUD', () => {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${user2Token}`,
+        Authorization: `Bearer ${user2Token}`,
       },
       body: JSON.stringify({ title: 'Intento de hijack' }),
     });
@@ -100,7 +100,7 @@ describe('Incidents CRUD', () => {
   test('DELETE /api/incidents/:id -> 200', async () => {
     const res = await fetch(`${baseUrl}/api/incidents/${incidentId}`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${userToken}` },
+      headers: { Authorization: `Bearer ${userToken}` },
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -110,7 +110,7 @@ describe('Incidents CRUD', () => {
   test('DELETE /api/incidents/:id inexistente -> 404', async () => {
     const res = await fetch(`${baseUrl}/api/incidents/999999`, {
       method: 'DELETE',
-      headers: { 'Authorization': `Bearer ${userToken}` },
+      headers: { Authorization: `Bearer ${userToken}` },
     });
     expect(res.status).toBe(404);
   });
@@ -122,7 +122,7 @@ describe('GET /api/incidents/:id', () => {
   beforeAll(async () => {
     const res = await fetch(`${baseUrl}/api/incidents`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userToken}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userToken}` },
       body: JSON.stringify({ transcript: 'Incident para detail' }),
     });
     const body = await res.json();
@@ -131,7 +131,7 @@ describe('GET /api/incidents/:id', () => {
 
   test('GET /api/incidents/:id -> 200 + incident', async () => {
     const res = await fetch(`${baseUrl}/api/incidents/${detailId}`, {
-      headers: { 'Authorization': `Bearer ${userToken}` },
+      headers: { Authorization: `Bearer ${userToken}` },
     });
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -141,14 +141,14 @@ describe('GET /api/incidents/:id', () => {
 
   test('GET /api/incidents/:id de otro user -> 403', async () => {
     const res = await fetch(`${baseUrl}/api/incidents/${detailId}`, {
-      headers: { 'Authorization': `Bearer ${user2Token}` },
+      headers: { Authorization: `Bearer ${user2Token}` },
     });
     expect(res.status).toBe(403);
   });
 
   test('GET /api/incidents/:id inexistente -> 404', async () => {
     const res = await fetch(`${baseUrl}/api/incidents/999999`, {
-      headers: { 'Authorization': `Bearer ${userToken}` },
+      headers: { Authorization: `Bearer ${userToken}` },
     });
     expect(res.status).toBe(404);
   });

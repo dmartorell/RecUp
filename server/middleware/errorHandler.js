@@ -1,4 +1,4 @@
-export function errorHandler(err, req, res, next) {
+export function errorHandler(err, req, res, _next) {
   const rawStatus = err.status || 500;
   const status = rawStatus === 401 ? 502 : rawStatus;
   const code = err.code || 'INTERNAL_ERROR';
