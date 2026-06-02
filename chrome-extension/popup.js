@@ -1,5 +1,17 @@
 const RECORDING_TIMEOUT_MS = 5 * 60 * 1000;
 
+(function installTokenRefreshInterceptor() {
+  if (window.__recupFetchPatched) return;
+  window.__recupFetchPatched = true;
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    const res = await originalFetch(...args);
+    const fresh = res.headers.get('X-New-Token');
+    if (fresh) chrome.storage.local.set({ recup_token: fresh });
+    return res;
+  };
+})();
+
 const API_ERRORS = {
   RATE_LIMITED: 'Demasiados intentos. Espera un minuto.',
   INVALID_EMAIL: 'Email inválido',

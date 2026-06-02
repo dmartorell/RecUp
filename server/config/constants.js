@@ -20,7 +20,9 @@ export const OPENAI_MAX_TOKENS = 1024;
 export const OPENAI_TEMPERATURE = 0.3;
 
 // Auth
-export const JWT_EXPIRES_IN = '30d';
+export const JWT_EXPIRES_IN = '7d';
+// Renueva el token cuando le quede menos de este umbral de vida.
+export const JWT_RENEW_THRESHOLD_MS = 3 * 24 * 60 * 60 * 1000;
 
 // Rate limiting
 export const RATE_LIMIT_WINDOW_MS = 60_000;
