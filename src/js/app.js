@@ -2,6 +2,7 @@ import {
   authHeaders,
   getSession,
   handleExpiredSession,
+  installTokenRefreshInterceptor,
   isUnauthorized,
   tagSentryUser,
 } from './auth.js';
@@ -26,6 +27,8 @@ import { openTicketModal } from './ticket-modal.js';
 import { formatDuration, parseUTC, timeAgo } from './time.js';
 import { showToast } from './toast.js';
 import { startTranscription, stopTranscription } from './transcriber.js';
+
+installTokenRefreshInterceptor();
 
 function scrollFeedToTop() {
   const scrollEl = document.getElementById('app');

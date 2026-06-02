@@ -24,6 +24,8 @@ export function authHeaders() {
 }
 
 export function handleExpiredSession() {
+  if (window.__recupSessionExpired) return;
+  window.__recupSessionExpired = true;
   localStorage.removeItem('recup_session');
   window.postMessage({ type: 'recup:logout' }, '*');
   showToast(UI.SESSION_EXPIRED);
@@ -32,4 +34,37 @@ export function handleExpiredSession() {
 
 export function isUnauthorized(res) {
   return res.status === 401;
+}
+
+export function updateSessionToken(newToken) {
+  const session = getSession();
+  if (!session?.user) return;
+  localStorage.setItem('recup_session', JSON.stringify({ ...session, token: newToken }));
+}
+
+const AUTH_PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register'];
+
+function isAuthPublicRequest(input) {
+  const rawUrl = typeof input === 'string' ? input : input?.url || '';
+  try {
+    const { pathname } = new URL(rawUrl, window.location.origin);
+    return AUTH_PUBLIC_PATHS.includes(pathname);
+  } catch {
+    return false;
+  }
+}
+
+export function installTokenRefreshInterceptor() {
+  if (window.__recupFetchPatched) return;
+  window.__recupFetchPatched = true;
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    const res = await originalFetch(...args);
+    const fresh = res.headers.get('X-New-Token');
+    if (fresh) updateSessionToken(fresh);
+    if (res.status === 401 && !isAuthPublicRequest(args[0]) && getSession()?.token) {
+      handleExpiredSession();
+    }
+    return res;
+  };
 }
