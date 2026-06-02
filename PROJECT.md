@@ -177,7 +177,7 @@ RecUp/
 ### JWT
 
 - Algoritmo: HS256 (default de jsonwebtoken)
-- Expiracion: **30 dias** (`JWT_EXPIRES_IN`)
+- Expiracion: **7 dias** (`JWT_EXPIRES_IN`)
 - Payload: `{ sub: userId, name, email }`
 - Secret: `JWT_SECRET` env var (obligatoria, sin fallback en runtime)
 
@@ -492,7 +492,6 @@ Directrices clave del prompt:
 | `CRYPTO_SECRET` | Si | Clave AES-256-GCM para cifrar `users.*_api_key`. Generar con `openssl rand -base64 32`. Perderla deja las keys cifradas irrecuperables |
 | `CLICKUP_API_KEY` | No | Key a nivel servidor — solo se usa en registro para validar `EMAIL_NOT_IN_WORKSPACE` (fail-open) |
 | `ANTHROPIC_API_KEY` | No | Key fallback opcional (cada usuario configura la suya en `/api/settings`) |
-| `CLICKUP_LIST_ID` | No | Lista por defecto si el usuario no configura la suya |
 | `ALLOWED_EMAIL_DOMAIN` | No | Restringe registro a un dominio de email (ej: `empresa.com`) |
 | `SENTRY_DSN` | No | Si esta seteada, los errores se reportan a Sentry. Omitir en dev para desactivar |
 | `SENTRY_ENVIRONMENT` | No | Tag de entorno para Sentry. Default: `development` |
@@ -505,7 +504,7 @@ Directrices clave del prompt:
 | Mecanismo | Implementacion |
 |---|---|
 | **Password hashing** | `bcryptjs` hash / compare (salt rounds: **12**) |
-| **JWT** | HS256, expira en **30d**, secret obligatorio |
+| **JWT** | HS256, expira en **7d**, secret obligatorio |
 | **Login enumeration** | Dummy `bcrypt.compare` cuando el usuario no existe para igualar tiempos de respuesta |
 | **Register enumeration** | Tradeoff aceptado: `409 EMAIL_TAKEN` filtra emails dentro de `ALLOWED_EMAIL_DOMAIN`. Revisar cuando exista infra de email transaccional |
 | **API keys cifradas** | `users.clickup_api_key`, `anthropic_api_key`, `openai_api_key` cifradas con **AES-256-GCM** (`CRYPTO_SECRET`). Migracion automatica encripta keys legacy en arranque |

@@ -97,7 +97,6 @@ Two tables: `users` (with per-user `clickup_api_key`, `clickup_list_id`, `anthro
 | `TURSO_AUTH_TOKEN` | Yes (prod) | Omit for local dev with `:memory:` |
 | `ANTHROPIC_API_KEY` | Yes | Server-level fallback key |
 | `CLICKUP_API_KEY` | Yes | Server-level fallback key |
-| `CLICKUP_LIST_ID` | Yes | Default ClickUp list for ticket creation |
 | `JWT_SECRET` | Yes (prod) | Fallback: `dev-secret-change-me` |
 | `CRYPTO_SECRET` | Yes | AES-256-GCM key for encrypting `users.*_api_key` columns. Generate with `openssl rand -base64 32`. Losing it makes existing encrypted keys unrecoverable. |
 | `ALLOWED_EMAIL_DOMAIN` | No | Restrict registration (e.g. `empresa.com`) |
