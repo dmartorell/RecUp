@@ -45,8 +45,13 @@ export function updateSessionToken(newToken) {
 const AUTH_PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register'];
 
 function isAuthPublicRequest(input) {
-  const url = typeof input === 'string' ? input : input?.url || '';
-  return AUTH_PUBLIC_PATHS.some((p) => url.includes(p));
+  const rawUrl = typeof input === 'string' ? input : input?.url || '';
+  try {
+    const { pathname } = new URL(rawUrl, window.location.origin);
+    return AUTH_PUBLIC_PATHS.includes(pathname);
+  } catch {
+    return false;
+  }
 }
 
 export function installTokenRefreshInterceptor() {
