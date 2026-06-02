@@ -37,46 +37,71 @@
 ```
 RecUp/
 ├── server/
-│   ├── index.js              # Entry point, Express setup, static serving
-│   ├── db.js                 # Turso/libSQL client, schemas, error logger
+│   ├── index.js              # Entry point: arranca el servidor en config.port
+│   ├── app.js                # Express setup, montaje de routers, error handler
+│   ├── instrument.js         # Sentry SDK init (cargado con --import/--preload)
+│   ├── db.js                 # Turso/libSQL client, schemas, migraciones, getUserSettings
+│   ├── config/
+│   │   ├── env.js            # Validacion de env vars (required/optional)
+│   │   ├── constants.js      # Constantes (ClickUp, Claude, OpenAI, JWT, rate limit, multer)
+│   │   └── prompts/
+│   │       └── summarize-system.txt  # System prompt de la IA
 │   ├── middleware/
-│   │   └── auth.js           # JWT sign/verify, authMiddleware
-│   └── routes/
-│       ├── auth.js           # Register/login con rate limiting
-│       ├── incidents.js      # CRUD de incidencias (auth required)
-│       ├── summarize.js      # Proxy a Claude API
-│       ├── ticket.js         # Creacion de tickets en ClickUp
-│       └── attachment.js     # Upload de archivos a ClickUp tasks
+│   │   ├── auth.js           # JWT sign/verify, authMiddleware
+│   │   ├── rateLimiter.js    # Rate limiter in-memory (factory)
+│   │   └── errorHandler.js   # Error handler central
+│   ├── routes/
+│   │   ├── auth.js           # Register/login/me con rate limiting
+│   │   ├── incidents.js      # CRUD de incidencias (auth required)
+│   │   ├── settings.js       # GET/PUT /api/settings (config por usuario)
+│   │   ├── summarize.js      # Proxy a Claude o OpenAI segun ai_provider
+│   │   ├── ticket.js         # Creacion de tickets en ClickUp
+│   │   └── attachment.js     # Upload de archivos a ClickUp tasks
+│   └── services/
+│       ├── ClickUpService.js # Wrapper API ClickUp (members, tasks, custom fields, uploads)
+│       ├── IncidentService.js# CRUD incidents + ownership assertion
+│       └── crypto.js         # AES-256-GCM encrypt/decrypt/hint para API keys
 ├── src/
 │   ├── index.html
 │   ├── css/
 │   └── js/
 │       ├── app.js            # Orquestador principal, auth UI, grabacion
-│       ├── auth.js            # getSession, authHeaders (localStorage)
-│       ├── incident-api.js    # persistIncident, saveIncidentResult
+│       ├── auth.js           # getSession, authHeaders (localStorage)
+│       ├── incident-api.js   # persistIncident, saveIncidentResult
 │       ├── incident-renderer.js # Render DOM, summarize flow, CRUD visual
-│       ├── ticket-modal.js    # Modal de creacion de ticket ClickUp
-│       ├── summarizer.js      # Fetch a /api/summarize
-│       ├── transcriber.js     # Web Speech API (SpeechRecognition)
-│       ├── recorder.js        # MediaRecorder wrapper
-│       ├── attachments.js     # AttachmentManager (files/camera)
-│       ├── confirm-modal.js   # Modal de confirmacion generico
-│       ├── toast.js           # Notificaciones toast
-│       ├── strings.js         # Constantes UI y mensajes de error
-│       ├── icons.js           # SVG icons como strings
-│       ├── time.js            # timeAgo, parseUTC, formatDuration
-│       ├── utils.js           # capitalize, ensurePeriod
-│       └── mocks.js           # Datos mock para desarrollo
+│       ├── ticket-modal.js   # Modal de creacion de ticket ClickUp
+│       ├── settings-modal.js # Modal de configuracion (API keys, ai_provider)
+│       ├── summarizer.js     # Fetch a /api/summarize
+│       ├── transcriber.js    # Web Speech API (SpeechRecognition)
+│       ├── recorder.js       # MediaRecorder wrapper
+│       ├── attachments.js    # AttachmentManager (files/camera)
+│       ├── confirm-modal.js  # Modal de confirmacion generico
+│       ├── toast.js          # Notificaciones toast
+│       ├── strings.js        # Constantes UI y mensajes de error
+│       ├── icons.js          # SVG icons como strings
+│       ├── time.js           # timeAgo, parseUTC, formatDuration
+│       ├── utils.js          # capitalize, ensurePeriod
+│       └── mocks.js          # Datos mock para desarrollo
 ├── chrome-extension/
-│   ├── manifest.json          # Manifest V3
-│   ├── background.js          # Service worker (context menu)
+│   ├── manifest.json         # Manifest V3
+│   ├── background.js         # Service worker (context menu, sesion)
+│   ├── content.js            # Content script: escucha recup:logout y limpia storage
+│   ├── config.js             # Config compartida (URL base)
+│   ├── transcriber.js        # Web Speech API para el popup
 │   ├── popup.html
-│   ├── popup.js               # Login, grabacion, envio desde popup
+│   ├── popup.js              # Login, grabacion, envio desde popup
 │   ├── popup.css
 │   └── icons/
-├── dbLogs/                    # Error logs
+├── tests/                    # Suite bun:test (auth, crypto, incidents, settings, proxy)
+│   ├── preload.js            # Configura TURSO_DATABASE_URL=:memory: + secrets
+│   ├── setup.js
+│   └── *.test.js
+├── dbLogs/                   # Error logs
 ├── scripts/
-│   └── seed-users.js
+│   ├── seed-users.js
+│   ├── backup-turso.sh
+│   └── BACKUP.md
+├── biome.json                # Configuracion Biome (lint + format)
 └── package.json
 ```
 
@@ -138,18 +163,23 @@ RecUp/
 ### Registro y login
 
 - **Registro:** `POST /api/auth/register` — name, email, password
-  - Password hasheado con `bcryptjs` (salt rounds: 10)
+  - Password hasheado con `bcryptjs` (salt rounds: **12**)
+  - Minimo **8 caracteres** de password
   - Dominio de email restringible via `ALLOWED_EMAIL_DOMAIN`
+  - Si `CLICKUP_API_KEY` esta configurada a nivel servidor, valida que el email este en el workspace ClickUp (fail-open si la llamada falla)
 - **Login:** `POST /api/auth/login` — email, password
   - Verificacion con `bcrypt.compare()`
-- Ambos devuelven JWT firmado
+  - **Mitigacion de enumeracion:** dummy `bcrypt.compare` si el usuario no existe para igualar tiempos de respuesta
+  - Refresca `avatar_url` desde ClickUp si el usuario tiene `clickup_api_key` guardada
+- **`GET /api/auth/me`** — recupera datos del usuario actual (requiere Bearer)
+- Register y login devuelven JWT firmado
 
 ### JWT
 
 - Algoritmo: HS256 (default de jsonwebtoken)
-- Expiracion: **7 dias**
+- Expiracion: **30 dias** (`JWT_EXPIRES_IN`)
 - Payload: `{ sub: userId, name, email }`
-- Secret: `JWT_SECRET` env var (fallback: `'dev-secret-change-me'`)
+- Secret: `JWT_SECRET` env var (obligatoria, sin fallback en runtime)
 
 ### Persistencia de sesion
 
@@ -160,8 +190,8 @@ RecUp/
 
 - `authMiddleware` extrae Bearer token del header `Authorization`
 - Decodifica JWT y setea `req.user = { id, name, email }`
-- Rutas protegidas: `/api/incidents` (GET/POST/PATCH/DELETE), `/api/attachment`
-- **Ownership validation:** PATCH y DELETE de incidents verifican `incident.user_id === req.user.id` → 403 si no coincide
+- Rutas protegidas: `/api/auth/me`, `/api/incidents` (GET/POST/PATCH/DELETE), `/api/summarize`, `/api/ticket`, `/api/attachment`, `/api/settings` (GET/PUT)
+- **Ownership validation:** GET por id, PATCH y DELETE de incidents verifican `incident.user_id === req.user.id` → 403 si no coincide
 
 ### Rate limiting
 
@@ -185,8 +215,9 @@ RecUp/
 
 | Metodo | Path | Auth | Body | Respuesta OK | Errores |
 |---|---|---|---|---|---|
-| POST | `/api/auth/register` | No | `{ name, email, password }` | 201 `{ success, data: { token, user: { name, email } } }` | 400 INVALID_NAME, INVALID_EMAIL, WEAK_PASSWORD, EMAIL_DOMAIN; 409 EMAIL_TAKEN; 429 RATE_LIMITED |
-| POST | `/api/auth/login` | No | `{ email, password }` | 200 `{ success, data: { token, user: { name, email } } }` | 400 REQUIRED_FIELDS; 401 INVALID_CREDENTIALS; 429 RATE_LIMITED |
+| POST | `/api/auth/register` | No | `{ name, email, password }` | 201 `{ success, data: { token, user: { name, email } } }` | 400 INVALID_NAME, INVALID_EMAIL, WEAK_PASSWORD (min 8), EMAIL_DOMAIN, EMAIL_NOT_IN_WORKSPACE; 409 EMAIL_TAKEN; 429 RATE_LIMITED |
+| POST | `/api/auth/login` | No | `{ email, password }` | 200 `{ success, data: { token, user: { name, email, avatar } } }` | 400 REQUIRED_FIELDS; 401 INVALID_CREDENTIALS; 429 RATE_LIMITED |
+| GET | `/api/auth/me` | Bearer | — | 200 `{ success, data: { user: { name, email, avatar } } }` | 401 UNAUTHORIZED; 404 NOT_FOUND |
 
 ### Incidents
 
@@ -194,6 +225,7 @@ RecUp/
 |---|---|---|---|---|---|
 | GET | `/api/incidents` | Bearer | Query: `limit` (default 20), `offset` (default 0) | 200 `{ success, data: { incidents: [...], total } }` | 401 UNAUTHORIZED |
 | POST | `/api/incidents` | Bearer | `{ transcript, title?, bullets?, status?, source_type?, duration_ms?, clickup_task_id?, clickup_task_url? }` | 201 `{ success, data: { incident } }` | 400 TRANSCRIPT_REQUIRED; 401 |
+| GET | `/api/incidents/:id` | Bearer | — | 200 `{ success, data: { incident } }` | 400 INVALID_ID; 403 UNAUTHORIZED; 404 NOT_FOUND |
 | PATCH | `/api/incidents/:id` | Bearer | Campos permitidos: `clickup_task_id, clickup_task_url, status, title, bullets, transcript` | 200 `{ success, data: { incident } }` | 400 INVALID_ID, NO_VALID_FIELDS; 403 UNAUTHORIZED; 404 NOT_FOUND |
 | DELETE | `/api/incidents/:id` | Bearer | — | 200 `{ success: true }` | 400 INVALID_ID; 403 UNAUTHORIZED; 404 NOT_FOUND |
 
@@ -201,19 +233,28 @@ RecUp/
 
 | Metodo | Path | Auth | Body | Respuesta OK | Errores |
 |---|---|---|---|---|---|
-| POST | `/api/summarize` | Bearer | `{ transcript }` | 200 `{ is_bug, title?, transcript, bullets[] }` | 400 TRANSCRIPT_REQUIRED, SETTINGS_NOT_CONFIGURED; 502 EMPTY_RESPONSE, INVALID_JSON; 504 TIMEOUT (30s) |
+| POST | `/api/summarize` | Bearer | `{ transcript }` | 200 `{ is_bug, title?, transcript, bullets[] }` | 400 TRANSCRIPT_REQUIRED, SETTINGS_NOT_CONFIGURED; 4xx AI_API_ERROR (passthrough); 502 EMPTY_RESPONSE, INVALID_JSON; 504 TIMEOUT (30s) |
 
 ### Ticket (ClickUp)
 
 | Metodo | Path | Auth | Body | Respuesta OK | Errores |
 |---|---|---|---|---|---|
-| POST | `/api/ticket` | No | `{ name, markdown_description?, reporterEmail?, assetId?, platform?, product?, appVersion? }` | 200 `{ id, url }` | 400 NAME_REQUIRED; 403 NO_MEMBER; 500 CLICKUP_NOT_CONFIGURED, INTERNAL_ERROR |
+| POST | `/api/ticket` | Bearer | `{ name, markdown_description?, reporterEmail?, assetId?, platform?, product?, appVersion? }` | 200 `{ id, url }` | 400 NAME_REQUIRED, SETTINGS_NOT_CONFIGURED; 403 NO_MEMBER; 500 CLICKUP_API_ERROR |
 
 ### Attachment
 
 | Metodo | Path | Auth | Body | Respuesta OK | Errores |
 |---|---|---|---|---|---|
-| POST | `/api/attachment` | Bearer | multipart: `taskId` + `attachment` (max 5 files, 100MB each) | 200 `{ attachments: [...] }` | 400 TASK_ID_REQUIRED, FILE_REQUIRED; 500 API_KEY_MISSING, UPLOAD_ERROR |
+| POST | `/api/attachment` | Bearer | multipart: `taskId` + `attachment` (max 5 files, 100MB each) | 200 `{ attachments: [...] }` | 400 TASK_ID_REQUIRED, FILE_REQUIRED, SETTINGS_NOT_CONFIGURED; 5xx CLICKUP_UPLOAD_ERROR |
+
+### Settings (config por usuario)
+
+| Metodo | Path | Auth | Body | Respuesta OK | Errores |
+|---|---|---|---|---|---|
+| GET | `/api/settings` | Bearer | — | 200 `{ clickup_list_id, ai_provider, clickup_api_key: { configured, hint }, anthropic_api_key: {...}, openai_api_key: {...} }` | 401 |
+| PUT | `/api/settings` | Bearer | `{ clickup_api_key?, clickup_list_id?, anthropic_api_key?, openai_api_key?, ai_provider? }` | 200 `{ ok: true }` | 401 |
+
+Las API keys se almacenan cifradas con AES-256-GCM. El GET nunca devuelve la key en claro, solo `configured` + `hint` (ultimos caracteres).
 
 ---
 
@@ -421,6 +462,11 @@ Directrices clave del prompt:
 | `incident-renderer.js` | Crear/render cards DOM, flujo summarize, tickets, delete |
 | `incident-api.js` | `persistIncident()` (POST), `saveIncidentResult()` (PATCH o POST) |
 | `ticket-modal.js` | Modal completo de creacion ClickUp: campos, adjuntos, camara, validacion |
+| `settings-modal.js` | Modal de configuracion de usuario: API keys (Anthropic/OpenAI/ClickUp), lista ClickUp, `ai_provider` |
+| `confirm-modal.js` | Modal generico de confirmacion |
+| `toast.js` | Notificaciones toast (success/error) |
+| `icons.js` | Iconos SVG como strings |
+| `time.js` | `timeAgo`, `parseUTC`, `formatDuration` |
 | `summarizer.js` | `summarize(transcript)` — fetch a `/api/summarize` |
 | `transcriber.js` | Web Speech API wrapper: `startTranscription(onError)`, `stopTranscription()` → Promise<string> |
 | `recorder.js` | MediaRecorder: `requestMicAccess()`, `startRecording()`, `stopRecording()` → Blob |
@@ -440,14 +486,17 @@ Directrices clave del prompt:
 
 | Variable | Obligatoria | Descripcion |
 |---|---|---|
-| `TURSO_DATABASE_URL` | Si | URL de la base de datos Turso (ej: `libsql://db.turso.io`) |
-| `TURSO_AUTH_TOKEN` | Si (prod) | Token de autenticacion Turso |
-| `ANTHROPIC_API_KEY` | Si | API key de Anthropic para Claude |
-| `CLICKUP_API_KEY` | Si | API key personal de ClickUp |
-| `CLICKUP_LIST_ID` | Si | ID de la lista ClickUp donde crear tasks |
-| `JWT_SECRET` | Si (prod) | Secret para firmar JWT. Fallback: `'dev-secret-change-me'` |
-| `PORT` | No | Puerto del servidor. Default: `3000` |
+| `TURSO_DATABASE_URL` | Si | URL de la base de datos Turso (`libsql://...`) o `:memory:` para tests |
+| `TURSO_AUTH_TOKEN` | Si (prod) | Token de autenticacion Turso. Omitible en local con `:memory:` |
+| `JWT_SECRET` | Si | Secret para firmar JWT (validado al arrancar) |
+| `CRYPTO_SECRET` | Si | Clave AES-256-GCM para cifrar `users.*_api_key`. Generar con `openssl rand -base64 32`. Perderla deja las keys cifradas irrecuperables |
+| `CLICKUP_API_KEY` | No | Key a nivel servidor — solo se usa en registro para validar `EMAIL_NOT_IN_WORKSPACE` (fail-open) |
+| `ANTHROPIC_API_KEY` | No | Key fallback opcional (cada usuario configura la suya en `/api/settings`) |
+| `CLICKUP_LIST_ID` | No | Lista por defecto si el usuario no configura la suya |
 | `ALLOWED_EMAIL_DOMAIN` | No | Restringe registro a un dominio de email (ej: `empresa.com`) |
+| `SENTRY_DSN` | No | Si esta seteada, los errores se reportan a Sentry. Omitir en dev para desactivar |
+| `SENTRY_ENVIRONMENT` | No | Tag de entorno para Sentry. Default: `development` |
+| `PORT` | No | Puerto del servidor. Default: `3000` |
 
 ---
 
@@ -455,12 +504,16 @@ Directrices clave del prompt:
 
 | Mecanismo | Implementacion |
 |---|---|
-| **Password hashing** | `bcryptjs` hash / compare (salt rounds: 10) |
-| **JWT** | HS256, expira en 7d, secret configurable |
-| **Rate limiting** | 10 req/min/IP en register + login (in-memory) |
-| **Ownership** | PATCH/DELETE incidents validan `user_id === req.user.id` |
-| **Upload limits** | 100MB por archivo, max 5 archivos por request |
-| **Input validation** | Email regex, password min 6 chars, name 1-100 chars, domain restriction opcional |
+| **Password hashing** | `bcryptjs` hash / compare (salt rounds: **12**) |
+| **JWT** | HS256, expira en **30d**, secret obligatorio |
+| **Login enumeration** | Dummy `bcrypt.compare` cuando el usuario no existe para igualar tiempos de respuesta |
+| **Register enumeration** | Tradeoff aceptado: `409 EMAIL_TAKEN` filtra emails dentro de `ALLOWED_EMAIL_DOMAIN`. Revisar cuando exista infra de email transaccional |
+| **API keys cifradas** | `users.clickup_api_key`, `anthropic_api_key`, `openai_api_key` cifradas con **AES-256-GCM** (`CRYPTO_SECRET`). Migracion automatica encripta keys legacy en arranque |
+| **Rate limiting** | 10 req/min/IP en register + login (in-memory, factory `createRateLimiter`) |
+| **Ownership** | GET/PATCH/DELETE incidents validan `user_id === req.user.id` |
+| **Upload limits** | 100MB por archivo, max 5 archivos por request (multer memory storage) |
+| **Input validation** | Email regex, password min **8 chars**, name 1-100 chars, domain restriction opcional |
 | **XSS** | `.textContent` para todo el rendering (no `innerHTML` con datos de usuario) |
-| **CORS** | No configurado explicitamente (mismo origin, localhost) |
-| **Sin HTTPS** | Solo localhost, no hay TLS |
+| **Trust proxy** | `app.set('trust proxy', 1)` para `req.ip` correcto detras de reverse proxy |
+| **Sentry** | Captura errores via `setupExpressErrorHandler` (antes del custom handler) si `SENTRY_DSN` esta seteada |
+| **CORS** | No configurado explicitamente (mismo origin) |
