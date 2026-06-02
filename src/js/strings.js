@@ -74,7 +74,7 @@ export const UI = {
     'Describe la incidencia en voz alta y RecUp hace el resto: transcribe tu audio, genera un resumen conciso y crea el ticket en ClickUp automáticamente, listo para que el equipo empiece a investigar.',
 
   TICKET_MODAL_TITLE: 'Crear ticket',
-  TICKET_MODAL_SUBTITLE: 'Genera un ticket en ClickUp a partir de este audio',
+  TICKET_MODAL_SUBTITLE: 'Genera un ticket en ClickUp a partir de esta incidencia',
   TICKET_MISSING_BANNER_TITLE: 'Te faltan datos',
   TICKET_MISSING_BANNER_MSG:
     'Sin estos campos, al equipo de IT le costará un poco más detectar el problema.',
