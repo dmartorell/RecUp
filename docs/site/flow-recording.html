@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grabación → bug report — RecUp Wiki</title>
+    <meta name="description" content="Happy path completo: el usuario graba audio o escribe texto, el frontend transcribe, llama a /api/summarize y renderiza el card con el bug report estructurado." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Flujos</div>
+        <h1>Grabación → bug report</h1>
+        <p class="lead">
+          El flujo principal de RecUp: el usuario pulsa grabar, habla, para la grabación y en
+          segundos obtiene un bug report estructurado con título y bullets. También soporta
+          entrada por teclado como alternativa al micrófono.
+        </p>
+
+        <h2 id="vision-general">Visión general</h2>
+<pre><code>[Usuario pulsa REC]
+        │
+        ├── navigator.mediaDevices.getUserMedia()   ← solicita micrófono
+        ├── MediaRecorder.start()                   ← captura audio (webm/opus)
+        └── SpeechRecognition.start()               ← transcripción en tiempo real (es-ES)
+
+[Usuario pulsa STOP]
+        │
+        ├── stopTranscription() → transcript (string)
+        ├── stopRecording()     → audioBlob (Blob webm)
+        └── createIncident(transcript, audioBlob, duration)
+                │
+                ├── Renderiza card en el feed (estado: "procesando")
+                └── runSummarize(incident, transcript, 'audio', duration)
+                        │
+                        │  POST /api/summarize  { transcript }
+                        ▼
+                [server/routes/summarize.js]
+                  └── Anthropic / OpenAI → JSON { is_bug, title, bullets, transcript }
+                        │
+                        ├── is_bug=false → badge neutral, sin ticket
+                        └── is_bug=true  → renderiza bullets, abre modal de ticket
+                                └── POST /api/incidents  (persiste en Turso)</code></pre>
+
+        <h2 id="captura-audio">Captura de audio</h2>
+        <p>
+          Al pulsar el botón de grabación, <code>toggleRecording()</code>
+          (<code>src/js/app.js:391</code>) arranca tres cosas en paralelo:
+        </p>
+
+        <h3 id="microfono">Acceso al micrófono</h3>
+        <p>
+          <code>requestMicAccess()</code> (<code>src/js/recorder.js:7</code>) llama a
+          <code>navigator.mediaDevices.getUserMedia({ audio: true })</code>. El stream se
+          reutiliza entre grabaciones: solo se pide permiso la primera vez. Si el usuario deniega
+          el acceso, se muestra un toast con el mensaje de error.
+        </p>
+
+        <h3 id="mediarecorder">MediaRecorder</h3>
+        <p>
+          <code>startRecording()</code> (<code>src/js/recorder.js:26</code>) crea un
+          <code>MediaRecorder</code> con <code>audio/webm;codecs=opus</code> (fallback a
+          <code>audio/webm</code> si el codec no está disponible). Los chunks de audio se
+          acumulan en un array; al parar, se construye un <code>Blob</code> con el MIME type
+          del recorder.
+        </p>
+
+        <h3 id="web-speech-api">Web Speech API (transcripción)</h3>
+        <p>
+          <code>startTranscription()</code> (<code>src/js/transcriber.js:59</code>) crea un
+          <code>SpeechRecognition</code> con:
+        </p>
+        <ul>
+          <li><code>continuous = true</code> — no para al detectar silencio.</li>
+          <li><code>interimResults = false</code> — solo resultados finales, reduce ruido.</li>
+          <li><code>lang = 'es-ES'</code></li>
+        </ul>
+        <p>
+          La API nativa tiene un límite de sesión (~60 s en Chrome). Para evitar cortes,
+          cuando <code>onend</code> se dispara con <code>isActive = true</code>, el transcriber
+          reinicia automáticamente el recognition tras 300 ms.
+        </p>
+        <p>
+          Los errores <code>no-speech</code> y <code>aborted</code> se ignoran (son esperables).
+          Los errores fatales (<code>not-allowed</code>, <code>network</code>, etc.) llaman al
+          callback de error y fuerzan un <code>forceCleanup()</code>.
+        </p>
+
+        <h3 id="waveform">Visualizador de onda</h3>
+        <p>
+          Un <code>AnalyserNode</code> conectado al stream calcula el pico de amplitud por
+          frame y ajusta la altura de las barras del waveform en el DOM. Corre con
+          <code>requestAnimationFrame</code> durante la grabación.
+        </p>
+
+        <h3 id="timeout">Timeout automático</h3>
+        <p>
+          Tras 5 minutos (<code>RECORDING_TIMEOUT_MS = 5 * 60 * 1000</code>, <code>src/js/app.js:257</code>),
+          se dispara <code>forceCleanup()</code> y se muestra un toast. Evita que una grabación
+          olvidada consuma recursos indefinidamente.
+        </p>
+
+        <h2 id="modo-texto">Modo texto</h2>
+        <p>
+          El botón de toggle (<code>modeToggleBtn</code>) alterna entre modo micrófono y modo
+          teclado. La preferencia se persiste en <code>localStorage</code> bajo la clave
+          <code>recup_input_mode</code>.
+        </p>
+        <p>
+          En modo teclado, el usuario escribe en un textarea (mínimo 4 caracteres). Al pulsar
+          «Enviar»:
+        </p>
+<pre><code>// src/js/app.js:349
+createIncident(text, null, 0);</code></pre>
+        <p>
+          El <code>audioBlob</code> es <code>null</code> y la duración es <code>0</code>.
+          Internamente, <code>source_type</code> se fija a <code>'text'</code> en lugar de
+          <code>'audio'</code>.
+        </p>
+
+        <h2 id="create-incident">createIncident — renderizado inmediato</h2>
+        <p>
+          <code>createIncident(transcript, audioBlob, duration)</code>
+          (<code>src/js/incident-renderer.js:226</code>) crea el card en el DOM
+          <strong>antes</strong> de llamar a la IA, con estado «procesando» y un spinner.
+          El usuario ve feedback instantáneo.
+        </p>
+        <ul>
+          <li>Si <code>transcript</code> está vacío (no se detectó voz): muestra el card sin llamar a summarize.</li>
+          <li>Si hay <code>audioBlob</code>: guarda la URL del objeto en <code>data-audio-blob-url</code> para el modal de ticket.</li>
+          <li>El card se inserta al principio del feed (<code>feed.prepend(incident)</code>).</li>
+        </ul>
+
+        <h2 id="summarize">Llamada a /api/summarize</h2>
+        <p>
+          <code>runSummarize()</code> (<code>src/js/incident-renderer.js:130</code>) llama a
+          <code>summarize(rawText)</code> que hace:
+        </p>
+<pre><code>POST /api/summarize
+Authorization: Bearer &lt;token&gt;
+Content-Type: application/json
+
+{ "transcript": "el usuario vio que al hacer clic en..." }</code></pre>
+        <p>
+          El servidor responde con JSON estricto (sin markdown). Ver detalles del backend en
+          <a href="flow-summarize.html">Integración IA (summarize)</a>.
+        </p>
+
+        <h2 id="resultado">Procesamiento del resultado</h2>
+
+        <h3 id="no-es-bug">Si <code>is_bug = false</code></h3>
+        <p>
+          El badge cambia a «completado» (neutro). Se muestra un mensaje «No se detectó un bug»
+          y no aparece el botón de ticket. La transcripción se guarda en BD con
+          <code>status = 'completado'</code>.
+        </p>
+
+        <h3 id="es-bug">Si <code>is_bug = true</code></h3>
+        <ol>
+          <li>Se renderizan los <code>bullets</code> como lista en el card.</li>
+          <li>
+            Los datos del resumen (<code>title</code>, <code>bullets</code>,
+            <code>transcript</code>) se guardan en atributos <code>data-*</code> del elemento
+            DOM para que el modal de ticket los lea sin un fetch adicional.
+          </li>
+          <li>Se añade el footer con el botón «Crear ticket».</li>
+          <li>El modal de ticket se abre automáticamente.</li>
+          <li>
+            <code>saveIncidentResult()</code> persiste el incidente en Turso:
+            primero intenta un <code>PATCH</code> si ya tiene ID, si no hace un
+            <code>POST /api/incidents</code>.
+          </li>
+        </ol>
+
+        <h3 id="error">Si la llamada falla</h3>
+        <p>
+          El badge cambia a «error» y aparece un botón «Reintentar» que vuelve a llamar a
+          <code>runSummarize()</code> con los mismos parámetros. El incidente queda en el feed
+          sin persistir hasta que el reintento tenga éxito.
+        </p>
+
+        <h2 id="persistencia">Persistencia en Turso</h2>
+        <p>
+          El incidente se persiste en dos momentos:
+        </p>
+        <ul>
+          <li>
+            <strong>POST /api/incidents</strong> — crea la fila con
+            <code>status = 'completado'</code>, <code>transcript</code>, <code>title</code>,
+            <code>bullets</code> (JSON string), <code>source_type</code> y
+            <code>duration_ms</code>.
+          </li>
+          <li>
+            <strong>PATCH /api/incidents/:id</strong> — actualiza si ya existe (p.ej. al crear
+            el ticket de ClickUp, añade <code>clickup_task_id</code> y
+            <code>clickup_task_url</code>).
+          </li>
+        </ul>
+
+        <h2 id="archivos">Archivos clave</h2>
+        <ul>
+          <li><code>src/js/app.js:391</code> — <code>toggleRecording()</code>, lógica de inicio/parada</li>
+          <li><code>src/js/recorder.js</code> — <code>MediaRecorder</code> wrapper</li>
+          <li><code>src/js/transcriber.js</code> — <code>SpeechRecognition</code> con auto-restart</li>
+          <li><code>src/js/incident-renderer.js:226</code> — <code>createIncident()</code>, <code>runSummarize()</code></li>
+          <li><code>src/js/summarizer.js</code> — fetch a <code>/api/summarize</code></li>
+          <li><code>src/js/incident-api.js</code> — <code>persistIncident()</code>, <code>saveIncidentResult()</code></li>
+        </ul>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <nav>
+          <ul>
+            <li><a href="#vision-general">Visión general</a></li>
+            <li><a href="#captura-audio">Captura de audio</a>
+              <ul>
+                <li><a href="#microfono">Micrófono</a></li>
+                <li><a href="#mediarecorder">MediaRecorder</a></li>
+                <li><a href="#web-speech-api">Web Speech API</a></li>
+                <li><a href="#waveform">Visualizador de onda</a></li>
+                <li><a href="#timeout">Timeout automático</a></li>
+              </ul>
+            </li>
+            <li><a href="#modo-texto">Modo texto</a></li>
+            <li><a href="#create-incident">createIncident</a></li>
+            <li><a href="#summarize">Llamada a /api/summarize</a></li>
+            <li><a href="#resultado">Procesamiento del resultado</a></li>
+            <li><a href="#persistencia">Persistencia en Turso</a></li>
+            <li><a href="#archivos">Archivos clave</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </body>
+</html>

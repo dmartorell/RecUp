@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Threat model y tradeoffs — RecUp Wiki</title>
+    <meta name="description" content="Amenazas identificadas en RecUp, su estado de mitigación y los tradeoffs aceptados conscientemente." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Seguridad</div>
+        <h1>Threat model y tradeoffs</h1>
+        <p class="lead">
+          Tabla de amenazas identificadas, cómo están mitigadas y qué riesgos se han aceptado
+          conscientemente. El objetivo no es seguridad perfecta, sino que los riesgos residuales
+          sean conocidos y proporcionados al contexto (herramienta interna, dominio restringido).
+        </p>
+
+        <h2 id="tabla">Resumen de amenazas</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin:1rem 0">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:0.5rem 0.75rem;border-bottom:2px solid var(--border);color:var(--text-muted)">Amenaza</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;border-bottom:2px solid var(--border);color:var(--text-muted)">Vector</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;border-bottom:2px solid var(--border);color:var(--text-muted)">Mitigación</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;border-bottom:2px solid var(--border);color:var(--text-muted)">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Login enumeration</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Timing diferencial en login fallido</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Dummy <code>bcrypt.compare</code> cuando el usuario no existe</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><span class="badge badge-green">Mitigado</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Register enumeration</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><code>409 EMAIL_TAKEN</code> revela emails existentes</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Dominio restringido (<code>ALLOWED_EMAIL_DOMAIN</code>); el dominio ya es conocido</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><span class="badge badge-yellow">Aceptado</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Brute force login</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Intentos masivos contra <code>/api/auth/login</code></td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Rate limiter 10 req/min por IP (<code>server/middleware/rateLimiter.js</code>)</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><span class="badge badge-green">Mitigado</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">MITM / sniffing</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Interceptación del tráfico en tránsito</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">TLS obligatorio en Render; conexión a Turso también cifrada</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><span class="badge badge-green">Mitigado</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Volcado de BD</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Acceso directo o exfiltración de Turso</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">API keys cifradas con AES-256-GCM; passwords en bcrypt</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><span class="badge badge-green">Mitigado</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">RCE en Render → extracción de secrets</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Ejecución de código en el proceso servidor</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Ninguna (sin KMS, sin HSM). Secrets accesibles como env vars en memoria</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><span class="badge badge-red">No mitigado</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">JWT robado (XSS o leak)</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Acceso a <code>localStorage</code> mediante script inyectado</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">TTL de 7 días; logout global por 401; sin <code>httpOnly</code> porque es SPA</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><span class="badge badge-yellow">Parcial</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem">XSS en la SPA</td>
+              <td style="padding:0.5rem 0.75rem">Input de usuario renderizado como HTML</td>
+              <td style="padding:0.5rem 0.75rem"><code>textContent</code> en paths críticos; revisar usos de <code>innerHTML</code> con datos externos</td>
+              <td style="padding:0.5rem 0.75rem"><span class="badge badge-yellow">Parcial</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <style>
+          .badge { display:inline-block; padding:0.15rem 0.55rem; border-radius:999px; font-size:0.78rem; font-weight:600; }
+          .badge-green { background:rgba(16,185,129,0.12); color:#065f46; }
+          .badge-yellow { background:rgba(245,158,11,0.12); color:#92400e; }
+          .badge-red { background:rgba(239,68,68,0.12); color:#991b1b; }
+        </style>
+
+        <h2 id="login-enumeration">Login enumeration — Mitigado</h2>
+        <p>
+          Si un usuario no existe, el servidor igualmente ejecuta un
+          <code>bcrypt.compare</code> contra un hash fijo (<code>DUMMY_HASH</code>) para igualar
+          el tiempo de respuesta al caso de contraseña incorrecta. Sin esto, la diferencia de
+          latencia (~100 ms de bcrypt vs. respuesta inmediata) permitiría enumerar qué emails
+          están registrados.
+        </p>
+<pre><code>// server/routes/auth.js:14
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing-mitigation', 12);
+
+// ...cuando el usuario no existe:
+await bcrypt.compare(password, DUMMY_HASH);
+return res.status(401).json({ error: 'INVALID_CREDENTIALS' });</code></pre>
+
+        <h2 id="register-enumeration">Register enumeration — Aceptado</h2>
+        <p>
+          <code>POST /api/auth/register</code> devuelve <code>409 EMAIL_TAKEN</code> cuando el
+          email ya existe. Esto filtra qué emails están registrados.
+        </p>
+        <p>Por qué se acepta:</p>
+        <ul>
+          <li>
+            El registro está restringido a un dominio corporativo
+            (<code>ALLOWED_EMAIL_DOMAIN</code>). El atacante ya conoce el dominio.
+          </li>
+          <li>
+            Sin infraestructura de email transaccional no hay forma de notificar al titular
+            legítimo de un intento de registro duplicado.
+          </li>
+          <li>
+            La alternativa (devolver <code>201</code> siempre + notificar por email) requiere email
+            infra que hoy no existe.
+          </li>
+        </ul>
+        <div class="callout warning">
+          <div class="callout-title">Revisitar cuando exista email transaccional</div>
+          <p>
+            Cambiar a respuesta genérica <code>201</code> + enviar notificación al titular cuando
+            se añada capacidad de envío de emails.
+          </p>
+        </div>
+
+        <h2 id="brute-force">Brute force login — Mitigado</h2>
+        <p>
+          Las rutas <code>/api/auth/login</code> y <code>/api/auth/register</code> tienen un rate
+          limiter en memoria: máximo 10 peticiones por IP en ventanas de 60 segundos. Superar el
+          límite devuelve <code>429 RATE_LIMITED</code>.
+        </p>
+<pre><code>// server/middleware/rateLimiter.js
+const recent = (attempts.get(key) || []).filter((t) => now - t < windowMs);
+if (recent.length >= max) {
+  return res.status(429).json({ success: false, error: 'RATE_LIMITED' });
+}</code></pre>
+        <div class="callout warning">
+          <div class="callout-title">Limitación multi-instancia</div>
+          <p>
+            El state es in-memory por proceso. Con varias instancias de Render (horizontal
+            scaling), cada instancia tiene su propio contador: un atacante que distribuya
+            peticiones entre instancias evita el límite. Solución: Redis compartido.
+            Ver <a href="scalability.html">Escalabilidad</a>.
+          </p>
+        </div>
+
+        <h2 id="volcado-bd">Volcado de BD — Mitigado</h2>
+        <p>
+          Si Turso es comprometido, el atacante obtiene:
+        </p>
+        <ul>
+          <li><strong>API keys</strong> — ciphertext <code>enc:v1:…</code> inutilizable sin <code>CRYPTO_SECRET</code>.</li>
+          <li><strong>Contraseñas</strong> — hash bcrypt (coste 12), resistente a fuerza bruta.</li>
+          <li><strong>Emails, nombres, transcripciones</strong> — en claro. Riesgo residual conocido.</li>
+        </ul>
+        <p>
+          Detalle completo del esquema de cifrado en
+          <a href="security-encryption.html">Cifrado de API keys en reposo</a>.
+        </p>
+
+        <h2 id="rce">RCE en Render — No mitigado</h2>
+        <p>
+          Si un atacante consigue ejecutar código en el proceso de Node.js (p.ej. a través de una
+          dependencia comprometida), puede leer las variables de entorno del proceso:
+          <code>CRYPTO_SECRET</code>, <code>JWT_SECRET</code>, <code>TURSO_AUTH_TOKEN</code>, etc.
+          Con eso puede descifrar todas las API keys de la BD.
+        </p>
+        <p>Mitigaciones robustas requerirían:</p>
+        <ul>
+          <li>KMS (AWS KMS, Google Cloud KMS) — la clave de cifrado nunca está en memoria, solo se piden operaciones criptográficas al KMS.</li>
+          <li>HSM o enclaves seguros.</li>
+        </ul>
+        <p>
+          Ambas opciones son desproporcionadas para el contexto actual (herramienta interna, equipo
+          pequeño). El riesgo se acepta. Si el scope crece, revisar.
+        </p>
+
+        <h2 id="jwt-robado">JWT robado — Parcial</h2>
+        <p>
+          El JWT se guarda en <code>localStorage</code>. Un script XSS puede leerlo. No es posible
+          usar <code>httpOnly</code> porque la SPA necesita adjuntarlo manualmente a cada fetch
+          (no hay cookie automática).
+        </p>
+        <p>Las capas de contención actuales:</p>
+        <ul>
+          <li>TTL de 7 días: la ventana de explotación de un JWT filtrado está acotada.</li>
+          <li>
+            Logout global por 401: si el servidor detecta un JWT inválido o expirado, el cliente
+            limpia sesión y redirige al login. Ver <a href="token.html">JWT y autenticación</a>.
+          </li>
+          <li>Reducir la superficie XSS limita la probabilidad de que el JWT sea accesible.</li>
+        </ul>
+
+        <h2 id="xss">XSS en la SPA — Parcial</h2>
+        <p>
+          La SPA es vanilla JS. Los paths de riesgo son los puntos donde se inserta contenido
+          externo en el DOM.
+        </p>
+        <ul>
+          <li>
+            <strong>Paths seguros</strong>: la mayoría de campos de incidentes se insertan vía
+            <code>textContent</code> o atributos <code>data-*</code>, que no interpretan HTML.
+          </li>
+          <li>
+            <strong>Paths a revisar</strong>: cualquier uso de <code>innerHTML</code> con datos
+            que procedan de transcripciones o del backend (contenido generado por el usuario o
+            por la IA). Aunque la IA devuelve JSON estructurado, una inyección en el prompt
+            podría producir HTML en los bullets.
+          </li>
+        </ul>
+        <div class="callout info">
+          <div class="callout-title">Regla práctica</div>
+          <p>
+            Usar siempre <code>textContent</code> para contenido de usuario. Reservar
+            <code>innerHTML</code> exclusivamente para HTML estático controlado por el
+            desarrollador.
+          </p>
+        </div>
+
+        <h2 id="fuera-de-scope">Fuera de scope (decisión explícita)</h2>
+        <ul>
+          <li>
+            <strong>CSRF</strong> — la SPA no usa cookies de sesión; el JWT va en
+            <code>Authorization: Bearer</code>, que CSRF no puede falsificar desde otro origen.
+          </li>
+          <li>
+            <strong>Clickjacking</strong> — herramienta interna; el riesgo es mínimo. Añadir
+            <code>X-Frame-Options: DENY</code> si se expone públicamente.
+          </li>
+          <li>
+            <strong>Dependency audit</strong> — no hay pipeline automático de <code>bun audit</code>.
+            Riesgo bajo-medio aceptado para el volumen actual.
+          </li>
+        </ul>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <nav>
+          <ul>
+            <li><a href="#tabla">Resumen de amenazas</a></li>
+            <li><a href="#login-enumeration">Login enumeration</a></li>
+            <li><a href="#register-enumeration">Register enumeration</a></li>
+            <li><a href="#brute-force">Brute force login</a></li>
+            <li><a href="#volcado-bd">Volcado de BD</a></li>
+            <li><a href="#rce">RCE en Render</a></li>
+            <li><a href="#jwt-robado">JWT robado</a></li>
+            <li><a href="#xss">XSS en la SPA</a></li>
+            <li><a href="#fuera-de-scope">Fuera de scope</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </body>
+</html>

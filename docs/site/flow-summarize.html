@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Integración IA (summarize) — RecUp Wiki</title>
+    <meta name="description" content="Cómo RecUp envía una transcripción a Anthropic o OpenAI, descifra la API key on-demand y parsea el JSON de respuesta." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Flujos</div>
+        <h1>Integración IA (summarize)</h1>
+        <p class="lead">
+          Cómo RecUp toma una transcripción, descifra la API key del usuario on-demand,
+          enruta la llamada a Anthropic o OpenAI y normaliza la respuesta JSON antes de
+          devolverla al frontend.
+        </p>
+
+        <h2 id="vision-general">Visión general</h2>
+<pre><code>[Frontend: POST /api/summarize  { transcript }]
+        │  Authorization: Bearer &lt;JWT&gt;
+        ▼
+[authMiddleware]
+        │
+        ▼
+[server/routes/summarize.js]
+  ├── Valida transcript (string no vacío)
+  ├── getUserSettings(userId)          ← SELECT + decrypt on-demand
+  │     └── AES-256-GCM decrypt(anthropic_api_key | openai_api_key)
+  ├── AbortController → setTimeout(30 000 ms)
+  └── fetch() al proveedor configurado
+        ├── 'openai'     → api.openai.com/v1/chat/completions
+        │                  model: gpt-4o-mini · max_tokens: 1024 · temp: 0.3
+        └── 'anthropic'  → api.anthropic.com/v1/messages
+                           model: claude-haiku-4-5-20251001 · max_tokens: 1024 · temp: 0.3
+              │
+              ▼
+        rawText → strip markdown → JSON.parse()
+              │
+              ▼
+{ is_bug, title, transcript, bullets }</code></pre>
+
+        <h2 id="configuracion-proveedor">Configuración de proveedor</h2>
+        <p>
+          Cada usuario tiene una columna <code>ai_provider</code> en Turso (<code>'anthropic'</code>
+          por defecto). El usuario la cambia desde Ajustes → el frontend llama a
+          <code>POST /api/settings</code> (<code>server/routes/settings.js</code>), que persiste
+          la elección y la API key correspondiente cifrada.
+        </p>
+        <p>
+          En <code>server/routes/summarize.js:33</code>, el proveedor se lee así:
+        </p>
+<pre><code>const settings = await getUserSettings(req.user.id);
+const provider = settings.ai_provider || 'anthropic';</code></pre>
+        <p>
+          Si el usuario no ha guardado la API key del proveedor elegido,
+          <code>apiKey</code> es <code>null</code> y el endpoint devuelve
+          <code>400 SETTINGS_NOT_CONFIGURED</code> antes de hacer ninguna llamada externa.
+        </p>
+
+        <h2 id="descifrado-on-demand">Descifrado on-demand de la API key</h2>
+        <p>
+          Las API keys nunca se almacenan en claro en Turso. Se guardan con el prefijo
+          <code>enc:v1:</code> (AES-256-GCM) y se descifran únicamente en el momento de usarlas.
+          La función <code>getUserSettings</code> (<code>server/db.js:83</code>) hace un
+          <code>SELECT</code> + <code>decrypt()</code> justo antes de pasar la key al
+          <code>fetch</code>:
+        </p>
+<pre><code>// server/db.js:90
+return {
+  ...row,
+  anthropic_api_key: decrypt(row.anthropic_api_key),
+  openai_api_key:    decrypt(row.openai_api_key),
+};</code></pre>
+        <p>
+          La key descifrada existe únicamente en memoria durante el tiempo de vida del request.
+          Si alguien vuelca la base de datos, obtiene los valores cifrados, no las keys reales.
+        </p>
+        <div class="callout info">
+          <div class="callout-title">Ver más sobre el cifrado</div>
+          <p>
+            El esquema AES-256-GCM, el prefijo <code>enc:v1:</code> y qué pasa si se pierde
+            <code>CRYPTO_SECRET</code> están detallados en
+            <a href="security-encryption.html">Cifrado de API keys en reposo</a>.
+          </p>
+        </div>
+
+        <h2 id="system-prompt">System prompt</h2>
+        <p>
+          El prompt se carga una vez al arrancar el módulo desde
+          <code>server/config/prompts/summarize-system.txt</code>
+          (<code>server/routes/summarize.js:19</code>) con <code>readFileSync</code>.
+          No se recarga en caliente: un cambio en el archivo requiere reiniciar el servidor.
+        </p>
+        <p>
+          El prompt instruye al modelo a devolver <strong>únicamente JSON válido</strong>,
+          sin markdown. Define dos formatos posibles según <code>is_bug</code>:
+        </p>
+<pre><code>// is_bug: true
+{ "is_bug": true, "title": "…", "transcript": "…", "bullets": ["…", "…"] }
+
+// is_bug: false
+{ "is_bug": false, "transcript": "…" }</code></pre>
+        <p>
+          Los bullets deben ser solo hechos extraídos de la transcripción — sin hipótesis ni
+          sugerencias de solución. El prompt incluye ejemplos de qué es correcto e incorrecto.
+        </p>
+
+        <h2 id="routing-proveedores">Routing Anthropic vs OpenAI</h2>
+        <p>
+          Las diferencias entre las dos llamadas son estructurales (formato de la API) pero los
+          parámetros de generación son idénticos:
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Parámetro</th>
+              <th>Anthropic</th>
+              <th>OpenAI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Endpoint</td>
+              <td><code>/v1/messages</code></td>
+              <td><code>/v1/chat/completions</code></td>
+            </tr>
+            <tr>
+              <td>Auth header</td>
+              <td><code>x-api-key: &lt;key&gt;</code></td>
+              <td><code>Authorization: Bearer &lt;key&gt;</code></td>
+            </tr>
+            <tr>
+              <td>Modelo</td>
+              <td><code>claude-haiku-4-5-20251001</code></td>
+              <td><code>gpt-4o-mini</code></td>
+            </tr>
+            <tr>
+              <td>max_tokens</td>
+              <td>1024</td>
+              <td>1024</td>
+            </tr>
+            <tr>
+              <td>temperature</td>
+              <td>0.3</td>
+              <td>0.3</td>
+            </tr>
+            <tr>
+              <td>System prompt</td>
+              <td>Campo <code>system</code> top-level</td>
+              <td>Mensaje <code>{ role: 'system', … }</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Todas las constantes viven en <code>server/config/constants.js</code>, no inline
+          en el router.
+        </p>
+
+        <h2 id="timeout">Timeout y AbortController</h2>
+        <p>
+          Antes del <code>fetch</code>, se crea un <code>AbortController</code> y se arma un
+          <code>setTimeout</code> de 30 segundos (<code>SUMMARIZE_TIMEOUT_MS</code>):
+        </p>
+<pre><code>const controller = new AbortController();
+const timeout = setTimeout(() => controller.abort(), SUMMARIZE_TIMEOUT_MS);
+
+// … fetch con signal: controller.signal …
+
+clearTimeout(timeout); // limpieza si el fetch termina antes</code></pre>
+        <p>
+          Si la llamada supera los 30 s, el fetch lanza un <code>AbortError</code>, que el
+          bloque <code>catch</code> intercepta y devuelve como <code>504 TIMEOUT</code>.
+          No hay retry automático: si Anthropic u OpenAI se caen, el request se pierde.
+        </p>
+        <div class="callout warning">
+          <div class="callout-title">Límite sin retry</div>
+          <p>
+            Un timeout sin reintentos es un bottleneck en producción. Si el proveedor sufre
+            latencia alta, el usuario recibe un error en lugar de esperar. Contexto más amplio
+            en <a href="scalability.html#ia-timeout">Escalabilidad — timeouts IA</a>.
+          </p>
+        </div>
+
+        <h2 id="parseo-respuesta">Parseo y normalización de la respuesta</h2>
+        <p>
+          Aunque el prompt pide JSON sin markdown, los modelos a veces envuelven la respuesta
+          en un bloque <code>```json … ```</code>. El código lo limpia antes de parsear:
+        </p>
+<pre><code>const cleaned = rawText
+  .replace(/^```(?:json)?\s*\n?/i, '')
+  .replace(/\n?```\s*$/, '')
+  .trim();
+parsed = JSON.parse(cleaned);</code></pre>
+        <p>
+          Si <code>JSON.parse</code> falla, el endpoint devuelve <code>502 INVALID_JSON</code>.
+          Si el cuerpo de la API externa es vacío o mal formado, devuelve
+          <code>502 EMPTY_RESPONSE</code>.
+        </p>
+        <p>
+          La respuesta final siempre incluye los cuatro campos (con valores por defecto para
+          los opcionales):
+        </p>
+<pre><code>return res.json({
+  is_bug:     parsed.is_bug ?? false,
+  title:      parsed.title || null,
+  transcript: parsed.transcript,
+  bullets:    parsed.bullets || [],
+});</code></pre>
+
+        <h2 id="errores">Errores posibles</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Código HTTP</th>
+              <th>Error</th>
+              <th>Causa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>400</td>
+              <td><code>TRANSCRIPT_REQUIRED</code></td>
+              <td><code>transcript</code> ausente o solo espacios</td>
+            </tr>
+            <tr>
+              <td>400</td>
+              <td><code>SETTINGS_NOT_CONFIGURED</code></td>
+              <td>El usuario no tiene API key del proveedor elegido</td>
+            </tr>
+            <tr>
+              <td>401</td>
+              <td>—</td>
+              <td>JWT inválido o expirado (lo devuelve <code>authMiddleware</code>)</td>
+            </tr>
+            <tr>
+              <td>502</td>
+              <td><code>AI_API_ERROR</code></td>
+              <td>La API externa devolvió un status no-2xx</td>
+            </tr>
+            <tr>
+              <td>502</td>
+              <td><code>EMPTY_RESPONSE</code></td>
+              <td>La respuesta del modelo no contenía texto</td>
+            </tr>
+            <tr>
+              <td>502</td>
+              <td><code>INVALID_JSON</code></td>
+              <td>El modelo devolvió texto que no es JSON parseable</td>
+            </tr>
+            <tr>
+              <td>504</td>
+              <td><code>TIMEOUT</code></td>
+              <td>La llamada superó 30 s</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="archivos">Archivos clave</h2>
+        <ul>
+          <li><code>server/routes/summarize.js</code> — router completo del endpoint</li>
+          <li><code>server/db.js:83</code> — <code>getUserSettings</code>: SELECT + decrypt</li>
+          <li><code>server/services/crypto.js</code> — <code>encrypt</code>, <code>decrypt</code>, <code>isEncrypted</code></li>
+          <li><code>server/config/constants.js</code> — modelos, max_tokens, temperature, timeout</li>
+          <li><code>server/config/prompts/summarize-system.txt</code> — system prompt cargado al arrancar</li>
+        </ul>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <nav>
+          <ul>
+            <li><a href="#vision-general">Visión general</a></li>
+            <li><a href="#configuracion-proveedor">Configuración de proveedor</a></li>
+            <li><a href="#descifrado-on-demand">Descifrado on-demand</a></li>
+            <li><a href="#system-prompt">System prompt</a></li>
+            <li><a href="#routing-proveedores">Routing Anthropic vs OpenAI</a></li>
+            <li><a href="#timeout">Timeout y AbortController</a></li>
+            <li><a href="#parseo-respuesta">Parseo y normalización</a></li>
+            <li><a href="#errores">Errores posibles</a></li>
+            <li><a href="#archivos">Archivos clave</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </body>
+</html>

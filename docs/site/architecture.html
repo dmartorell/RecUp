@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arquitectura general — RecUp Wiki</title>
+    <meta
+      name="description"
+      content="Vista de pájaro de RecUp: extensión Chrome, SPA estática, Express en Render, Turso, Anthropic/OpenAI y ClickUp."
+    />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">
+      html,
+      body {
+        background: #ffffff;
+      }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background: #1b1b1d;
+      }
+      html.__no-transition *,
+      html.__no-transition *::before,
+      html.__no-transition *::after {
+        transition: none;
+        animation: none;
+      }
+    </style>
+    <script>
+      (() => {
+        try {
+          const t = localStorage.getItem("recup-docs-theme");
+          if (t === "dark" || t === "light")
+            document.documentElement.setAttribute("data-theme", t);
+        } catch {}
+        document.documentElement.classList.add("__no-transition");
+        document.addEventListener("DOMContentLoaded", () => {
+          document.documentElement.classList.remove("__no-transition");
+          document.getElementById("__nt")?.remove();
+        });
+      })();
+    </script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+    <style>
+      .arch-diagram {
+        margin: 2rem 0;
+        overflow-x: auto;
+      }
+      .arch-diagram svg {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      .arch-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        font-size: 0.9rem;
+      }
+      .arch-table th {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 2px solid var(--border);
+        color: var(--text-muted);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .arch-table td {
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid var(--border);
+        vertical-align: top;
+      }
+      .arch-table tr:last-child td {
+        border-bottom: none;
+      }
+      .arch-table code {
+        font-size: 0.82rem;
+      }
+      .layer-badge {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .layer-client {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .layer-server {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .layer-data {
+        background: #fef9c3;
+        color: #854d0e;
+      }
+      .layer-ext {
+        background: #f3e8ff;
+        color: #6b21a8;
+      }
+      [data-theme="dark"] .layer-client {
+        background: #1e3a5f;
+        color: #93c5fd;
+      }
+      [data-theme="dark"] .layer-server {
+        background: #14532d;
+        color: #86efac;
+      }
+      [data-theme="dark"] .layer-data {
+        background: #422006;
+        color: #fde68a;
+      }
+      [data-theme="dark"] .layer-ext {
+        background: #3b0764;
+        color: #d8b4fe;
+      }
+      .layer-api {
+        background: #ffedd5;
+        color: #9a3412;
+      }
+      [data-theme="dark"] .layer-api {
+        background: #431407;
+        color: #fdba74;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Visión general</div>
+        <h1>Arquitectura general</h1>
+        <p class="lead">
+          RecUp conecta cuatro capas: un cliente web (SPA vanilla JS) y una
+          extensión de Chrome que actúan de entrada, un backend Express
+          desplegado en Render que orquesta toda la lógica, una base de datos
+          Turso (libSQL/SQLite) como persistencia, y tres APIs externas
+          (Anthropic, OpenAI y ClickUp).
+        </p>
+
+        <h2 id="diagrama">Diagrama</h2>
+        <div class="arch-diagram">
+          <svg
+            viewBox="0 0 780 420"
+            xmlns="http://www.w3.org/2000/svg"
+            font-family="'Source Sans 3', sans-serif"
+            font-size="13"
+          >
+            <title>RecUp Architecture Diagram</title>
+            <!-- ── Fondo de capas ─────────────────────────────────────────── -->
+            <!-- Cliente -->
+            <rect
+              x="10"
+              y="10"
+              width="210"
+              height="400"
+              rx="10"
+              fill="none"
+              stroke="#93c5fd"
+              stroke-width="1.5"
+              stroke-dasharray="6 3"
+            />
+            <text
+              x="115"
+              y="28"
+              text-anchor="middle"
+              fill="#3b82f6"
+              font-size="11"
+              font-weight="600"
+            >
+              CLIENTE
+            </text>
+
+            <!-- Servidor -->
+            <rect
+              x="270"
+              y="10"
+              width="210"
+              height="400"
+              rx="10"
+              fill="none"
+              stroke="#86efac"
+              stroke-width="1.5"
+              stroke-dasharray="6 3"
+            />
+            <text
+              x="375"
+              y="28"
+              text-anchor="middle"
+              fill="#16a34a"
+              font-size="11"
+              font-weight="600"
+            >
+              SERVIDOR (Render)
+            </text>
+
+            <!-- APIs externas -->
+            <rect
+              x="530"
+              y="10"
+              width="240"
+              height="400"
+              rx="10"
+              fill="none"
+              stroke="#d8b4fe"
+              stroke-width="1.5"
+              stroke-dasharray="6 3"
+            />
+            <text
+              x="650"
+              y="28"
+              text-anchor="middle"
+              fill="#9333ea"
+              font-size="11"
+              font-weight="600"
+            >
+              APIS EXTERNAS
+            </text>
+
+            <!-- ── Bloques ─────────────────────────────────────────────────── -->
+
+            <!-- Extensión Chrome -->
+            <rect
+              x="25"
+              y="45"
+              width="180"
+              height="60"
+              rx="8"
+              fill="#f3e8ff"
+              stroke="#c084fc"
+              stroke-width="1.5"
+            />
+            <text
+              x="115"
+              y="68"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#6b21a8"
+            >
+              Extensión Chrome
+            </text>
+            <text
+              x="115"
+              y="84"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              Manifest V3 · context menu
+            </text>
+            <text
+              x="115"
+              y="97"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              query params → token
+            </text>
+
+            <!-- SPA -->
+            <rect
+              x="25"
+              y="130"
+              width="180"
+              height="60"
+              rx="8"
+              fill="#dbeafe"
+              stroke="#60a5fa"
+              stroke-width="1.5"
+            />
+            <text
+              x="115"
+              y="153"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#1e40af"
+            >
+              SPA (src/)
+            </text>
+            <text
+              x="115"
+              y="169"
+              text-anchor="middle"
+              font-size="11"
+              fill="#1d4ed8"
+            >
+              Vanilla JS · ESM
+            </text>
+            <text
+              x="115"
+              y="182"
+              text-anchor="middle"
+              font-size="11"
+              fill="#1d4ed8"
+            >
+              sin framework
+            </text>
+
+            <!-- Flecha extensión → SPA -->
+            <line
+              x1="115"
+              y1="105"
+              x2="115"
+              y2="128"
+              stroke="#9333ea"
+              stroke-width="1.5"
+              marker-end="url(#arrow-purple)"
+            />
+            <text x="118" y="120" font-size="10" fill="#7c3aed">abre URL</text>
+
+            <!-- Flecha SPA → Express (doble sentido) -->
+            <line
+              x1="205"
+              y1="160"
+              x2="268"
+              y2="160"
+              stroke="#3b82f6"
+              stroke-width="1.5"
+              marker-end="url(#arrow-blue)"
+            />
+            <line
+              x1="268"
+              y1="172"
+              x2="205"
+              y2="172"
+              stroke="#3b82f6"
+              stroke-width="1.5"
+              marker-end="url(#arrow-blue-rev)"
+            />
+            <text
+              x="237"
+              y="155"
+              text-anchor="middle"
+              font-size="10"
+              fill="#2563eb"
+            >
+              fetch
+            </text>
+            <text
+              x="237"
+              y="186"
+              text-anchor="middle"
+              font-size="10"
+              fill="#2563eb"
+            >
+              JSON
+            </text>
+
+            <!-- Express / app.js -->
+            <rect
+              x="285"
+              y="45"
+              width="180"
+              height="60"
+              rx="8"
+              fill="#dcfce7"
+              stroke="#4ade80"
+              stroke-width="1.5"
+            />
+            <text
+              x="375"
+              y="68"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#166534"
+            >
+              Express (app.js)
+            </text>
+            <text
+              x="375"
+              y="84"
+              text-anchor="middle"
+              font-size="11"
+              fill="#15803d"
+            >
+              JWT auth · rate limiter
+            </text>
+            <text
+              x="375"
+              y="97"
+              text-anchor="middle"
+              font-size="11"
+              fill="#15803d"
+            >
+              Sentry · error handler
+            </text>
+
+            <!-- Express → Routes -->
+            <line
+              x1="375"
+              y1="105"
+              x2="375"
+              y2="128"
+              stroke="#16a34a"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+
+            <!-- Routes box -->
+            <rect
+              x="285"
+              y="130"
+              width="180"
+              height="80"
+              rx="8"
+              fill="#dcfce7"
+              stroke="#4ade80"
+              stroke-width="1.5"
+            />
+            <text
+              x="375"
+              y="153"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#166534"
+            >
+              Routes
+            </text>
+            <text
+              x="375"
+              y="169"
+              text-anchor="middle"
+              font-size="11"
+              fill="#15803d"
+            >
+              /auth · /incidents
+            </text>
+            <text
+              x="375"
+              y="182"
+              text-anchor="middle"
+              font-size="11"
+              fill="#15803d"
+            >
+              /summarize · /ticket
+            </text>
+            <text
+              x="375"
+              y="195"
+              text-anchor="middle"
+              font-size="11"
+              fill="#15803d"
+            >
+              /settings · /attachment
+            </text>
+
+            <!-- Routes → Turso -->
+            <line
+              x1="375"
+              y1="210"
+              x2="375"
+              y2="248"
+              stroke="#16a34a"
+              stroke-width="1.5"
+              marker-end="url(#arrow-green)"
+            />
+
+            <!-- Turso -->
+            <rect
+              x="285"
+              y="250"
+              width="180"
+              height="60"
+              rx="8"
+              fill="#fef9c3"
+              stroke="#facc15"
+              stroke-width="1.5"
+            />
+            <text
+              x="375"
+              y="273"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#854d0e"
+            >
+              Turso (libSQL)
+            </text>
+            <text
+              x="375"
+              y="289"
+              text-anchor="middle"
+              font-size="11"
+              fill="#92400e"
+            >
+              users · incidents
+            </text>
+            <text
+              x="375"
+              y="302"
+              text-anchor="middle"
+              font-size="11"
+              fill="#92400e"
+            >
+              API keys cifradas AES-256
+            </text>
+
+            <!-- ── APIs externas ─────────────────────────────────────────── -->
+
+            <!-- Anthropic -->
+            <rect
+              x="548"
+              y="45"
+              width="200"
+              height="60"
+              rx="8"
+              fill="#f3e8ff"
+              stroke="#c084fc"
+              stroke-width="1.5"
+            />
+            <text
+              x="648"
+              y="68"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#6b21a8"
+            >
+              Anthropic API
+            </text>
+            <text
+              x="648"
+              y="84"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              claude-haiku-4-5
+            </text>
+            <text
+              x="648"
+              y="97"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              summarize · JSON estricto
+            </text>
+
+            <!-- OpenAI -->
+            <rect
+              x="548"
+              y="130"
+              width="200"
+              height="60"
+              rx="8"
+              fill="#f3e8ff"
+              stroke="#c084fc"
+              stroke-width="1.5"
+            />
+            <text
+              x="648"
+              y="153"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#6b21a8"
+            >
+              OpenAI API
+            </text>
+            <text
+              x="648"
+              y="169"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              gpt-4o-mini
+            </text>
+            <text
+              x="648"
+              y="182"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              alternativa configurable
+            </text>
+
+            <!-- ClickUp -->
+            <rect
+              x="548"
+              y="215"
+              width="200"
+              height="60"
+              rx="8"
+              fill="#f3e8ff"
+              stroke="#c084fc"
+              stroke-width="1.5"
+            />
+            <text
+              x="648"
+              y="238"
+              text-anchor="middle"
+              font-weight="600"
+              fill="#6b21a8"
+            >
+              ClickUp API v2
+            </text>
+            <text
+              x="648"
+              y="254"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              crear tarea · custom fields
+            </text>
+            <text
+              x="648"
+              y="267"
+              text-anchor="middle"
+              font-size="11"
+              fill="#7c3aed"
+            >
+              subir attachments
+            </text>
+
+            <!-- Flechas Routes → Anthropic / OpenAI / ClickUp -->
+            <line
+              x1="465"
+              y1="155"
+              x2="546"
+              y2="100"
+              stroke="#9333ea"
+              stroke-width="1.5"
+              marker-end="url(#arrow-purple)"
+            />
+            <line
+              x1="465"
+              y1="165"
+              x2="546"
+              y2="160"
+              stroke="#9333ea"
+              stroke-width="1.5"
+              marker-end="url(#arrow-purple)"
+            />
+            <line
+              x1="465"
+              y1="175"
+              x2="546"
+              y2="240"
+              stroke="#9333ea"
+              stroke-width="1.5"
+              marker-end="url(#arrow-purple)"
+            />
+
+            <!-- ── Markers ─────────────────────────────────────────────────── -->
+            <defs>
+              <marker
+                id="arrow-blue"
+                markerWidth="8"
+                markerHeight="8"
+                refX="6"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6" />
+              </marker>
+              <marker
+                id="arrow-blue-rev"
+                markerWidth="8"
+                markerHeight="8"
+                refX="6"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6" />
+              </marker>
+              <marker
+                id="arrow-green"
+                markerWidth="8"
+                markerHeight="8"
+                refX="6"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L0,6 L8,3 z" fill="#16a34a" />
+              </marker>
+              <marker
+                id="arrow-purple"
+                markerWidth="8"
+                markerHeight="8"
+                refX="6"
+                refY="3"
+                orient="auto"
+              >
+                <path d="M0,0 L0,6 L8,3 z" fill="#9333ea" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+
+        <h2 id="capas">Capas</h2>
+        <table class="arch-table">
+          <thead>
+            <tr>
+              <th>Capa</th>
+              <th>Qué es</th>
+              <th>Tecnología</th>
+              <th>Código</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="layer-badge layer-ext">Extensión</span></td>
+              <td>
+                Context menu en Chrome que abre la webapp con la sesión ya
+                iniciada
+              </td>
+              <td>Manifest V3, service worker</td>
+              <td><code>chrome-extension/</code></td>
+            </tr>
+            <tr>
+              <td><span class="layer-badge layer-client">SPA</span></td>
+              <td>
+                Interfaz: grabar audio, escribir texto, ver incidentes, crear
+                ticket ClickUp
+              </td>
+              <td>Vanilla JS ESM, sin bundler</td>
+              <td><code>src/js/</code></td>
+            </tr>
+            <tr>
+              <td><span class="layer-badge layer-server">Servidor</span></td>
+              <td>
+                API REST Express. Autenticación JWT, rate limiter, proxy a IA,
+                integración ClickUp
+              </td>
+              <td>Bun + Express, Render (free tier)</td>
+              <td><code>server/</code></td>
+            </tr>
+            <tr>
+              <td><span class="layer-badge layer-data">Base de datos</span></td>
+              <td>
+                Persistencia de usuarios e incidentes. API keys cifradas en
+                reposo
+              </td>
+              <td>Turso (libSQL/SQLite)</td>
+              <td><code>server/db.js</code></td>
+            </tr>
+            <tr>
+              <td><span class="layer-badge layer-api">IA</span></td>
+              <td>
+                Transcripción + generación del bug report estructurado en JSON
+              </td>
+              <td>Anthropic claude-haiku / OpenAI gpt-4o-mini</td>
+              <td><code>server/routes/summarize.js</code></td>
+            </tr>
+            <tr>
+              <td><span class="layer-badge layer-api">ClickUp</span></td>
+              <td>Creación de tareas con campos personalizados y adjuntos</td>
+              <td>ClickUp API v2</td>
+              <td><code>server/services/ClickUpService.js</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="flujo-principal">Flujo principal</h2>
+        <p>El happy path de un bug report completo, de punta a punta:</p>
+        <ol>
+          <li>
+            El usuario graba audio o escribe texto en la <strong>SPA</strong>.
+          </li>
+          <li>
+            La SPA envía <code>POST /api/incidents</code> al backend → se guarda
+            el incidente con <code>status: procesando</code>.
+          </li>
+          <li>
+            La SPA envía <code>POST /api/summarize</code>. El backend lee el
+            <code>ai_provider</code> del usuario, descifra su API key y llama a
+            Anthropic u OpenAI. Devuelve JSON estructurado (título + bullets +
+            transcripción).
+          </li>
+          <li>
+            La SPA persiste el resultado con
+            <code>PATCH /api/incidents/:id</code> y renderiza el card.
+          </li>
+          <li>
+            Si la IA detecta que es un bug, el modal de ticket se abre
+            automáticamente. El usuario puede completarlo y enviar
+            <code>POST /api/ticket</code>. El backend resuelve el email del
+            reporter a un userId de ClickUp (caché 10 min) y crea la tarea con
+            adjuntos.
+          </li>
+        </ol>
+
+        <h2 id="entrada-extension">Entrada desde la extensión</h2>
+        <p>
+          La extensión <strong>no tiene backend propio</strong>. Al hacer clic
+          en "Enviar a RecUp", abre la webapp con query params:
+          <code
+            >?token=&lt;jwt&gt;&amp;email=&lt;e&gt;&amp;name=&lt;n&gt;&amp;contextText=&lt;texto&gt;</code
+          >.
+        </p>
+        <p>
+          La SPA detecta estos params en
+          <code>app.js → adoptExtensionSession()</code>, inicia sesión
+          directamente y pre-carga el texto. Después,
+          <code>history.replaceState</code> limpia la URL para que el token no
+          quede expuesto en el historial del navegador.
+        </p>
+        <div class="callout info">
+          <div class="callout-title">Sin login extra</div>
+          <p>
+            El JWT que emite el servidor al hacer login desde la extensión es
+            idéntico al de la SPA. No hay sesiones separadas ni handshake
+            especial: la extensión simplemente reusa el token existente.
+          </p>
+        </div>
+
+        <h2 id="decisiones">Decisiones de diseño relevantes</h2>
+        <ul>
+          <li>
+            <strong>Sin bundler.</strong> La SPA se sirve como archivos
+            estáticos desde Express (<code>server/index.js</code>). Sin Webpack,
+            Vite ni build step: más simple, más fácil de depurar, suficiente
+            para el tamaño actual.
+          </li>
+          <li>
+            <strong>API keys cifradas en BD.</strong> Las claves de Anthropic,
+            OpenAI y ClickUp de cada usuario se guardan cifradas con
+            AES-256-GCM. El servidor las descifra on-demand. Si alguien vuelca
+            la BD, las keys no sirven de nada sin <code>CRYPTO_SECRET</code>. →
+            <a href="./security-encryption.html">Cifrado de API keys</a>
+          </li>
+          <li>
+            <strong>Rate limiter in-memory.</strong> Sencillo y suficiente para
+            una instancia. En multi-instancia rompe. →
+            <a href="./scalability.html">Límites actuales</a>
+          </li>
+          <li>
+            <strong>IA configurable por usuario.</strong> Cada usuario debe
+            configurar su propia API key de Anthropic u OpenAI. Sin key,
+            <code>POST /api/summarize</code> devuelve
+            <code>400 SETTINGS_NOT_CONFIGURED</code>. No hay fallback del
+            servidor.
+          </li>
+        </ul>
+
+        <h2 id="testing">Testing</h2>
+        <p>
+          Tests con <code>bun:test</code> y SQLite <code>:memory:</code> vía
+          <code>tests/preload.js</code>. No hay mocks de base de datos: los
+          tests lanzan el servidor real contra una BD efímera.
+        </p>
+        <pre><code>bun test                    # todos
+bun test tests/auth.test.js # un archivo
+bun test --test-name-pattern "POST /api/auth"</code></pre>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <ul id="toc-list"></ul>
+      </aside>
+    </div>
+  </body>
+</html>
