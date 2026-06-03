@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cifrado de API keys — RecUp Wiki</title>
+    <meta name="description" content="Cómo RecUp cifra las API keys de usuarios en reposo con AES-256-GCM, gestiona CRYPTO_SECRET y protege la BD ante un volcado." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Seguridad</div>
+        <h1>Cifrado de API keys en reposo</h1>
+        <p class="lead">
+          Cada usuario puede guardar sus propias claves de Anthropic, OpenAI y ClickUp. Estas
+          claves se cifran con <strong>AES-256-GCM</strong> antes de tocar la base de datos.
+          Si alguien vuelca Turso, obtiene texto cifrado inútil sin <code>CRYPTO_SECRET</code>.
+        </p>
+
+        <h2 id="que-se-cifra">Qué se cifra</h2>
+        <p>Tres columnas de la tabla <code>users</code>:</p>
+        <ul>
+          <li><code>anthropic_api_key</code></li>
+          <li><code>openai_api_key</code></li>
+          <li><code>clickup_api_key</code></li>
+        </ul>
+        <p>Lo que <strong>no</strong> está cifrado con este sistema (y por qué):</p>
+        <ul>
+          <li>
+            <code>password</code> — usa <code>bcrypt</code> (hash unidireccional). No necesita
+            reversibilidad.
+          </li>
+          <li>
+            El JWT — se firma con <code>JWT_SECRET</code> pero no se almacena en BD.
+          </li>
+          <li>
+            <code>clickup_list_id</code> — identificador no sensible, no es una credencial.
+          </li>
+        </ul>
+
+        <h2 id="como-funciona">Cómo funciona AES-256-GCM</h2>
+        <p>
+          <strong>AES-256-GCM</strong> es cifrado simétrico autenticado. «Autenticado» significa
+          que, además de cifrar, produce un <em>authentication tag</em> de 16 bytes que verifica
+          la integridad. Si alguien modifica el ciphertext en BD, el descifrado lanza un error en
+          lugar de devolver basura silenciosa.
+        </p>
+        <p>
+          La clave de cifrado es de 32 bytes (256 bits). Se deriva del <code>CRYPTO_SECRET</code>
+          pasándolo por SHA-256:
+        </p>
+<pre><code>// server/services/crypto.js:12
+cachedKey = createHash('sha256').update(config.cryptoSecret, 'utf8').digest();</code></pre>
+        <p>
+          Esto permite que <code>CRYPTO_SECRET</code> sea cualquier string arbitrario (una frase,
+          un base64 de 32 bytes…) y siempre producirá una clave de exactamente 256 bits. La clave
+          derivada se cachea en memoria para no recalcularla en cada operación.
+        </p>
+
+        <h2 id="formato-en-bd">Formato en BD</h2>
+        <p>Cada valor cifrado sigue este layout binario, codificado en base64 con prefijo:</p>
+<pre><code>enc:v1:&lt;base64( IV[12 bytes] | ciphertext | authTag[16 bytes] )&gt;</code></pre>
+        <p>Ejemplo real en Turso:</p>
+<pre><code>enc:v1:aGVsbG8gd29ybGQhISEAAAAAAAAAAAABAgMEBQYHCA==</code></pre>
+        <ul>
+          <li><strong>Prefijo <code>enc:v1:</code></strong> — marca el valor como cifrado e identifica la versión del esquema.</li>
+          <li><strong>IV (12 bytes)</strong> — vector de inicialización aleatorio generado con <code>randomBytes(12)</code> en cada cifrado. Garantiza que cifrar la misma key dos veces produce ciphertexts distintos.</li>
+          <li><strong>Ciphertext</strong> — longitud variable, igual a la del plaintext.</li>
+          <li><strong>Auth tag (16 bytes)</strong> — producido por GCM para verificar integridad en el descifrado.</li>
+        </ul>
+
+        <h2 id="flujo">Flujo completo: guardar y leer una API key</h2>
+
+        <h3 id="flujo-guardar">Guardar (PUT /api/settings)</h3>
+        <ol>
+          <li>El usuario envía la clave en claro por HTTPS.</li>
+          <li>
+            El route handler llama a <code>encrypt(trimmed)</code>
+            (<code>server/routes/settings.js:51</code>).
+          </li>
+          <li>
+            <code>encrypt</code> genera un IV aleatorio, cifra, concatena
+            <code>IV + ciphertext + tag</code> y devuelve el string con prefijo.
+          </li>
+          <li>El string cifrado se persiste en Turso. La clave en claro nunca toca el disco.</li>
+        </ol>
+
+        <h3 id="flujo-leer">Leer en el frontend (GET /api/settings)</h3>
+        <ol>
+          <li>El backend descifra la columna con <code>decrypt(row[field])</code>.</li>
+          <li>
+            En lugar de devolver la clave en claro al cliente, pasa el plaintext por
+            <code>hint(plain)</code> que enmascara todo excepto los últimos 4 caracteres:
+          </li>
+        </ol>
+<pre><code>// server/services/crypto.js:44
+const HINT_MASK = '••••••••••••••••••••••••';
+export function hint(value) {
+  if (!value) return '';
+  const tail = value.slice(-4);
+  return `${HINT_MASK}${tail}`;
+}</code></pre>
+        <p>
+          El frontend solo sabe si la clave está configurada y cuáles son sus últimos 4 caracteres.
+          La clave en claro <strong>nunca sale del servidor</strong>.
+        </p>
+
+        <h3 id="flujo-uso">Usar en llamadas a IA y ClickUp</h3>
+        <ol>
+          <li>
+            <code>getUserSettings(userId)</code> en <code>server/db.js:83</code> descifra
+            on-demand justo antes de cada request que necesita las keys.
+          </li>
+          <li>La clave en claro vive solo en memoria durante la duración del request.</li>
+        </ol>
+
+        <h2 id="idempotencia">Idempotencia de encrypt / decrypt</h2>
+        <p>
+          Ambas funciones son seguras de llamar repetidamente sobre el mismo valor sin efectos
+          secundarios:
+        </p>
+<pre><code>encrypt(null)            // → null
+encrypt('')              // → ''
+encrypt('enc:v1:...')    // → 'enc:v1:...'  (ya cifrado, lo devuelve tal cual)
+
+decrypt(null)            // → null
+decrypt('')              // → ''
+decrypt('sk-plaintext')  // → 'sk-plaintext'  (sin prefijo, lo devuelve tal cual)</code></pre>
+        <p>
+          Esto hace que la migración al arranque sea segura: si una key ya estaba cifrada de una
+          ejecución anterior, <code>encrypt</code> la deja intacta.
+        </p>
+
+        <h2 id="migracion">Migración automática al arranque</h2>
+        <p>
+          Al iniciar el servidor, <code>initDb()</code> llama a
+          <code>migrateEncryptApiKeys()</code> (<code>server/db.js:63</code>). Esta función
+          recorre todos los usuarios y cifra cualquier columna que aún esté en claro (sin prefijo
+          <code>enc:v1:</code>). Esto cubrió la transición cuando se añadió el cifrado sin
+          necesitar una migración manual de datos.
+        </p>
+
+        <h2 id="crypto-secret">CRYPTO_SECRET</h2>
+
+        <h3 id="generar">Cómo generarlo</h3>
+<pre><code>openssl rand -base64 32</code></pre>
+        <p>
+          Produce 32 bytes aleatorios en base64 (~44 caracteres). Válido como valor de
+          <code>CRYPTO_SECRET</code>; SHA-256 lo reducirá a exactamente 32 bytes para AES-256.
+        </p>
+
+        <h3 id="donde-vive">Dónde vive</h3>
+        <p>
+          Solo en el <strong>dashboard de Render</strong> como variable de entorno del servicio.
+          No está en <code>.env</code>, no está en el repo, no está en los logs.
+          <code>server/config/env.js</code> lo marca como <code>required()</code>: si falta, el
+          servidor no arranca.
+        </p>
+
+        <h3 id="si-se-pierde">Qué pasa si se pierde</h3>
+        <div class="callout danger">
+          <div class="callout-title">Pérdida irrecuperable de API keys cifradas</div>
+          <p>
+            Si <code>CRYPTO_SECRET</code> se pierde o rota, todas las API keys almacenadas en BD
+            se vuelven <strong>irrecuperables</strong>. No hay backdoor ni copia de seguridad de
+            la clave de cifrado.
+          </p>
+          <p>Consecuencia práctica: los usuarios tendrían que volver a introducir sus API keys.</p>
+        </div>
+        <p>
+          La contraseña de usuario (<code>bcrypt</code>) no se ve afectada: el login sigue
+          funcionando con normalidad.
+        </p>
+
+        <h3 id="rotar">Rotar CRYPTO_SECRET</h3>
+        <p>
+          No hay un comando de rotación automática. Si se necesita rotar (por ejemplo, ante
+          sospecha de compromiso del secret), el proceso manual sería:
+        </p>
+        <ol>
+          <li>Descifrar todas las keys con el secret antiguo mientras el servidor aún corre.</li>
+          <li>Actualizar <code>CRYPTO_SECRET</code> en Render.</li>
+          <li>Re-cifrar todas las keys con el nuevo secret y escribirlas en BD.</li>
+        </ol>
+        <p>
+          Actualmente no existe este tooling. Si se compromete el secret, lo más rápido es
+          resetear todas las columnas a <code>NULL</code> y pedir a los usuarios que reconfiguren.
+        </p>
+
+        <h2 id="ante-el-cto">Respuesta ante «¿qué pasa si os roban la BD?»</h2>
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem;margin:1rem 0">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:0.5rem 0.75rem;border-bottom:2px solid var(--border);color:var(--text-muted)">Dato</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;border-bottom:2px solid var(--border);color:var(--text-muted)">En BD</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;border-bottom:2px solid var(--border);color:var(--text-muted)">Explotable sin CRYPTO_SECRET</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Contraseñas</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">bcrypt hash (coste 10)</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">No (brute force muy costoso)</td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">API keys (Anthropic, OpenAI, ClickUp)</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)"><code>enc:v1:&lt;base64&gt;</code></td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">No</td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Emails</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">En claro</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Sí (enumeración)</td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Transcripciones e incidentes</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">En claro</td>
+              <td style="padding:0.5rem 0.75rem;border-bottom:1px solid var(--border)">Sí</td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0.75rem">Nombres de usuario</td>
+              <td style="padding:0.5rem 0.75rem">En claro</td>
+              <td style="padding:0.5rem 0.75rem">Sí</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="callout info">
+          <div class="callout-title">Límite del modelo actual</div>
+          <p>
+            Las transcripciones e incidentes no están cifradas. Un volcado de BD expone el
+            contenido de los bug reports. El vector de ataque es acceso a Turso (credenciales de
+            Turso, no de RecUp), que en prod está protegido por <code>TURSO_AUTH_TOKEN</code>
+            guardado en Render.
+          </p>
+        </div>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <ul id="toc-list"></ul>
+      </aside>
+    </div>
+  </body>
+</html>

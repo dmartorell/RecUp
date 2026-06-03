@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sentry — RecUp Wiki</title>
+    <meta name="description" content="Configuración y uso de Sentry en RecUp: backend, app web, política de PII, identificación de usuario y reducción de ruido." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Observabilidad · Errores</div>
+        <h1>Sentry</h1>
+        <p class="lead">
+          RecUp usa <strong>Sentry</strong> como único sistema de monitorización de errores
+          en producción. Está activo en el <strong>backend</strong> (Express) y en la
+          <strong>app web</strong> (SPA). La extensión de Chrome <em>no</em> envía a
+          Sentry. La configuración es mínima a propósito: solo errores, sin tracing,
+          sin PII por defecto.
+        </p>
+
+        <h2 id="alcance">Alcance y filosofía</h2>
+        <ul>
+          <li>
+            <strong>Solo errores</strong>. <code>tracesSampleRate: 0</code> en ambos
+            extremos: no se mandan transacciones de performance ni spans. Lo único que
+            llega a Sentry son excepciones y errores no capturados.
+          </li>
+          <li>
+            <strong>PII off por defecto</strong>. <code>sendDefaultPii: false</code> evita
+            que Sentry adjunte IPs, cookies o headers automáticamente. El único dato
+            personal que se envía es el email del usuario y de forma explícita (ver
+            <a href="#usuario">Identificación de usuario</a>).
+          </li>
+          <li>
+            <strong>Cobertura ≠ telemetría</strong>. Sentry es para detectar
+            <em>regresiones y errores</em> en prod, no un APM. Logs de aplicación siguen
+            en stdout (Render); analytics no hay.
+          </li>
+          <li>
+            <strong>Extensión fuera</strong>. La extensión vive en el contexto del
+            navegador del usuario sobre páginas de terceros — Sentry generaría más ruido
+            que señal (ver <a href="#deny-urls">denyUrls</a>).
+          </li>
+        </ul>
+
+        <h2 id="backend">Backend (Express + Node/Bun)</h2>
+
+        <h3 id="backend-init">Inicialización</h3>
+        <p>
+          El SDK <code>@sentry/node</code> se inicializa en
+          <code>server/instrument.js</code>, un fichero <strong>sin imports de la app</strong>:
+        </p>
+<pre><code>import 'dotenv/config';
+import * as Sentry from '@sentry/node';
+
+const dsn = process.env.SENTRY_DSN;
+
+if (dsn) {
+  Sentry.init({
+    dsn,
+    environment: process.env.SENTRY_ENVIRONMENT || 'development',
+    tracesSampleRate: 0,
+    sendDefaultPii: false,
+  });
+}
+
+export { Sentry };</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Por qué se carga antes que cualquier otro módulo</div>
+          <p>
+            Sentry instrumenta automáticamente <code>http</code>, <code>express</code>,
+            etc. para capturar errores. Para hacerlo necesita <em>parchear</em> esos
+            módulos <strong>antes</strong> de que el resto del código los importe. Por eso
+            <code>instrument.js</code> se inyecta vía el flag de arranque, no como un
+            <code>import</code> normal:
+          </p>
+<pre><code>"start": "node --import ./server/instrument.js server/index.js",
+"dev":   "bun --preload ./server/instrument.js --watch server/index.js"</code></pre>
+          <p>
+            Si lo importases desde <code>app.js</code>, Express ya estaría cargado sin
+            instrumentar y se perderían capturas.
+          </p>
+        </div>
+
+        <h3 id="backend-handler">Orden de los error handlers</h3>
+        <p>
+          En <code>server/app.js</code>, el handler de Sentry se registra <strong>antes</strong>
+          del handler propio:
+        </p>
+<pre><code>// …rutas…
+Sentry.setupExpressErrorHandler(app);   // captura y envía a Sentry
+app.use(errorHandler);                  // formatea respuesta JSON al cliente</code></pre>
+        <p>
+          El orden es importante:
+        </p>
+        <ol>
+          <li>
+            Una ruta llama a <code>next(err)</code>.
+          </li>
+          <li>
+            Express busca el siguiente middleware de error. Encuentra el de Sentry
+            primero, que <strong>captura</strong> la excepción y la pasa al siguiente.
+          </li>
+          <li>
+            Llega a <code>errorHandler</code>, que serializa el error como
+            <code>{ success: false, error: 'INTERNAL_ERROR' }</code> y responde
+            <code>500</code> (o el status que toque).
+          </li>
+        </ol>
+        <p>
+          Si invirtieras el orden, <code>errorHandler</code> respondería primero y Sentry
+          nunca vería el error.
+        </p>
+
+        <h3 id="backend-degradacion">Degradación sin DSN</h3>
+        <p>
+          Si <code>SENTRY_DSN</code> no está definido, <code>Sentry.init</code> nunca se
+          llama. El SDK queda en estado no-op: <code>setupExpressErrorHandler</code>
+          existe y no falla, pero no envía nada. Esto permite:
+        </p>
+        <ul>
+          <li>Levantar local sin tocar nada — basta no setear la env var.</li>
+          <li>Correr tests sin generar tráfico ni ruido en Sentry.</li>
+          <li>Apagar Sentry en una emergencia borrando la env var y reiniciando.</li>
+        </ul>
+
+        <h2 id="frontend">App web (SPA)</h2>
+
+        <h3 id="frontend-init">Inicialización</h3>
+        <p>
+          El SDK del navegador se carga vía CDN <strong>en el <code>&lt;head&gt;</code></strong>
+          de <code>src/index.html</code>, pinneado a una versión concreta y con SRI:
+        </p>
+<pre><code>&lt;script
+  src="https://browser.sentry-cdn.com/10.55.0/bundle.min.js"
+  integrity="sha384-bxrw1+kSICicOnYIsIuCMwwSPMLE5565At6u56u5+WgEjG9NQWsS01Q0pZTHwoeL"
+  crossorigin="anonymous"
+&gt;&lt;/script&gt;</code></pre>
+
+        <div class="callout">
+          <div class="callout-title">Para qué sirve el <code>integrity="sha384-…"</code></div>
+          <p>
+            Es <strong>Subresource Integrity</strong> (SRI). El navegador descarga el JS,
+            calcula su SHA-384 y lo compara con el hash declarado. Si no cuadra, no lo
+            ejecuta. Esto blinda contra:
+          </p>
+          <ul>
+            <li>Compromiso del CDN sirviendo un bundle alterado.</li>
+            <li>MITM en redes inseguras inyectando código en el SDK.</li>
+          </ul>
+          <p>
+            Coste: cada bump de versión del SDK requiere regenerar el hash. El comentario
+            sobre el <code>&lt;script&gt;</code> ya deja el comando preparado:
+          </p>
+<pre><code>curl -sSL "&lt;URL&gt;" | openssl dgst -sha384 -binary | openssl base64 -A</code></pre>
+        </div>
+
+        <h3 id="frontend-config">Configuración</h3>
+<pre><code>Sentry.init({
+  dsn: 'https://b8a22…@o45…ingest.de.sentry.io/45…',
+  environment: isProd ? 'production' : 'development',
+  sampleRate: 1.0,
+  tracesSampleRate: 0,
+  sendDefaultPii: false,
+  ignoreErrors: [
+    'ResizeObserver loop limit exceeded',
+    'ResizeObserver loop completed with undelivered notifications',
+    'Non-Error promise rejection captured',
+    'Network request failed',
+  ],
+  denyUrls: [
+    /^chrome:\/\//i,
+    /^chrome-extension:\/\//i,
+    /^moz-extension:\/\//i,
+    /^safari-extension:\/\//i,
+    /extensions\//i,
+  ],
+});</code></pre>
+
+        <p>Cosas a destacar:</p>
+        <ul>
+          <li>
+            <strong>DSN hardcodeado, no en env</strong>. La SPA es estática, no hay
+            backend de build, y el DSN de browser <em>está diseñado para ser público</em>
+            — solo permite ingestar, no leer. Meterlo en variables de entorno no aporta
+            nada salvo complejidad.
+          </li>
+          <li>
+            <strong>Detección de entorno por hostname</strong>:
+            <code>isProd = hostname !== 'localhost' &amp;&amp; !hostname.startsWith('127.')</code>.
+            Sin variables ni build steps.
+          </li>
+          <li>
+            <strong><code>sampleRate: 1.0</code></strong>: se envían el 100% de los
+            errores. El volumen es bajo, no compensa hacer sampling.
+          </li>
+        </ul>
+
+        <h3 id="ignore-errors">Reducción de ruido: <code>ignoreErrors</code></h3>
+        <p>Cuatro patrones de ruido típico de navegador, no son bugs de la app:</p>
+        <ul>
+          <li>
+            <strong>ResizeObserver loop …</strong>: warning espurio de Chrome que aparece
+            cuando un observer reagenda layout. No es un error real, no afecta UX.
+          </li>
+          <li>
+            <strong>Non-Error promise rejection captured</strong>: típicamente código de
+            terceros que rechaza promises con un string o un objeto vano. Sin stack útil.
+          </li>
+          <li>
+            <strong>Network request failed</strong>: el usuario perdió conectividad o
+            navegó mientras una request estaba en vuelo. Sentry no debe paginar a nadie
+            por esto.
+          </li>
+        </ul>
+
+        <h3 id="deny-urls">Reducción de ruido: <code>denyUrls</code></h3>
+        <p>
+          Esto es lo que aísla la SPA de los errores que <strong>no son nuestros</strong>:
+        </p>
+<pre><code>denyUrls: [
+  /^chrome:\/\//i,
+  /^chrome-extension:\/\//i,
+  /^moz-extension:\/\//i,
+  /^safari-extension:\/\//i,
+  /extensions\//i,
+],</code></pre>
+        <p>
+          Cuando Sentry captura un error, mira la URL del frame superior del stack. Si
+          coincide con cualquiera de estas regex, descarta el evento. Filtramos:
+        </p>
+        <ul>
+          <li>Páginas internas del navegador (<code>chrome://</code>).</li>
+          <li>
+            <strong>Extensiones del usuario</strong> (Grammarly, traductores, password
+            managers, etc.) que parchean el DOM e introducen errores en su propio código.
+          </li>
+        </ul>
+        <p>
+          Sin esto, los issues de Sentry se llenan de errores de extensiones aleatorias
+          que ni reproducimos ni controlamos. Es la regla de filtrado <em>más rentable</em>
+          que tiene la SPA.
+        </p>
+
+        <h2 id="usuario">Identificación de usuario</h2>
+        <p>
+          La única PII que viaja a Sentry es el <strong>email del usuario logado</strong>,
+          adjuntada como contexto del evento mediante <code>Sentry.setUser()</code>. No se
+          envía nombre, avatar, ni IPs (las suprime <code>sendDefaultPii: false</code>).
+        </p>
+
+        <h3 id="set-user-puntos">Dónde se llama</h3>
+        <p>
+          El helper vive en <code>src/js/auth.js</code> y se re-aplica en cada punto donde
+          la sesión cambia:
+        </p>
+<pre><code>export function tagSentryUser() {
+  if (!window.Sentry) return;
+  const email = getSession()?.user?.email;
+  window.Sentry.setUser(email ? { email } : null);
+}</code></pre>
+        <ul>
+          <li>
+            <strong>Boot de la SPA</strong> (inline en <code>index.html</code>): si ya hay
+            <code>recup_session</code> en <code>localStorage</code>, se tagea el usuario
+            antes incluso de cargar la app.
+          </li>
+          <li>
+            <strong>Login</strong>: tras un login exitoso se llama <code>tagSentryUser()</code>.
+          </li>
+          <li>
+            <strong>Handoff de la extensión</strong>: cuando la SPA adopta la sesión que
+            viene de la extensión (URL params o postMessage), se vuelve a tagear.
+          </li>
+          <li>
+            <strong>Refresh de <code>/api/auth/me</code></strong>: al recuperar el perfil.
+          </li>
+          <li>
+            <strong>Logout</strong>: <code>setUser(null)</code> implícito vía la rama
+            <code>email ? … : null</code>.
+          </li>
+        </ul>
+
+        <div class="callout warn">
+          <div class="callout-title">Nunca añadir más PII</div>
+          <p>
+            Tenemos un dominio corporativo controlado (<code>ALLOWED_EMAIL_DOMAIN</code>)
+            y por eso el email se considera asumible. Cualquier otro campo que se pase a
+            <code>setUser</code> o como contexto pasa por revisión: nombre real,
+            <code>id</code>, IP, etc., obligan a un análisis previo. El default es no
+            enviar.
+          </p>
+        </div>
+
+        <h2 id="entornos">Entornos</h2>
+        <table>
+          <thead>
+            <tr><th>Capa</th><th>Cómo se decide el entorno</th><th>Valores típicos</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Backend</td>
+              <td>Env var <code>SENTRY_ENVIRONMENT</code> (fallback <code>development</code>)</td>
+              <td><code>production</code> en Render · <code>development</code> en local</td>
+            </tr>
+            <tr>
+              <td>SPA</td>
+              <td>Hostname (<code>!== 'localhost' &amp;&amp; !127.*</code>)</td>
+              <td><code>production</code> servida desde el dominio público · <code>development</code> en local</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          En Sentry los issues se filtran por <em>environment</em>, así que el dashboard
+          de prod no se contamina con eventos de dev/local.
+        </p>
+
+        <h2 id="env-vars">Variables de entorno</h2>
+        <table>
+          <thead><tr><th>Var</th><th>Dónde</th><th>Obligatoria</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>SENTRY_DSN</code></td>
+              <td>Backend</td>
+              <td>No</td>
+              <td>Sin DSN, el SDK queda no-op. Omitir en dev para no enviar.</td>
+            </tr>
+            <tr>
+              <td><code>SENTRY_ENVIRONMENT</code></td>
+              <td>Backend</td>
+              <td>No</td>
+              <td>Tag del entorno en Sentry. Default <code>development</code>.</td>
+            </tr>
+            <tr>
+              <td>—</td>
+              <td>SPA</td>
+              <td>—</td>
+              <td>DSN hardcodeado en <code>src/index.html</code>; no se gestiona por env.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="probar">Probar la integración</h2>
+        <ul>
+          <li>
+            <strong>Backend</strong>: lanza una ruta que tire <code>throw new Error('test')</code>
+            y comprueba en Sentry que aparece con el environment esperado.
+          </li>
+          <li>
+            <strong>SPA</strong>: en la consola del navegador
+            <code>throw new Error('test sentry')</code> o
+            <code>Sentry.captureMessage('hola', 'info')</code>.
+          </li>
+          <li>
+            Para <em>no</em> enviar mientras pruebas, basta con quitar el DSN del backend
+            o cargar la SPA desde <code>localhost</code> (cae en environment
+            <code>development</code> y los issues se filtran en el dashboard).
+          </li>
+        </ul>
+
+        <h2 id="trade-offs">Trade-offs conscientes</h2>
+        <ul>
+          <li>
+            <strong>Sin tracing</strong>. Si en algún momento aparecen problemas de
+            performance reales, activar <code>tracesSampleRate</code> a un valor pequeño
+            (0.05–0.1) y volver a evaluar.
+          </li>
+          <li>
+            <strong>Sin Session Replay</strong>. Sería útil para reproducir bugs UI,
+            pero implica más PII (DOM + inputs). Por ahora compensa la simplicidad.
+          </li>
+          <li>
+            <strong>Sin source maps subidos</strong>. Los stacks de la SPA son contra el
+            <code>bundle.min.js</code> de Sentry, pero el código propio es ESM sin minify
+            y los stacks son legibles. Cuando entre un build step de minificación habrá
+            que subir source maps a Sentry.
+          </li>
+        </ul>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <ul id="toc-list"></ul>
+      </aside>
+    </div>
+  </body>
+</html>

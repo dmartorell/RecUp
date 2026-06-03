@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Base de datos · Turso y esquemas — RecUp Wiki</title>
+    <meta name="description" content="Servicio de base de datos (Turso) y esquemas de tablas de RecUp." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Backend · Persistencia</div>
+        <h1>Base de datos</h1>
+        <p class="lead">
+          RecUp persiste todo su estado en <strong>Turso</strong> (libSQL, fork de SQLite con
+          replicación distribuida). El esquema vive en <code>server/db.js</code> y se aplica
+          de forma idempotente en cada arranque.
+        </p>
+
+        <h2 id="turso">Turso (libSQL)</h2>
+        <p>
+          Turso es la base de datos en producción. Es SQLite servido sobre el wire de libSQL,
+          accesible desde cualquier región. Para RecUp encaja bien porque:
+        </p>
+        <ul>
+          <li>Bajo volumen por usuario (decenas o cientos de incidencias).</li>
+          <li>Consultas sencillas, sin joins complejos ni transacciones largas.</li>
+          <li>Coste muy bajo en el plan free y backups automáticos.</li>
+          <li>
+            <strong>Tests con altísima fidelidad gratis.</strong> libSQL es un fork de
+            SQLite, así que el mismo SQL y el mismo cliente <code>@libsql/client</code>
+            funcionan tanto contra Turso remoto como contra un SQLite local. En tests basta
+            con cambiar <code>TURSO_DATABASE_URL</code> a <code>:memory:</code> (una BD
+            efímera en RAM que se crea y destruye con el proceso). Resultado: los tests
+            ejercitan el mismo código de producción, los mismos <code>CREATE</code>,
+            <code>INSERT</code> y constraints reales — sin mocks, sin un “DB driver de test”
+            paralelo, y sin riesgo de divergencia entre lo que pasa el test suite y lo que
+            pasa en prod.
+          </li>
+        </ul>
+
+        <h3 id="cliente">Cliente</h3>
+        <p>
+          Se usa el SDK oficial <code>@libsql/client</code>. La instancia es un singleton
+          exportado por <code>server/db.js</code>:
+        </p>
+<pre><code>import { createClient } from '@libsql/client';
+
+const db = createClient({
+  url: config.tursoUrl,        // libsql://… o file: o :memory:
+  authToken: config.tursoAuthToken || undefined,
+});
+
+export default db;</code></pre>
+
+        <h3 id="env">Variables de entorno</h3>
+        <table>
+          <thead><tr><th>Var</th><th>Obligatoria</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>TURSO_DATABASE_URL</code></td>
+              <td>Sí</td>
+              <td>
+                URL del libSQL remoto (<code>libsql://…</code>) en producción, o
+                <code>:memory:</code> en tests. Validado al arrancar.
+              </td>
+            </tr>
+            <tr>
+              <td><code>TURSO_AUTH_TOKEN</code></td>
+              <td>Sí en prod</td>
+              <td>Token de acceso al libSQL remoto. Se omite con <code>:memory:</code>.</td>
+            </tr>
+            <tr>
+              <td><code>CRYPTO_SECRET</code></td>
+              <td>Sí</td>
+              <td>
+                Secreto base para derivar la clave AES-256-GCM que cifra las API keys de
+                ClickUp, Anthropic y OpenAI almacenadas en <code>users</code>.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout warn">
+          <div class="callout-title">CRYPTO_SECRET no se rota</div>
+          <p>
+            Si pierdes o cambias <code>CRYPTO_SECRET</code>, las columnas cifradas existentes
+            quedan irrecuperables (no hay re-encrypt automático con clave anterior).
+            Genérala una vez con <code>openssl rand -base64 32</code> y guárdala en el
+            password manager del equipo.
+          </p>
+        </div>
+
+        <h2 id="init">Inicialización y migraciones</h2>
+        <p>
+          <code>initDb()</code> es la función arrancada al importar <code>server/db.js</code>.
+          Aplica el esquema base con <code>CREATE TABLE IF NOT EXISTS</code> y añade
+          columnas nuevas con <code>ALTER TABLE … ADD COLUMN</code> envuelto en
+          <code>try/catch</code> para tolerar el error si la columna ya existe.
+        </p>
+<pre><code>try { await db.execute('ALTER TABLE users ADD COLUMN avatar_url TEXT'); } catch {}
+try { await db.execute('ALTER TABLE users ADD COLUMN anthropic_api_key TEXT'); } catch {}
+// …</code></pre>
+        <div class="callout">
+          <div class="callout-title">Migraciones idempotentes, no versionadas</div>
+          <p>
+            No hay un sistema de migraciones tipo Knex o Prisma Migrate. Cada cambio de
+            esquema se añade como otro <code>CREATE IF NOT EXISTS</code> o
+            <code>ALTER … ADD COLUMN</code> envuelto en try/catch. Funciona porque el
+            equipo es pequeño y los cambios son aditivos. Si el esquema empieza a requerir
+            renombrados, drops o backfills coordinados, conviene introducir un runner real.
+          </p>
+        </div>
+
+        <h2 id="schema-users">Tabla <code>users</code></h2>
+        <p>Usuario autenticado. Una fila por cuenta.</p>
+<pre><code>CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  clickup_user_id TEXT,
+  avatar_url TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  -- añadidas por ALTER … ADD COLUMN:
+  clickup_api_key TEXT,        -- cifrado (enc:v1:…)
+  clickup_list_id TEXT,
+  anthropic_api_key TEXT,      -- cifrado
+  openai_api_key TEXT,         -- cifrado
+  ai_provider TEXT DEFAULT 'anthropic'
+);</code></pre>
+
+        <table>
+          <thead><tr><th>Columna</th><th>Tipo</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>INTEGER PK</td><td>Autoincrement.</td></tr>
+            <tr><td><code>name</code></td><td>TEXT</td><td>Nombre visible. 1–100 chars (validado en backend).</td></tr>
+            <tr><td><code>email</code></td><td>TEXT UNIQUE</td><td>Lowercased al guardar. Único.</td></tr>
+            <tr><td><code>password</code></td><td>TEXT</td><td>Hash <code>bcrypt</code> (cost 12).</td></tr>
+            <tr><td><code>clickup_user_id</code></td><td>TEXT</td><td>Id de ClickUp resuelto al crear tickets (no se usa hoy en login).</td></tr>
+            <tr><td><code>avatar_url</code></td><td>TEXT</td><td>Avatar resuelto desde ClickUp al hacer login y cacheado.</td></tr>
+            <tr><td><code>clickup_api_key</code></td><td>TEXT cifrado</td><td>Personal access token de ClickUp del usuario.</td></tr>
+            <tr><td><code>clickup_list_id</code></td><td>TEXT</td><td>Lista de ClickUp destino para nuevas tareas.</td></tr>
+            <tr><td><code>anthropic_api_key</code></td><td>TEXT cifrado</td><td>API key de Anthropic.</td></tr>
+            <tr><td><code>openai_api_key</code></td><td>TEXT cifrado</td><td>API key de OpenAI.</td></tr>
+            <tr><td><code>ai_provider</code></td><td>TEXT</td><td><code>anthropic</code> | <code>openai</code>. Determina a quién se llama desde <code>/api/summarize</code>.</td></tr>
+            <tr><td><code>created_at</code></td><td>TEXT</td><td>ISO8601 generado por SQLite.</td></tr>
+          </tbody>
+        </table>
+
+        <h2 id="schema-incidents">Tabla <code>incidents</code></h2>
+        <p>Una incidencia por bug capturado (voz, texto o extensión).</p>
+<pre><code>CREATE TABLE IF NOT EXISTS incidents (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  transcript TEXT,
+  title TEXT,
+  bullets TEXT,                -- JSON.stringify(string[])
+  status TEXT DEFAULT 'procesando'
+    CHECK(status IN ('procesando','completado','error')),
+  source_type TEXT
+    CHECK(source_type IN ('audio','text','extension')),
+  duration_ms INTEGER DEFAULT 0,
+  clickup_task_id TEXT,
+  clickup_task_url TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_incidents_user_id ON incidents(user_id);</code></pre>
+
+        <table>
+          <thead><tr><th>Columna</th><th>Tipo</th><th>Descripción</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>INTEGER PK</td><td>Autoincrement.</td></tr>
+            <tr><td><code>user_id</code></td><td>INTEGER FK</td><td>Dueño de la incidencia (<code>users.id</code>). Verificado por <code>assertOwnership</code>.</td></tr>
+            <tr><td><code>transcript</code></td><td>TEXT</td><td>Texto crudo (transcripción del audio o input del usuario).</td></tr>
+            <tr><td><code>title</code></td><td>TEXT</td><td>Título corto generado por la IA tras summarize.</td></tr>
+            <tr><td><code>bullets</code></td><td>TEXT</td><td>Array de bullets serializado como JSON. Se parsea en <code>IncidentService.parseBullets</code>.</td></tr>
+            <tr><td><code>status</code></td><td>TEXT</td><td><code>procesando</code> al crear · <code>completado</code> tras summarize · <code>error</code> si falla. Enforced por <code>CHECK</code>.</td></tr>
+            <tr><td><code>source_type</code></td><td>TEXT</td><td><code>audio</code> · <code>text</code> · <code>extension</code>. Enforced por <code>CHECK</code>.</td></tr>
+            <tr><td><code>duration_ms</code></td><td>INTEGER</td><td>Duración del audio en ms. <code>0</code> para fuentes <code>text</code>/<code>extension</code>.</td></tr>
+            <tr><td><code>clickup_task_id</code></td><td>TEXT</td><td>Id de la tarea de ClickUp si se llegó a crear.</td></tr>
+            <tr><td><code>clickup_task_url</code></td><td>TEXT</td><td>URL directa al ticket en ClickUp.</td></tr>
+            <tr><td><code>created_at</code></td><td>TEXT</td><td>Usado para ordenar el feed (<code>DESC</code>).</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <div class="callout-title">Por qué bullets como TEXT (JSON) y no tabla aparte</div>
+          <p>
+            Los bullets siempre se leen y escriben en conjunto, nunca se consultan por su
+            contenido. Modelarlo como tabla separada añadiría joins sin aportar nada. Es un
+            trade-off consciente a favor de la simplicidad.
+          </p>
+        </div>
+
+        <h2 id="indexes">Índices</h2>
+        <table>
+          <thead><tr><th>Índice</th><th>Sobre</th><th>Para qué</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>idx_incidents_user_id</code></td>
+              <td><code>incidents(user_id)</code></td>
+              <td>Carga del feed y comprobaciones de ownership.</td>
+            </tr>
+            <tr>
+              <td><em>implícito</em></td>
+              <td><code>users(email)</code></td>
+              <td>Generado por la constraint <code>UNIQUE</code>. Hace el login un lookup directo.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="encryption">Cifrado de columnas sensibles</h2>
+        <p>
+          Las API keys (<code>clickup_api_key</code>, <code>anthropic_api_key</code>,
+          <code>openai_api_key</code>) se cifran antes de persistir con
+          <strong>AES-256-GCM</strong>. La clave deriva de <code>CRYPTO_SECRET</code> vía
+          SHA-256.
+        </p>
+
+        <h4>Formato del valor almacenado</h4>
+<pre><code>enc:v1:&lt;base64( iv ‖ ciphertext ‖ tag )&gt;</code></pre>
+        <ul>
+          <li><code>enc:v1:</code> — prefijo para detectar valores ya cifrados (versionado por si cambia el algoritmo).</li>
+          <li><code>iv</code> — 12 bytes aleatorios por valor (nonce GCM).</li>
+          <li><code>ciphertext</code> — texto cifrado.</li>
+          <li><code>tag</code> — 16 bytes de auth tag GCM (detecta manipulación).</li>
+        </ul>
+
+        <h4>Flujo en código</h4>
+        <ul>
+          <li><code>encrypt(plain)</code> y <code>decrypt(value)</code> en <code>server/services/crypto.js</code>.</li>
+          <li>
+            En el endpoint <code>PUT /api/settings</code> se cifra antes del
+            <code>UPDATE</code>.
+          </li>
+          <li>
+            <code>getUserSettings(userId)</code> en <code>db.js</code> descifra al leer, así
+            el resto del backend trabaja con texto plano sin enterarse del cifrado.
+          </li>
+          <li>
+            <code>GET /api/settings</code> nunca devuelve la clave en claro: sólo
+            <code>{ configured, hint }</code> (hint = enmascarado con 4 últimos chars).
+          </li>
+        </ul>
+
+        <h4>Migración suave de claves en claro</h4>
+        <p>
+          <strong>Contexto.</strong> Antes de introducir el cifrado, las columnas
+          <code>clickup_api_key</code>, <code>anthropic_api_key</code> y
+          <code>openai_api_key</code> se guardaban en texto plano. Al activar el cifrado
+          quedaron filas <em>mixtas</em>: las nuevas ya se escriben con el prefijo
+          <code>enc:v1:</code>, pero las viejas seguían en claro. Hacían falta dos cosas:
+          (1) que el código de lectura tolerase ambos formatos, y (2) que los datos
+          antiguos acabaran cifrados sin requerir un script manual ni una ventana de
+          mantenimiento.
+        </p>
+        <p>
+          <strong>Qué hace <code>migrateEncryptApiKeys()</code>.</strong> Se ejecuta una
+          vez por arranque del servidor (la llama <code>initDb()</code>). Recorre todas las
+          filas de <code>users</code>, mira cada columna cifrable, y para cada valor que
+          <em>no</em> empiece por <code>enc:v1:</code> ejecuta <code>encrypt()</code> y
+          reescribe la fila. Los valores ya cifrados se ignoran (la función
+          <code>isEncrypted()</code> los detecta por prefijo). Los nulos también se saltan.
+        </p>
+        <p><strong>Por qué este enfoque.</strong></p>
+        <ul>
+          <li>
+            <strong>Sin downtime ni coordinación.</strong> No requiere apagar el servicio,
+            ejecutar un script SQL externo y volver a levantar: con desplegar la versión
+            que cifra, el siguiente boot deja la BD coherente.
+          </li>
+          <li>
+            <strong>Idempotente.</strong> En el segundo arranque ya no queda nada en claro,
+            así que la migración es un no-op. Es seguro dejarla siempre activa.
+          </li>
+          <li>
+            <strong>Auto-cura.</strong> Si en algún momento se restaurase un backup viejo
+            o se insertara una clave en claro por error, el próximo reinicio la cifraría
+            automáticamente.
+          </li>
+        </ul>
+        <div class="callout warn">
+          <div class="callout-title">Cuándo dejará de tener sentido</div>
+          <p>
+            Una vez confirmado que no quedan filas con prefijo distinto a
+            <code>enc:v1:</code> en producción, esta migración se puede eliminar para evitar
+            un scan completo de <code>users</code> en cada boot. Mientras la tabla sea
+            pequeña, el coste es irrelevante y la red de seguridad compensa.
+          </p>
+        </div>
+
+        <h2 id="tests">Base de datos en tests</h2>
+        <p>
+          Los tests no pegan a Turso. El preload de Bun en <code>tests/preload.js</code> fija
+          <code>TURSO_DATABASE_URL=:memory:</code> antes de cargar <code>db.js</code>. Como
+          libSQL acepta el mismo URL que SQLite, todo el código de prod corre tal cual contra
+          una BD en memoria efímera por test run.
+        </p>
+
+        <h2 id="ops">Operación</h2>
+
+        <h3 id="backups">Backups</h3>
+        <p>Hay <strong>dos capas</strong> de backup, complementarias:</p>
+        <ol>
+          <li>
+            <strong>Point-in-time recovery de Turso</strong>. Gestionado por el proveedor.
+            La ventana de retención depende del plan: <strong>1 día en Free</strong>,
+            10 d en Developer, 30 d en Scaler, 90 d en Pro. RecUp está en Free, así que
+            PITR cubre incidentes detectados en las <em>últimas 24 h</em> y poco más.
+          </li>
+          <li>
+            <strong>Dumps semanales en GitHub Releases</strong>. Copia portátil fuera de
+            Turso. Es la única red de seguridad <em>real</em> a medio/largo plazo mientras
+            estemos en Free: si un borrado o corrupción aparece pasadas 48 h, el PITR de
+            Turso ya no llega y se restaura desde la release semanal más cercana
+            (≈ 12 semanas de historial, una por release).
+          </li>
+        </ol>
+
+        <h4>Cómo funcionan los dumps semanales</h4>
+        <ul>
+          <li>
+            Workflow: <code>.github/workflows/turso-backup.yml</code>. Cron
+            <code>0 4 * * 1</code> (lunes 04:00 UTC) + disparo manual desde
+            <em>Actions → Turso Backup → Run workflow</em>.
+          </li>
+          <li>
+            Script: <code>scripts/backup-turso.sh</code>. Llama al endpoint
+            <code>/dump</code> de Turso con el <code>TURSO_AUTH_TOKEN</code>, descarga el
+            SQL, lo carga en una SQLite temporal para <strong>verificar</strong> que las
+            tablas <code>users</code> e <code>incidents</code> están presentes, y
+            comprime con <code>gzip -9</code>.
+          </li>
+          <li>
+            Publicación: el <code>.sql.gz</code> se sube como asset de una
+            <strong>GitHub Release</strong> con tag <code>backup-YYYY-MM-DD-HHMM</code>.
+            No se commitea al repo: vive en Releases.
+          </li>
+          <li>
+            Rotación: el propio job borra todas las releases con prefijo
+            <code>backup-</code> salvo las <strong>12 más recientes</strong>.
+          </li>
+          <li>
+            Secrets en el repo (<code>Settings → Secrets → Actions</code>):
+            <code>TURSO_DATABASE_URL</code> y <code>TURSO_AUTH_TOKEN</code>. El upload usa
+            el <code>GITHUB_TOKEN</code> built-in.
+          </li>
+          <li>
+            Doc operativa completa (restore manual, probar el script en local, disparo
+            manual desde CLI): <code>scripts/BACKUP.md</code>.
+          </li>
+        </ul>
+
+        <div class="callout warn">
+          <div class="callout-title">Backups y CRYPTO_SECRET</div>
+          <p>
+            Los dumps contienen las columnas sensibles tal cual están en BD, es decir
+            <strong>cifradas</strong>. Restaurarlos y volver a usar las API keys requiere
+            el mismo <code>CRYPTO_SECRET</code> que tenía el servidor cuando se cifraron.
+            Si se pierde el secret, el restore sigue sirviendo para usuarios e incidencias
+            pero las API keys hay que reintroducirlas a mano. Guarda
+            <code>CRYPTO_SECRET</code> al menos en: env de Render, <code>.env</code> local
+            y un password manager.
+          </p>
+        </div>
+
+        <h3 id="cli">CLI de Turso</h3>
+        <ul>
+          <li><code>turso db shell &lt;db&gt;</code> — inspeccionar prod.</li>
+          <li><code>turso db tokens create &lt;db&gt;</code> — emitir/rotar <code>TURSO_AUTH_TOKEN</code>.</li>
+          <li><code>turso db create &lt;name&gt; --from-file dump.sql</code> — crear una BD nueva desde un dump (útil para restore desde un backup de Releases).</li>
+        </ul>
+
+        <h3 id="reset">Reset local</h3>
+        <p>
+          Borra el fichero <code>.db</code> si usas <code>file:</code>. Los tests usan
+          <code>:memory:</code> y no requieren reset entre runs.
+        </p>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <ul id="toc-list"></ul>
+      </aside>
+    </div>
+  </body>
+</html>

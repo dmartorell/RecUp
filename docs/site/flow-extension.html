@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Chrome Extension ↔ Webapp — RecUp Wiki</title>
+    <meta name="description" content="Cómo la extensión Chrome de RecUp pasa la sesión al webapp sin un login extra: context menu, query params, postMessage y sincronización de token." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Flujos</div>
+        <h1>Chrome Extension ↔ Webapp</h1>
+        <p class="lead">
+          La extensión abre el webapp y transfiere la sesión sin pedirle al usuario un segundo
+          login. Funciona mediante query params cuando la pestaña no existe, y mediante
+          <code>postMessage</code> cuando ya está abierta. El logout se propaga en sentido
+          contrario.
+        </p>
+
+        <h2 id="vision-general">Visión general</h2>
+<pre><code>[Chrome Extension]
+  ├── popup.js        — login propio, graba audio, envía incidents, abre webapp
+  ├── background.js   — service worker: context menu "Enviar a RecUp"
+  ├── content.js      — relay de mensajes window ↔ runtime
+  └── config.js       — RECUP_URL (prod/local)
+
+        │
+        │  Hay dos canales de comunicación según el estado de la pestaña:
+        │
+        ├── Tab nueva       → query params en la URL  (?token=…&email=…&contextText=…)
+        │                       └── adoptExtensionSession() + handleExternalText()
+        │
+        └── Tab existente   → chrome.scripting.executeScript → window.postMessage
+                                └── handlePostMessage() en el webapp</code></pre>
+
+        <h2 id="componentes">Componentes de la extensión</h2>
+
+        <h3 id="manifest">Manifest V3</h3>
+        <p>
+          El fichero <code>chrome-extension/manifest.json</code> declara:
+        </p>
+        <ul>
+          <li><strong>Permisos</strong>: <code>storage</code>, <code>tabs</code>, <code>contextMenus</code>, <code>scripting</code>.</li>
+          <li><strong>Host permissions</strong>: <code>https://recup.onrender.com/*</code> y <code>http://localhost:3000/*</code>. Son necesarios para inyectar scripts con <code>chrome.scripting.executeScript</code>.</li>
+          <li><strong>Service worker</strong>: <code>background.js</code> — gestiona el menú contextual y escucha mensajes de logout.</li>
+          <li><strong>Content script</strong>: <code>content.js</code> — inyectado en las páginas de RecUp, hace de relay entre el contexto de la página (<code>window</code>) y el service worker (<code>chrome.runtime</code>).</li>
+        </ul>
+
+        <h3 id="almacenamiento">Almacenamiento de sesión en la extensión</h3>
+        <p>
+          La extensión guarda la sesión en <code>chrome.storage.local</code> con tres claves:
+          <code>recup_token</code>, <code>recup_email</code> y <code>recup_name</code>. Este
+          almacenamiento persiste entre reinicios del navegador y es independiente del
+          <code>localStorage</code> del webapp.
+        </p>
+        <p>
+          Al arrancar el popup (<code>chrome-extension/popup.js:444</code>), recupera estas claves:
+          si existen, muestra la interfaz idle y valida el token contra <code>GET /api/incidents?limit=1</code>.
+          Si el servidor devuelve <code>401</code>, limpia el storage y muestra el login.
+        </p>
+
+        <h2 id="flujo-tab-nueva">Flujo A: menú contextual → tab nueva</h2>
+        <p>
+          Este es el flujo que se activa cuando el usuario selecciona texto en cualquier página,
+          hace clic derecho y elige <strong>"Enviar a RecUp"</strong>, y no hay ninguna pestaña
+          de RecUp abierta.
+        </p>
+<pre><code>[background.js — contextMenus.onClicked]
+  1. Lee chrome.storage.local → { recup_token, recup_email, recup_name }
+  2. Comprueba si hay tabs con URL = RECUP_URL/* → ninguna
+  3. Construye URL:
+       RECUP_URL/?contextText=&lt;encoded&gt;&token=&lt;token&gt;&email=&lt;email&gt;&name=&lt;name&gt;
+  4. chrome.tabs.create({ url })
+
+[Webapp — DOMContentLoaded en src/js/app.js:688]
+  1. adoptExtensionSession()   — lee ?token, ?email, ?name y los persiste en localStorage
+  2. checkAuth()               — ya hay sesión → muestra la app
+  3. loadIncidents()
+  4. handleExternalText()      — lee ?contextText → createIncident(contextText)
+  5. history.replaceState()    — limpia todos los query params de la URL</code></pre>
+
+        <div class="callout info">
+          <div class="callout-title">Por qué limpiar la URL</div>
+          <p>
+            El JWT viaja en la URL solo el tiempo necesario. <code>history.replaceState()</code>
+            lo elimina antes de que el usuario pueda copiarlo, compartirlo o que quede en el
+            historial del navegador. La sesión ya está en <code>localStorage</code> en ese punto.
+          </p>
+        </div>
+
+        <h2 id="flujo-tab-existente">Flujo B: menú contextual → tab existente</h2>
+        <p>
+          Si ya hay una pestaña de RecUp abierta, el background no puede modificar su URL sin
+          interrumpir al usuario. En su lugar, usa inyección de script para enviar un mensaje
+          directo al contexto de la página.
+        </p>
+<pre><code>[background.js — contextMenus.onClicked]
+  1. chrome.tabs.query({ url: RECUP_URL/* }) → hay una tab
+  2. Llama a injectPostMessage(tabId, {
+       type: 'recup:extension-data',
+       contextText, token, email, name
+     })
+  3. chrome.scripting.executeScript ejecuta window.postMessage(msg, '*') en la tab
+  4. Si falla (tab aún cargando), reintenta hasta 5 veces con 400 ms de delay
+  5. chrome.tabs.update(tabId, { active: true }) — pone la tab en foco
+
+[Webapp — handlePostMessage en src/js/app.js:609]
+  1. Verifica event.origin === window.location.origin
+  2. Si lleva token + email y no hay sesión activa:
+       - Guarda la sesión en localStorage
+       - showApp(email) + loadIncidents()
+  3. Si ya hay sesión:
+       - createIncident(contextText)  (si viene contextText)
+  4. history.replaceState() no es necesario: la URL no cambió</code></pre>
+
+        <h2 id="flujo-popup">Flujo C: incident enviado desde el popup</h2>
+        <p>
+          El popup tiene su propia interfaz de grabación/texto. Cuando el usuario envía un
+          incident desde el popup:
+        </p>
+<pre><code>[popup.js — sendBtn click]
+  1. POST /api/incidents  con Authorization: Bearer &lt;recup_token&gt;
+  2. Obtiene incidentId del response
+  3. Si hay tab de RecUp abierta:
+       injectPostMessage(tabId, { type: 'recup:extension-data',
+                                  token, email, name,
+                                  highlight: incidentId })
+  4. Si no hay tab:
+       chrome.tabs.create({ url: RECUP_URL/ })
+       (el webapp cargará y renderizará el incident vía loadIncidents)
+  5. window.close()  — cierra el popup
+
+[Webapp — handlePostMessage]
+  Si hay highlight → highlightTarget(incidentId)
+    → scrollIntoView + añade clase 'incident-highlight' 3 s
+    → si el incident ya tiene summary y no tiene ticket → abre modal de ClickUp</code></pre>
+
+        <h2 id="sincronizacion-token">Sincronización del token</h2>
+        <p>
+          El popup intercepta la cabecera <code>X-New-Token</code> en cada respuesta de la API
+          (<code>popup.js:9</code>), igual que el webapp. Cuando el servidor renueva el JWT de
+          forma silenciosa, ambos lados lo actualizan en su almacenamiento respectivo:
+        </p>
+        <ul>
+          <li><strong>Webapp</strong>: actualiza <code>localStorage['recup_session'].token</code>.</li>
+          <li><strong>Popup</strong>: actualiza <code>chrome.storage.local['recup_token']</code>.</li>
+        </ul>
+        <p>
+          Esto garantiza que el popup y el webapp nunca tengan tokens distintos aunque uno
+          renueve antes que el otro: el último que hace una request gana.
+        </p>
+
+        <h2 id="logout">Logout: de webapp a extensión</h2>
+        <p>
+          Cuando el usuario hace logout en el webapp (o la sesión expira por 401), el flujo
+          se propaga a la extensión a través de <code>content.js</code>:
+        </p>
+<pre><code>[src/js/app.js:250]
+  window.postMessage({ type: 'recup:logout' }, '*')
+
+[chrome-extension/content.js:1]
+  window.addEventListener('message') → relay a chrome.runtime.sendMessage
+
+[chrome-extension/background.js:23]
+  chrome.runtime.onMessage → chrome.storage.local.remove(['recup_token', 'recup_email', 'recup_name'])</code></pre>
+        <p>
+          El content script es necesario porque el service worker no tiene acceso a
+          <code>window</code> de la página. Actúa de puente entre el contexto de la página
+          y el service worker.
+        </p>
+
+        <h2 id="seguridad">Consideraciones de seguridad</h2>
+        <ul>
+          <li>
+            <strong>Origin check en postMessage</strong> — <code>handlePostMessage</code>
+            verifica <code>event.origin === window.location.origin</code>
+            (<code>src/js/app.js:610</code>) antes de procesar cualquier mensaje. Sin este
+            check, cualquier página podría inyectar una sesión falsa.
+          </li>
+          <li>
+            <strong>Token en query params</strong> — solo viaja en la URL cuando no hay tab
+            existente. <code>history.replaceState</code> lo elimina inmediatamente al arrancar.
+            No persiste en el historial del navegador.
+          </li>
+          <li>
+            <strong>chrome.storage.local vs localStorage</strong> — el token de la extensión
+            vive en <code>chrome.storage.local</code>, aislado del <code>localStorage</code>
+            de la página. Un XSS en el webapp no puede leer el storage de la extensión.
+          </li>
+          <li>
+            <strong>host_permissions</strong> — la extensión solo puede inyectar scripts en
+            <code>recup.onrender.com</code> y <code>localhost:3000</code>. No tiene acceso a
+            ningún otro origen.
+          </li>
+        </ul>
+
+        <h2 id="archivos">Archivos clave</h2>
+        <ul>
+          <li><code>chrome-extension/manifest.json</code> — permisos y declaración de componentes</li>
+          <li><code>chrome-extension/background.js</code> — service worker: context menu y logout</li>
+          <li><code>chrome-extension/content.js</code> — relay window ↔ chrome.runtime para logout</li>
+          <li><code>chrome-extension/popup.js</code> — interfaz del popup, login, grabación, envío de incidents</li>
+          <li><code>chrome-extension/config.js</code> — <code>RECUP_URL</code> (conmutable prod/local)</li>
+          <li><code>src/js/app.js:573</code> — <code>adoptExtensionSession()</code></li>
+          <li><code>src/js/app.js:594</code> — <code>handleExternalText()</code></li>
+          <li><code>src/js/app.js:609</code> — <code>handlePostMessage()</code></li>
+        </ul>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <nav>
+          <ul>
+            <li><a href="#vision-general">Visión general</a></li>
+            <li><a href="#componentes">Componentes</a>
+              <ul>
+                <li><a href="#manifest">Manifest V3</a></li>
+                <li><a href="#almacenamiento">Almacenamiento de sesión</a></li>
+              </ul>
+            </li>
+            <li><a href="#flujo-tab-nueva">Flujo A: tab nueva</a></li>
+            <li><a href="#flujo-tab-existente">Flujo B: tab existente</a></li>
+            <li><a href="#flujo-popup">Flujo C: desde el popup</a></li>
+            <li><a href="#sincronizacion-token">Sincronización del token</a></li>
+            <li><a href="#logout">Logout</a></li>
+            <li><a href="#seguridad">Seguridad</a></li>
+            <li><a href="#archivos">Archivos clave</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </body>
+</html>

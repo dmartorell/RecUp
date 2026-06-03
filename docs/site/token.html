@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Token y JWT — RecUp Wiki</title>
+    <meta name="description" content="Cómo RecUp emite, valida, almacena y renueva el JWT, y cómo lo comparten la app web y la extensión de Chrome." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Auth · Sesiones</div>
+        <h1>Token y JWT</h1>
+        <p class="lead">
+          RecUp usa un único <strong>JWT</strong> como prueba de identidad. Lo emite el
+          backend al registrarse o hacer login, viaja en cada request como cabecera
+          <code>Authorization</code>, y se renueva de forma <em>silenciosa</em> antes de
+          que caduque. La app web y la extensión de Chrome comparten el mismo token, con
+          almacenamiento distinto.
+        </p>
+
+        <h2 id="que-es">Qué es el JWT</h2>
+        <p>
+          Un <strong>JSON Web Token</strong> firmado por el backend con
+          <code>JWT_SECRET</code>. La librería es <code>jsonwebtoken</code> y se firma con
+          el default (<strong>HS256</strong>, simétrico). El payload es mínimo:
+        </p>
+<pre><code>{
+  "sub": 42,                       // users.id
+  "name": "Dani",
+  "email": "dani@empresa.com",
+  "iat": 1717977600,               // emitido (epoch s)
+  "exp": 1718582400                // expira (epoch s)
+}</code></pre>
+        <p>
+          El payload <strong>no está cifrado</strong>, solo firmado: cualquiera puede
+          decodificarlo (es base64). Lo que protege la firma es que si manipulas un campo,
+          la verificación con <code>JWT_SECRET</code> falla en el backend.
+        </p>
+        <div class="callout warn">
+          <div class="callout-title">No metas datos sensibles en el payload</div>
+          <p>
+            El token viaja a cliente y se queda almacenado en su disco. <code>name</code>
+            y <code>email</code> ya son los datos que el cliente conoce de sí mismo. No
+            añadir <code>password</code>, API keys, ni claims internos.
+          </p>
+        </div>
+
+        <h2 id="emision">Emisión</h2>
+        <p>
+          <code>signToken(userId, name, email)</code> en
+          <code>server/middleware/auth.js</code> es el único punto que emite tokens.
+          Lo invocan:
+        </p>
+        <ul>
+          <li><code>POST /api/auth/register</code> — en la respuesta de creación de cuenta.</li>
+          <li><code>POST /api/auth/login</code> — tras validar credenciales con bcrypt.</li>
+          <li>
+            El propio <code>authMiddleware</code> — al renovar silenciosamente (ver
+            <a href="#renovacion">Renovación</a>).
+          </li>
+        </ul>
+<pre><code>export function signToken(userId, name, email) {
+  return jwt.sign(
+    { sub: userId, name, email },
+    config.jwtSecret,
+    { expiresIn: JWT_EXPIRES_IN }   // '7d'
+  );
+}</code></pre>
+
+        <h2 id="caducidad">Caducidad</h2>
+        <table>
+          <thead><tr><th>Constante</th><th>Valor</th><th>Significado</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>JWT_EXPIRES_IN</code></td>
+              <td><code>'7d'</code></td>
+              <td>El token expira a los <strong>7 días</strong> desde su emisión. La librería rellena <code>exp</code> y <code>iat</code> automáticamente.</td>
+            </tr>
+            <tr>
+              <td><code>JWT_RENEW_THRESHOLD_MS</code></td>
+              <td><code>3 días</code> (en ms)</td>
+              <td>Umbral a partir del cual el backend devuelve un token nuevo en la respuesta. Ver renovación.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Ambos viven en <code>server/config/constants.js</code> — un único sitio para
+          tocar la política de sesiones.
+        </p>
+
+        <h2 id="validacion">Validación en cada request</h2>
+        <p>
+          <code>authMiddleware</code> protege todas las rutas autenticadas. Espera:
+        </p>
+<pre><code>Authorization: Bearer &lt;jwt&gt;</code></pre>
+        <ol>
+          <li>Si falta la cabecera o no empieza por <code>Bearer </code> → <code>401 UNAUTHORIZED</code>.</li>
+          <li>
+            <code>jwt.verify(token, JWT_SECRET)</code> comprueba firma <em>y</em>
+            expiración. Si el token está expirado o la firma es inválida →
+            <code>401 UNAUTHORIZED</code>.
+          </li>
+          <li>
+            Si pasa, escribe <code>req.user = { id, name, email }</code> y el handler
+            sigue normal.
+          </li>
+        </ol>
+
+        <h2 id="renovacion">Renovación silenciosa</h2>
+        <p>
+          RecUp no usa refresh tokens. En su lugar, <code>authMiddleware</code>
+          <strong>renueva en banda</strong>: si al validar detecta que al token le quedan
+          menos de <code>JWT_RENEW_THRESHOLD_MS</code> de vida, firma uno nuevo y lo
+          adjunta como cabecera de respuesta:
+        </p>
+<pre><code>const expMs = decoded.exp * 1000;
+if (expMs - Date.now() &lt; JWT_RENEW_THRESHOLD_MS) {
+  const fresh = signToken(decoded.sub, decoded.name, decoded.email);
+  res.setHeader('X-New-Token', fresh);
+  res.setHeader('Access-Control-Expose-Headers', 'X-New-Token');
+}</code></pre>
+        <p>El cliente intercepta cada respuesta y, si trae la cabecera, sustituye el token guardado.</p>
+
+        <div class="callout">
+          <div class="callout-title">Vida efectiva de una sesión activa</div>
+          <p>
+            Con TTL <strong>7 d</strong> y umbral <strong>3 d</strong>, mientras el usuario
+            haga al menos una request cada ≤ 4 días <em>nunca verá la sesión expirada</em>:
+            cada vez que entra en esa ventana de "quedan menos de 3 días", la respuesta le
+            trae un token nuevo de 7 d. Solo se cae la sesión si no abre la app durante
+            más de 4 días seguidos (entre la última request y la caducidad real).
+          </p>
+        </div>
+
+        <h2 id="almacenamiento">Almacenamiento por cliente</h2>
+
+        <h3 id="saas-storage">App web (SaaS)</h3>
+        <p>
+          Guardado en <code>localStorage</code> bajo la clave <code>recup_session</code>:
+        </p>
+<pre><code>localStorage.setItem('recup_session', JSON.stringify({
+  token: '&lt;jwt&gt;',
+  user: { name, email, avatar }
+}));</code></pre>
+        <ul>
+          <li>
+            Accesores en <code>src/js/auth.js</code>: <code>getSession()</code>,
+            <code>updateSessionToken(token)</code>, <code>authHeaders()</code>.
+          </li>
+          <li>
+            <code>authHeaders()</code> es el helper que cada llamada usa para inyectar
+            <code>Authorization</code> y <code>Content-Type</code>.
+          </li>
+          <li>
+            <code>localStorage</code> persiste entre reinicios del navegador hasta que se
+            limpie explícitamente (logout, expiración detectada, devtools).
+          </li>
+        </ul>
+
+        <h3 id="ext-storage">Extensión de Chrome</h3>
+        <p>
+          Guardado en <code>chrome.storage.local</code>, separado en tres entradas:
+        </p>
+<pre><code>chrome.storage.local.set({
+  recup_token: '&lt;jwt&gt;',
+  recup_email: 'dani@empresa.com',
+  recup_name: 'Dani'
+});</code></pre>
+        <ul>
+          <li>
+            La extensión <em>no</em> guarda avatar — solo lo necesita para autenticar y
+            enviar al SaaS.
+          </li>
+          <li>
+            Se lee desde <code>popup.js</code> al abrir el popup y desde
+            <code>background.js</code> al disparar el menú contextual
+            "<em>Enviar a RecUp</em>".
+          </li>
+          <li>
+            <code>chrome.storage.local</code> es por instalación de la extensión, no
+            comparte con cookies del navegador.
+          </li>
+        </ul>
+
+        <div class="callout warn">
+          <div class="callout-title">Por qué localStorage / chrome.storage y no cookies httpOnly</div>
+          <p>
+            Cookies <code>httpOnly</code> protegerían el token frente a XSS, pero
+            requerirían arquitectura de cookies + CSRF + dominio compartido. RecUp es una
+            SPA en su propio dominio con superficie XSS reducida (no renderiza HTML de
+            terceros sin escapar). El trade-off de complejidad no compensa todavía.
+          </p>
+        </div>
+
+        <h2 id="interceptor">Interceptor de fetch (ambos clientes)</h2>
+        <p>
+          Tanto el SaaS como la extensión <strong>monkeypatchean</strong>
+          <code>window.fetch</code> al arrancar para automatizar la renovación. Cada
+          respuesta se inspecciona y, si trae <code>X-New-Token</code>, se actualiza el
+          token guardado.
+        </p>
+
+<pre><code>// src/js/auth.js (SaaS)
+const fresh = res.headers.get('X-New-Token');
+if (fresh) updateSessionToken(fresh);
+
+// chrome-extension/popup.js (extensión)
+const fresh = res.headers.get('X-New-Token');
+if (fresh) chrome.storage.local.set({ recup_token: fresh });</code></pre>
+
+        <p>Diferencias prácticas:</p>
+        <ul>
+          <li>
+            <strong>SaaS</strong>: además del refresh, al recibir <code>401</code> en una
+            ruta no pública dispara <code>handleExpiredSession()</code> — borra
+            <code>recup_session</code>, muestra toast "<em>sesión caducada</em>",
+            <code>postMessage({ type: 'recup:logout' })</code> para que la extensión se
+            entere, y recarga la página.
+          </li>
+          <li>
+            <strong>Extensión</strong>: solo refresca el token; el manejo de
+            <code>401</code> lo hace cada llamada por su cuenta (vuelve a la pantalla de
+            login). No tiene página que recargar.
+          </li>
+        </ul>
+
+        <h3 id="rutas-publicas">AUTH_PUBLIC_PATHS</h3>
+        <p>
+          Un <code>401</code> en <code>/api/auth/login</code> o
+          <code>/api/auth/register</code> significa credenciales incorrectas, no sesión
+          caducada. Para no disparar <code>handleExpiredSession()</code> en esos casos,
+          el interceptor comprueba la URL de la request contra una lista de rutas públicas:
+        </p>
+<pre><code>// src/js/auth.js
+const AUTH_PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register'];</code></pre>
+        <p>
+          Si la URL está en esa lista, el <code>401</code> se deja pasar al handler de la
+          llamada original (que mostrará el error de credenciales). Si no está, se trata
+          como sesión expirada y se fuerza el logout.
+        </p>
+
+        <h2 id="handoff">Handoff extensión ↔ SaaS</h2>
+        <p>
+          La extensión y la SPA comparten el mismo backend y por tanto el mismo JWT,
+          pero <strong>cada una mantiene su propia copia</strong> del token. Cuando el
+          usuario hace clic derecho → <em>Enviar a RecUp</em>, la extensión necesita
+          "trasplantar" su sesión a la pestaña del SaaS.
+        </p>
+
+        <h3 id="handoff-flow">Flujo</h3>
+        <ol>
+          <li>
+            <strong>Service worker</strong> (<code>background.js</code>) lee
+            <code>recup_token</code>, <code>recup_email</code>, <code>recup_name</code> de
+            <code>chrome.storage.local</code>.
+          </li>
+          <li>
+            Comprueba si ya hay una pestaña abierta en el dominio del SaaS
+            (<code>RECUP_URL</code>):
+            <ul>
+              <li>
+                <strong>Sí</strong>: inyecta un <code>postMessage</code> con
+                <code>{ type: 'recup:extension-data', token, email, name, contextText }</code>
+                en esa pestaña y la enfoca.
+              </li>
+              <li>
+                <strong>No</strong>: abre nueva pestaña con los datos como query params
+                (<code>?contextText=…&amp;token=…&amp;email=…&amp;name=…</code>).
+              </li>
+            </ul>
+          </li>
+          <li>
+            En el SaaS, <code>adoptExtensionSession()</code> (URL) y
+            <code>handlePostMessage()</code> (postMessage) en <code>src/js/app.js</code>:
+            <ul>
+              <li>
+                Solo adoptan la sesión si <strong>aún no hay sesión propia</strong>
+                (<code>!getSession()?.token</code>). Esto evita pisar un usuario logado
+                con otro.
+              </li>
+              <li>
+                Guardan <code>{ token, user: { email, name } }</code> en
+                <code>localStorage</code>.
+              </li>
+              <li>
+                <strong>Limpian la URL</strong> con
+                <code>history.replaceState</code> para que el token deje de aparecer en
+                <code>location.search</code> y no se filtre a Sentry, referer headers o
+                screenshots.
+              </li>
+            </ul>
+          </li>
+        </ol>
+
+        <div class="callout warn">
+          <div class="callout-title">Token en query params: por qué se acepta y por qué se limpia</div>
+          <p>
+            Pasar el JWT en la URL no es ideal: puede acabar en el history del navegador,
+            en logs del servidor y en cabeceras <code>Referer</code>. Se acepta como
+            <em>último recurso</em> cuando no hay una pestaña del SaaS abierta donde
+            inyectar el <code>postMessage</code>. Por eso, en cuanto el SaaS arranca, lo
+            primero que hace es <strong>borrar los params</strong> de la URL con
+            <code>history.replaceState</code>. El token vive en
+            <code>location.search</code> milisegundos.
+          </p>
+        </div>
+
+        <h2 id="logout">Logout coordinado</h2>
+        <p>
+          Como hay dos copias del token (una por cliente), un logout en uno debe propagar
+          al otro. Flujo:
+        </p>
+        <ol>
+          <li>
+            SaaS detecta logout (manual o expiración) → emite
+            <code>postMessage({ type: 'recup:logout' })</code>.
+          </li>
+          <li>
+            El service worker de la extensión escucha
+            <code>chrome.runtime.onMessage</code> y, al recibir
+            <code>recup:logout</code>, borra <code>recup_token</code>,
+            <code>recup_email</code> y <code>recup_name</code> de
+            <code>chrome.storage.local</code>.
+          </li>
+          <li>
+            En la dirección contraria (logout iniciado en la extensión) solo se limpia el
+            storage local de la propia extensión; el SaaS lo notará la próxima vez que
+            necesite el token (o vía la próxima respuesta <code>401</code>).
+          </li>
+        </ol>
+
+        <h2 id="diferencias">Resumen de diferencias SaaS ↔ extensión</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Aspecto</th>
+              <th>App web (SaaS)</th>
+              <th>Extensión Chrome</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Storage</td>
+              <td><code>localStorage</code>, clave <code>recup_session</code> (objeto)</td>
+              <td><code>chrome.storage.local</code>, claves separadas <code>recup_token</code>, <code>recup_email</code>, <code>recup_name</code></td>
+            </tr>
+            <tr>
+              <td>Datos del usuario guardados</td>
+              <td>token + name + email + avatar</td>
+              <td>token + name + email (sin avatar)</td>
+            </tr>
+            <tr>
+              <td>Interceptor de fetch</td>
+              <td>Refresca token + maneja 401 (toast + reload)</td>
+              <td>Solo refresca token</td>
+            </tr>
+            <tr>
+              <td>Login</td>
+              <td>Formulario en la SPA</td>
+              <td>Formulario en el popup de la extensión</td>
+            </tr>
+            <tr>
+              <td>Logout</td>
+              <td>Botón → limpia storage + avisa a la extensión por <code>postMessage</code></td>
+              <td>Botón → limpia storage propio; recibe <code>recup:logout</code> del SaaS</td>
+            </tr>
+            <tr>
+              <td>Handoff entre clientes</td>
+              <td>Recibe sesión vía URL params o <code>postMessage</code> (<code>recup:extension-data</code>)</td>
+              <td>Envía sesión inyectando <code>postMessage</code> o abriendo URL con query params</td>
+            </tr>
+            <tr>
+              <td>Renovación silenciosa</td>
+              <td>Sí, vía <code>X-New-Token</code></td>
+              <td>Sí, vía <code>X-New-Token</code></td>
+            </tr>
+            <tr>
+              <td>Algoritmo, TTL y umbral</td>
+              <td colspan="2">Idénticos: HS256, TTL 7 d, renovación si quedan &lt; 3 d</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="env">Variables de entorno</h2>
+        <table>
+          <thead><tr><th>Var</th><th>Obligatoria</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>JWT_SECRET</code></td>
+              <td>Sí en prod</td>
+              <td>
+                Clave HMAC para firmar y verificar. En dev hay fallback
+                <code>dev-secret-change-me</code>; en prod debe ser un valor largo y
+                aleatorio. Rotar invalida todos los tokens emitidos.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <ul id="toc-list"></ul>
+      </aside>
+    </div>
+  </body>
+</html>

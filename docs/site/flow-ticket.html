@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Creación de ticket ClickUp — RecUp Wiki</title>
+    <meta
+      name="description"
+      content="Flujo completo de creación de un ticket ClickUp desde RecUp: modal del frontend, resolución email→userId cacheada, custom fields, subida de adjuntos."
+    />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">
+      html,
+      body {
+        background: #ffffff;
+      }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background: #1b1b1d;
+      }
+      html.__no-transition *,
+      html.__no-transition *::before,
+      html.__no-transition *::after {
+        transition: none;
+        animation: none;
+      }
+    </style>
+    <script>
+      (() => {
+        try {
+          const t = localStorage.getItem("recup-docs-theme");
+          if (t === "dark" || t === "light")
+            document.documentElement.setAttribute("data-theme", t);
+        } catch {}
+        document.documentElement.classList.add("__no-transition");
+        document.addEventListener("DOMContentLoaded", () => {
+          document.documentElement.classList.remove("__no-transition");
+          document.getElementById("__nt")?.remove();
+        });
+      })();
+    </script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Flujos</div>
+        <h1>Creación de ticket ClickUp</h1>
+        <p class="lead">
+          Cómo el usuario convierte un bug report en un ticket de ClickUp: el
+          modal del frontend recopila los metadatos, el backend resuelve el
+          email del reporter a un userId (con caché de 10 min), crea la tarea
+          con custom fields y sube los adjuntos.
+        </p>
+
+        <h2 id="vision-general">Visión general</h2>
+        <pre><code>[Frontend: openTicketModal({ title, bullets, transcript })]
+        │  Usuario elige: app, plataforma, versión, assetId, adjuntos
+        │  POST /api/ticket { name, markdown_description, reporterEmail,
+        │                     assetId, platform, product, appVersion }
+        ▼
+[server/routes/ticket.js]
+  ├── Valida name (string no vacío)
+  ├── getUserSettings(userId)    ← descifra clickup_api_key + lee clickup_list_id
+  ├── Construye markdown_description
+  ├── Construye custom_fields (assetId, plataforma, versión)
+  ├── resolveEmailToUserId(reporterEmail, apiKey)
+  │     └── getWorkspaceMembers → GET /v2/team  (caché in-memory 10 min)
+  ├── createTask → POST /v2/list/{listId}/task   (priority: 3)
+  └── setReporterField(taskId, userId, apiKey)
+        │
+        ▼
+{ id, url }
+        │  Si hay adjuntos: POST /api/attachment  multipart (taskId + files)
+        ▼
+[server/routes/attachment.js]
+  └── Para cada archivo: uploadAttachment → POST /v2/task/{id}/attachment
+        │
+        ▼
+Toast con link al ticket en ClickUp</code></pre>
+
+        <h2 id="modal-frontend">Modal del frontend</h2>
+        <p>
+          Se abre con <code>openTicketModal(incidentData)</code>
+          (<code>src/js/ticket-modal.js:140</code>). Pre-rellena
+          automáticamente:
+        </p>
+        <ul>
+          <li>
+            <strong>Título</strong> — <code>incidentData.title</code> (el
+            generado por la IA)
+          </li>
+          <li>
+            <strong>Descripción</strong> — bullets del summary, uno por línea
+            con <code>- </code>
+          </li>
+          <li>
+            App seleccionada por defecto: <code>alfred</code> / plataforma:
+            <code>iOS</code>
+          </li>
+        </ul>
+        <p>El usuario puede cambiar o completar:</p>
+        <ul>
+          <li>
+            <strong>App</strong> — badges: alfred, nn, lavidda, dkey, assets,
+            assets-beta
+          </li>
+          <li>
+            <strong>Plataforma</strong> — iOS, Android, Web (multiseleción
+            excepto Web)
+          </li>
+          <li><strong>Versión de la app</strong> — texto libre</li>
+          <li><strong>Asset ID / Proyecto</strong> — texto libre</li>
+          <li>
+            <strong>Adjuntos</strong> — hasta 5 archivos, máx. 100 MB por
+            archivo, o foto con cámara
+          </li>
+        </ul>
+
+        <h3 id="validacion-submit">Validación en dos pasos</h3>
+        <p>
+          Si el usuario pulsa "Crear ticket" con campos opcionales vacíos
+          (versión, assetId), el primer click muestra un banner con la lista de
+          campos que faltan y no envía. El segundo click envía aunque los campos
+          sigan vacíos. Esto evita bloquear al usuario cuando los campos
+          realmente no aplican.
+        </p>
+        <p>
+          El único campo obligatorio que bloquea siempre es el
+          <strong>título</strong>: si está vacío, aparece un error en el modal y
+          no se avanza.
+        </p>
+
+        <h2 id="payload">Construcción del payload</h2>
+        <p>
+          El frontend construye <code>markdown_description</code> antes de
+          enviar (<code>src/js/ticket-modal.js:324</code>):
+        </p>
+        <pre><code>**Resumen de la incidencia:**
+
+- Bullet 1.
+- Bullet 2.
+
+---
+
+**Transcripción completa:**
+
+&lt;transcripción original&gt;
+
+---
+**Producto:** Alfred
+**ID de Asset o Proyecto:** &lt;assetId&gt;
+**Plataforma:** iOS
+**Versión:** Alfred 3.2.1</code></pre>
+        <p>
+          El backend añade el bloque de metadatos al final del description
+          (<code>server/routes/ticket.js:24</code>). Los custom fields de
+          ClickUp reciben esos mismos datos de forma estructurada (ver sección
+          siguiente).
+        </p>
+
+        <h2 id="resolucion-email">Resolución email → userId (caché 10 min)</h2>
+        <p>
+          ClickUp requiere el userId numérico para asignar el campo "Reporter".
+          El email del usuario logueado está disponible en la sesión
+          (<code>getSession().user.email</code>), pero la API de ClickUp no
+          acepta email directamente.
+        </p>
+        <p>
+          <code>ClickUpService.resolveEmailToUserId(email, apiKey)</code>
+          (<code>server/services/ClickUpService.js:34</code>) hace:
+        </p>
+        <ol>
+          <li>
+            Llama a <code>getWorkspaceMembers(apiKey)</code>, que consulta
+            <code>GET /v2/team</code>.
+          </li>
+          <li>
+            El resultado se guarda en un <code>Map</code> en memoria
+            (<code>membersCache</code>) con timestamp. Si una petición posterior
+            llega antes de 10 minutos (<code
+              >CLICKUP_CACHE_TTL = 10 * 60 * 1000</code
+            >), devuelve el caché sin volver a llamar a ClickUp.
+          </li>
+          <li>
+            Busca el miembro cuyo email coincida (comparación en minúsculas) y
+            devuelve su <code>id</code>.
+          </li>
+        </ol>
+        <p>
+          Si el email no está en el workspace,
+          <code>resolveEmailToUserId</code> devuelve <code>null</code> y el
+          endpoint responde <code>403 NO_MEMBER</code>. El frontend cierra el
+          modal y muestra un toast; no intenta crear la tarea.
+        </p>
+        <div class="callout warn">
+          <div class="callout-title">Caché in-memory y escalabilidad</div>
+          <p>
+            Con múltiples instancias del servidor, cada una tiene su propio
+            caché. Una rotación de API key o un nuevo miembro puede tardar hasta
+            10 min en reflejarse. En un entorno multi-instancia haría falta
+            Redis. Ver
+            <a href="scalability.html#cache-clickup"
+              >Escalabilidad — caché ClickUp</a
+            >.
+          </p>
+        </div>
+
+        <h2 id="creacion-tarea">Creación de la tarea</h2>
+        <p>
+          <code>ClickUpService.createTask</code>
+          (<code>server/services/ClickUpService.js:52</code>) llama a
+          <code>POST /api/v2/list/{listId}/task</code> con:
+        </p>
+        <ul>
+          <li><code>name</code> — título del bug</li>
+          <li>
+            <code>markdown_description</code> — descripción completa construida
+            por el frontend
+          </li>
+          <li>
+            <code>priority: 3</code> — normal (escala ClickUp: 1 urgente, 2
+            alta, 3 normal, 4 baja)
+          </li>
+          <li>
+            <code>custom_fields</code> — array con los campos estructurados (ver
+            tabla abajo)
+          </li>
+        </ul>
+        <p>
+          Una vez creada,
+          <code>setReporterField(taskId, userId, apiKey)</code> hace una segunda
+          llamada para asignar el campo "Reporter" (campo tipo People):
+        </p>
+        <pre><code>POST /api/v2/task/{taskId}/field/{CLICKUP_CUSTOM_FIELD_IDS.reporter}
+{ "value": { "add": [userId] } }</code></pre>
+
+        <h2 id="custom-fields">Custom fields</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Campo</th>
+              <th>ID ClickUp</th>
+              <th>Fuente en RecUp</th>
+              <th>Cómo se envía</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Reporter</td>
+              <td><code>c9fb2e87-…</code></td>
+              <td>Email del usuario logueado → resolución a userId</td>
+              <td><code>setReporterField</code> (llamada separada)</td>
+            </tr>
+            <tr>
+              <td>Asset ID / Proyecto</td>
+              <td><code>3aedd038-…</code></td>
+              <td>Input <code>ticket-asset-id</code></td>
+              <td><code>custom_fields</code> en <code>createTask</code></td>
+            </tr>
+            <tr>
+              <td>Dispositivo / Plataforma</td>
+              <td><code>b07abf0c-…</code></td>
+              <td>Badges de plataforma (iOS, Android, Web…)</td>
+              <td><code>custom_fields</code> en <code>createTask</code></td>
+            </tr>
+            <tr>
+              <td>Versión de la app</td>
+              <td><code>66097442-…</code></td>
+              <td><code>product + appVersion</code> concatenados</td>
+              <td><code>custom_fields</code> en <code>createTask</code></td>
+            </tr>
+            <tr>
+              <td>Captura</td>
+              <td><code>567894b1-…</code></td>
+              <td>Archivos adjuntos</td>
+              <td>
+                <code>uploadAttachment</code> con <code>?custom_field_id=</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p>
+          Los IDs viven en <code>CLICKUP_CUSTOM_FIELD_IDS</code>
+          (<code>server/config/constants.js:2</code>) y son específicos del
+          workspace.
+        </p>
+
+        <h2 id="adjuntos">Subida de adjuntos</h2>
+        <p>
+          Una vez el backend devuelve <code>{ id, url }</code> con el taskId, el
+          frontend sube los adjuntos en una segunda petición
+          (<code>src/js/ticket-modal.js:245</code>):
+        </p>
+        <pre><code>POST /api/attachment
+Content-Type: multipart/form-data
+
+taskId=&lt;taskId&gt;
+attachment=&lt;file1&gt;
+attachment=&lt;file2&gt;
+…</code></pre>
+        <p>
+          El servidor (<code>server/routes/attachment.js</code>) usa
+          <strong>multer</strong> con almacenamiento en memoria
+          (<code>memoryStorage</code>), límite de 100 MB por archivo y máximo 5
+          archivos por request. Para cada archivo llama a
+          <code>ClickUpService.uploadAttachment</code>, que hace:
+        </p>
+        <pre><code>POST /api/v2/task/{taskId}/attachment?custom_field_id={captura_field_id}
+Content-Type: multipart/form-data  (FormData con el Blob del archivo)</code></pre>
+        <p>
+          El bucle es <strong>secuencial</strong>: si falla un archivo, la
+          respuesta incluye el error y el array <code>uploaded</code> con los
+          que ya se subieron.
+        </p>
+
+        <h3 id="error-parcial">Error parcial y retry</h3>
+        <p>
+          Si la subida de adjuntos falla después de crear la tarea, el frontend:
+        </p>
+        <ol>
+          <li>
+            Marca la tarjeta de incidente como enviada (la tarea ya existe en
+            ClickUp).
+          </li>
+          <li>
+            Muestra un error en el modal con un botón
+            <strong>Reintentar adjuntos</strong>.
+          </li>
+          <li>
+            El retry vuelve a llamar a <code>/api/attachment</code> con todos
+            los archivos pendientes.
+          </li>
+          <li>
+            Si el retry también falla, el modal queda abierto con el botón
+            disponible de nuevo.
+          </li>
+        </ol>
+        <p>
+          El usuario no pierde el ticket aunque los adjuntos fallen — la tarea
+          en ClickUp ya está creada.
+        </p>
+
+        <h2 id="errores">Errores posibles</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Código HTTP</th>
+              <th>Error</th>
+              <th>Causa</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>400</td>
+              <td><code>NAME_REQUIRED</code></td>
+              <td>El campo <code>name</code> está vacío o ausente</td>
+            </tr>
+            <tr>
+              <td>400</td>
+              <td><code>SETTINGS_NOT_CONFIGURED</code></td>
+              <td>
+                El usuario no tiene <code>clickup_api_key</code> o
+                <code>clickup_list_id</code>
+              </td>
+            </tr>
+            <tr>
+              <td>401</td>
+              <td>—</td>
+              <td>JWT inválido (devuelto por <code>authMiddleware</code>)</td>
+            </tr>
+            <tr>
+              <td>403</td>
+              <td><code>NO_MEMBER</code></td>
+              <td>El email del usuario no pertenece al workspace de ClickUp</td>
+            </tr>
+            <tr>
+              <td>4xx/5xx</td>
+              <td><code>CLICKUP_API_ERROR</code></td>
+              <td>La API de ClickUp devolvió error al crear la tarea</td>
+            </tr>
+            <tr>
+              <td>4xx/5xx</td>
+              <td><code>CLICKUP_UPLOAD_ERROR</code></td>
+              <td>
+                Fallo al subir un adjunto; incluye <code>uploaded</code> con los
+                exitosos
+              </td>
+            </tr>
+            <tr>
+              <td>400</td>
+              <td><code>TASK_ID_REQUIRED</code></td>
+              <td>
+                <code>taskId</code> ausente en <code>POST /api/attachment</code>
+              </td>
+            </tr>
+            <tr>
+              <td>400</td>
+              <td><code>FILE_REQUIRED</code></td>
+              <td>
+                No se adjuntó ningún archivo en
+                <code>POST /api/attachment</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2 id="archivos">Archivos clave</h2>
+        <ul>
+          <li>
+            <code>server/routes/ticket.js</code> — endpoint
+            <code>POST /api/ticket</code>
+          </li>
+          <li>
+            <code>server/routes/attachment.js</code> — endpoint
+            <code>POST /api/attachment</code>
+          </li>
+          <li>
+            <code>server/services/ClickUpService.js</code> —
+            <code>getWorkspaceMembers</code>, <code>createTask</code>,
+            <code>setReporterField</code>, <code>uploadAttachment</code>
+          </li>
+          <li>
+            <code>server/config/constants.js:2</code> —
+            <code>CLICKUP_CUSTOM_FIELD_IDS</code>,
+            <code>CLICKUP_CACHE_TTL</code>, <code>MULTER_MAX_FILE_SIZE</code>,
+            <code>MULTER_MAX_FILES</code>
+          </li>
+          <li>
+            <code>src/js/ticket-modal.js</code> — modal completo: campos,
+            validación, progreso, retry
+          </li>
+        </ul>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <nav>
+          <ul>
+            <li><a href="#vision-general">Visión general</a></li>
+            <li><a href="#modal-frontend">Modal del frontend</a></li>
+            <li><a href="#validacion-submit">Validación en dos pasos</a></li>
+            <li><a href="#payload">Construcción del payload</a></li>
+            <li><a href="#resolucion-email">Resolución email → userId</a></li>
+            <li><a href="#creacion-tarea">Creación de la tarea</a></li>
+            <li><a href="#custom-fields">Custom fields</a></li>
+            <li><a href="#adjuntos">Subida de adjuntos</a></li>
+            <li><a href="#error-parcial">Error parcial y retry</a></li>
+            <li><a href="#errores">Errores posibles</a></li>
+            <li><a href="#archivos">Archivos clave</a></li>
+          </ul>
+        </nav>
+      </aside>
+    </div>
+  </body>
+</html>

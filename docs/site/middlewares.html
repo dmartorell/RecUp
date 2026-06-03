@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Middlewares — RecUp Wiki</title>
+    <meta name="description" content="Pipeline de Express en RecUp: orden de middlewares, contrato de errores, rate limiter y middlewares de terceros." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Backend · Pipeline</div>
+        <h1>Middlewares</h1>
+        <p class="lead">
+          Cómo es el viaje de un request en RecUp desde que entra hasta que se responde:
+          orden global del pipeline en <code>server/app.js</code>, middlewares propios
+          (auth, rate limit, error handler) y los de terceros que se montan en él
+          (<code>express.json</code>, Sentry, multer).
+        </p>
+
+        <h2 id="pipeline">El pipeline de un request</h2>
+        <p>
+          Todo está cableado en <code>server/app.js</code>. Este es el orden literal en
+          el que se ejecutan los middlewares globales:
+        </p>
+<pre><code>const app = express();
+
+app.set('trust proxy', 1);              // 1. confianza en proxy (Render)
+app.use(express.json());                // 2. body parser JSON
+
+app.use(authRouter);                    // 3. routers
+app.use(summarizeRouter);
+app.use(ticketRouter);
+app.use(attachmentRouter);
+app.use('/api/incidents', incidentsRouter);
+app.use(settingsRouter);
+
+Sentry.setupExpressErrorHandler(app);   // 4. handler de errores de Sentry
+app.use(errorHandler);                  // 5. handler de errores propio</code></pre>
+
+        <h3 id="pipeline-pasos">Qué hace cada paso</h3>
+        <table>
+          <thead>
+            <tr><th>#</th><th>Paso</th><th>Para qué</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td><code>trust proxy: 1</code></td>
+              <td>
+                Indica a Express que confíe en el primer proxy delante (Render). Sin
+                esto, <code>req.ip</code> sería la IP del proxy y el rate limiter
+                contaría a todos los usuarios como uno solo.
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td><code>express.json()</code></td>
+              <td>
+                Parsea bodies <code>application/json</code> y deja el objeto en
+                <code>req.body</code>. Las rutas que reciben multipart (attachments)
+                usan multer en su lugar.
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Routers</td>
+              <td>
+                Cada router se monta global o bajo prefijo. Dentro, las rutas individuales
+                aplican <em>middlewares por ruta</em>: <code>rateLimit</code> en
+                register/login, <code>authMiddleware</code> en todo lo demás.
+              </td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td><code>Sentry.setupExpressErrorHandler</code></td>
+              <td>
+                Captura el error y lo envía a Sentry. <strong>Va antes</strong> del handler
+                propio porque si éste respondiera primero, Sentry nunca lo vería.
+              </td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td><code>errorHandler</code></td>
+              <td>
+                Serializa el error como <code>{ success, error }</code>, mapea status y
+                hace logging. Es el último paso antes del cliente.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <div class="callout-title">Resumen mental</div>
+          <p>
+            <code>trust proxy → JSON body → router (rateLimit/auth si aplica → handler) → si error: Sentry → respuesta JSON</code>.
+            Mantener este orden literal en <code>app.js</code> es lo que garantiza que el
+            rate limiter ve la IP correcta, que los handlers reciben
+            <code>req.body</code> ya parseado y que los errores se capturan y formatean.
+          </p>
+        </div>
+
+        <h2 id="propios">Middlewares propios</h2>
+
+        <h3 id="auth-middleware"><code>authMiddleware</code></h3>
+        <p>Protege todas las rutas privadas. Verifica el JWT, escribe <code>req.user</code> y
+          renueva el token silenciosamente vía cabecera <code>X-New-Token</code> si está
+          cerca de caducar.</p>
+        <p>
+          Detalles completos (payload, TTL, política de renovación, storage por cliente y
+          handoff con la extensión): ver
+          <a href="./token.html">Token y JWT</a>. Aquí solo aparece para situarlo en el
+          pipeline.
+        </p>
+        <ul>
+          <li>Fichero: <code>server/middleware/auth.js</code>.</li>
+          <li>Se aplica <strong>por ruta</strong>, no globalmente — las rutas públicas no lo llevan.</li>
+          <li>Errores que produce: <code>401 UNAUTHORIZED</code>.</li>
+        </ul>
+
+        <h3 id="rate-limiter"><code>rateLimiter</code></h3>
+        <p>
+          Limitador en memoria, por IP, con ventana deslizante. Diseñado para frenar
+          fuerza bruta sobre las rutas públicas de auth. Vive en
+          <code>server/middleware/rateLimiter.js</code>.
+        </p>
+<pre><code>export function createRateLimiter({
+  windowMs = RATE_LIMIT_WINDOW_MS,   // 60_000 ms
+  max      = RATE_LIMIT_MAX,         // 10 requests
+} = {}) {
+  const attempts = new Map();          // ip → timestamps[]
+  return (req, res, next) =&gt; {
+    const key = req.ip;
+    const now = Date.now();
+    const recent = (attempts.get(key) || []).filter(t =&gt; now - t &lt; windowMs);
+    if (recent.length &gt;= max) {
+      return res.status(429).json({ success: false, error: 'RATE_LIMITED' });
+    }
+    recent.push(now);
+    attempts.set(key, recent);
+    next();
+  };
+}</code></pre>
+
+        <h4>Cómo funciona</h4>
+        <ul>
+          <li>
+            Por cada request guarda el timestamp en un array asociado a
+            <code>req.ip</code>.
+          </li>
+          <li>
+            En la siguiente request descarta del array los timestamps de hace más de
+            <code>windowMs</code> (60 s). Si quedan ≥ <code>max</code> (10), responde
+            <code>429 RATE_LIMITED</code>.
+          </li>
+          <li>
+            <strong>Ventana deslizante</strong>, no fija: a las 10 req no se desbloquea a
+            los 60 s exactos, sino a medida que cada timestamp envejece.
+          </li>
+        </ul>
+
+        <h4>Dónde se aplica</h4>
+        <p>
+          En <code>server/routes/auth.js</code>:
+        </p>
+<pre><code>const rateLimit = createRateLimiter();
+
+router.post('/api/auth/register', rateLimit, …);
+router.post('/api/auth/login',    rateLimit, …);</code></pre>
+        <p>
+          Importante: las dos rutas <strong>comparten el mismo <code>attempts</code></strong>
+          (la closure se crea una sola vez). Así, 10 intentos por IP cubren register +
+          login combinados — no son 10 + 10. Es lo que queremos: un atacante no puede
+          alternar las dos rutas para duplicar su presupuesto.
+        </p>
+
+        <div class="callout warn">
+          <div class="callout-title">Limitaciones conscientes</div>
+          <ul>
+            <li>
+              <strong>In-memory</strong>: si hay varias instancias del backend, cada una
+              tiene su propio contador. Hoy RecUp corre en una sola instancia en Render,
+              así que no es un problema. Si en algún momento escalas horizontalmente,
+              esto deja de ser efectivo y hay que mover el contador a Redis.
+            </li>
+            <li>
+              <strong>Por IP, no por cuenta</strong>: alguien detrás de un NAT (oficina,
+              VPN compartida) puede agotar el límite con tráfico legítimo. El umbral de
+              10/min está pensado para tolerar ese caso.
+            </li>
+            <li>
+              <strong>Sin barrido</strong>: el <code>Map</code> nunca se purga; las IPs
+              inactivas conservan su array hasta que se reinicia el proceso. En volúmenes
+              actuales el coste de memoria es negligible.
+            </li>
+          </ul>
+        </div>
+
+        <h3 id="error-handler"><code>errorHandler</code></h3>
+        <p>
+          Último middleware del pipeline. Convierte cualquier excepción que llegue por
+          <code>next(err)</code> en una respuesta JSON con el mismo contrato que el resto
+          de endpoints. Vive en <code>server/middleware/errorHandler.js</code>.
+        </p>
+<pre><code>export function errorHandler(err, req, res, _next) {
+  const rawStatus = err.status || 500;
+  const status    = rawStatus === 401 ? 502 : rawStatus;
+  const code      = err.code || 'INTERNAL_ERROR';
+  if (status &gt;= 500) console.error(`[ERROR] ${req.method} ${req.path}:`, err.message);
+  return res.status(status).json({ success: false, error: code });
+}</code></pre>
+
+        <h4>Contrato de salida</h4>
+<pre><code>{ "success": false, "error": "INTERNAL_ERROR" }</code></pre>
+        <p>
+          Mismo envoltorio que el resto de respuestas de error de la API. El cliente solo
+          tiene que mirar <code>success</code> y mapear <code>error</code> a un string
+          i18n.
+        </p>
+
+        <h4 id="error-401-502">Por qué <code>401 → 502</code></h4>
+        <p>
+          Si un servicio aguas abajo (ClickUp, Anthropic, OpenAI) responde
+          <code>401</code> a una llamada del backend, eso significa <em>fallo de auth del
+          backend con el proveedor</em>, no del usuario con RecUp. Reenviar el
+          <code>401</code> tal cual al cliente dispararía el flujo de "sesión caducada"
+          (logout + reload) por una causa que no es la suya: ver
+          <a href="./token.html#interceptor">interceptor del SaaS</a>. Reescribirlo como
+          <code>502 BAD_GATEWAY</code> mantiene la semántica correcta: "tu sesión está
+          bien, pero un proveedor falló".
+        </p>
+
+        <h4>Logging</h4>
+        <p>
+          Solo se loguea por <code>console.error</code> cuando el status es ≥ 500. Los
+          errores 4xx son ruido (clientes mandando peticiones malformadas), así que se
+          ignoran. Sentry recibe el evento aparte vía el handler que va justo antes.
+        </p>
+
+        <h2 id="terceros">Middlewares de terceros</h2>
+
+        <h3 id="express-json"><code>express.json()</code></h3>
+        <ul>
+          <li>Parsea bodies <code>application/json</code> y los deja en <code>req.body</code>.</li>
+          <li>
+            <strong>No</strong> aplica a <code>POST /api/attachment</code>: ese endpoint
+            es multipart y lo maneja multer.
+          </li>
+          <li>
+            Si el body no es JSON válido, el propio middleware llama a <code>next(err)</code>
+            con status <code>400</code>, que termina en <code>errorHandler</code>.
+          </li>
+        </ul>
+
+        <h3 id="sentry-handler"><code>Sentry.setupExpressErrorHandler</code></h3>
+        <p>
+          Captura el error en Sentry y lo pasa al siguiente handler. <strong>No</strong>
+          responde al cliente; solo observa. Por eso va <em>antes</em> de
+          <code>errorHandler</code>.
+        </p>
+        <p>
+          Política, PII, environments, filtros de ruido: ver
+          <a href="./monitoring.html">Sentry</a>.
+        </p>
+
+        <h3 id="multer"><code>multer</code> (en <code>/api/attachment</code>)</h3>
+        <p>
+          Único endpoint multipart. Multer se monta por ruta, no globalmente:
+        </p>
+<pre><code>const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MULTER_MAX_FILE_SIZE },   // 100 MB
+});
+
+router.post(
+  '/api/attachment',
+  authMiddleware,
+  upload.array('attachment', MULTER_MAX_FILES), // máx 5 ficheros
+  handler,
+);</code></pre>
+        <ul>
+          <li>
+            <strong>Memory storage</strong>: los ficheros nunca se escriben en disco del
+            backend; se procesan en RAM y se reenvían a ClickUp. Esto evita acumulación
+            de basura en el filesystem y simplifica el lifecycle.
+          </li>
+          <li>
+            <strong>Límites</strong> declarados como constantes en
+            <code>server/config/constants.js</code> (<code>MULTER_MAX_FILE_SIZE</code> y
+            <code>MULTER_MAX_FILES</code>). Tocar el tamaño máx se hace en un único sitio.
+          </li>
+          <li>
+            Detalle del endpoint:
+            <a href="./endpoints.html#post-attachment"><code>POST /api/attachment</code></a>.
+          </li>
+        </ul>
+
+        <h2 id="ver-tambien">Ver también</h2>
+        <ul>
+          <li><a href="./token.html">Token y JWT</a> — todo sobre <code>authMiddleware</code> y la política de sesión.</li>
+          <li><a href="./monitoring.html">Sentry</a> — detalle del handler de errores observador.</li>
+          <li><a href="./endpoints.html">Endpoints disponibles</a> — qué middlewares lleva cada ruta.</li>
+        </ul>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <ul id="toc-list"></ul>
+      </aside>
+    </div>
+  </body>
+</html>

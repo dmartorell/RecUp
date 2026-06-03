@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="es" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Endpoints disponibles — RecUp Wiki</title>
+    <meta name="description" content="Listado completo de endpoints del backend de RecUp." />
+    <link rel="icon" type="image/png" href="./assets/favicon.png" />
+    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
+    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+    <script src="./assets/partials.js" defer></script>
+    <script src="./assets/search-index.js" defer></script>
+    <script src="./assets/app.js" defer></script>
+  </head>
+  <body>
+    <div id="topbar-slot"></div>
+    <div class="layout">
+      <div id="sidebar-slot"></div>
+
+      <main class="content">
+        <div class="breadcrumb">Backend · API</div>
+        <h1>Endpoints disponibles</h1>
+        <p class="lead">
+          Endpoints expuestos por el backend Express de RecUp. Todos devuelven JSON.
+          Los marcados como <strong>Auth</strong> requieren cabecera
+          <code>Authorization: Bearer &lt;jwt&gt;</code>.
+        </p>
+
+        <div class="callout">
+          <div class="callout-title">Renovación silenciosa de JWT</div>
+          <p>
+            Cuando una respuesta de una ruta autenticada incluye la cabecera
+            <code>X-New-Token</code>, el frontend debe sustituir el token actual por ese valor.
+            Sucede automáticamente cuando faltan menos de <code>JWT_RENEW_THRESHOLD_MS</code>
+            para que el token expire.
+          </p>
+        </div>
+
+        <h2 id="auth">Autenticación</h2>
+        <p>
+          Endpoints para registro, login y comprobación de sesión. Los endpoints públicos están
+          protegidas por un rate limiter en memoria (10 req/min por IP).
+        </p>
+
+        <article class="route" id="post-auth-register">
+          <header class="route-header">
+            <span class="method method-POST">POST</span>
+            <span class="route-path">/api/auth/register</span>
+            <span class="route-auth public">Pública</span>
+          </header>
+          <p class="route-desc">Crea una cuenta y devuelve un JWT.</p>
+          <h4>Body</h4>
+<pre><code>{
+  "name": "Dani",
+  "email": "dani@empresa.com",
+  "password": "min8chars"
+}</code></pre>
+          <h4>Respuestas</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>201</td><td>—</td><td>Cuenta creada. Devuelve <code>{ token, user }</code>.</td></tr>
+              <tr><td>400</td><td><code>INVALID_NAME</code></td><td>Nombre vacío o &gt; 100 chars.</td></tr>
+              <tr><td>400</td><td><code>INVALID_EMAIL</code></td><td>Email malformado.</td></tr>
+              <tr><td>400</td><td><code>WEAK_PASSWORD</code></td><td>Contraseña &lt; 8 chars.</td></tr>
+              <tr><td>400</td><td><code>EMAIL_DOMAIN</code></td><td>El dominio no coincide con <code>ALLOWED_EMAIL_DOMAIN</code>.</td></tr>
+              <tr><td>400</td><td><code>EMAIL_NOT_IN_WORKSPACE</code></td><td>Email no es miembro del workspace de ClickUp.</td></tr>
+              <tr><td>409</td><td><code>EMAIL_TAKEN</code></td><td>Email ya registrado. (Tradeoff de enumeración aceptado.)</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="route" id="post-auth-login">
+          <header class="route-header">
+            <span class="method method-POST">POST</span>
+            <span class="route-path">/api/auth/login</span>
+            <span class="route-auth public">Pública</span>
+          </header>
+          <p class="route-desc">Verifica credenciales y devuelve un JWT. Tras login intenta resolver avatar desde ClickUp.</p>
+          <h4>Body</h4>
+<pre><code>{ "email": "dani@empresa.com", "password": "..." }</code></pre>
+          <h4>Respuestas</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>200</td><td>—</td><td>Devuelve <code>{ token, user: { name, email, avatar } }</code>.</td></tr>
+              <tr><td>400</td><td><code>REQUIRED_FIELDS</code></td><td>Faltan email o password.</td></tr>
+              <tr><td>401</td><td><code>INVALID_CREDENTIALS</code></td><td>Credenciales no válidas (mitigado contra enumeración).</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="route" id="get-auth-me">
+          <header class="route-header">
+            <span class="method method-GET">GET</span>
+            <span class="route-path">/api/auth/me</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">Devuelve el usuario actual derivado del JWT.</p>
+          <h4>Respuestas</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>200</td><td>—</td><td><code>{ success, data: { user: { name, email, avatar } } }</code></td></tr>
+              <tr><td>401</td><td><code>UNAUTHORIZED</code></td><td>Token ausente o inválido.</td></tr>
+              <tr><td>404</td><td><code>NOT_FOUND</code></td><td>Usuario eliminado mientras el token seguía vivo.</td></tr>
+            </tbody>
+          </table>
+
+          <h4>Dónde se usa</h4>
+          <p>
+            Hoy lo consume <strong>solo el SaaS</strong>, en <code>src/js/app.js</code> →
+            <code>handlePostMessage()</code>. Se llama <strong>una única vez</strong>:
+            justo cuando el SaaS recibe la sesión enviada por la extensión vía
+            <code>postMessage</code> de tipo <code>recup:extension-data</code>.
+          </p>
+
+          <h4>Para qué se usa</h4>
+          <p>
+            La extensión solo envía <code>token</code>, <code>email</code> y
+            <code>name</code> — <strong>no envía avatar</strong>. Tras guardar esa
+            sesión mínima en <code>localStorage</code>, el SaaS dispara
+            <code>/api/auth/me</code> para <strong>rehidratar el perfil canónico</strong>
+            desde la BD (incluyendo el <code>avatar_url</code> resuelto contra ClickUp en
+            su día) y completar el objeto <code>session.user</code>. Después se vuelve a
+            llamar a <code>tagSentryUser()</code> y a <code>showApp()</code> con los datos
+            ya completos.
+          </p>
+          <p>
+            No se usa para <em>validar</em> la sesión (eso ya lo hace
+            <code>authMiddleware</code> en cada request) ni en el boot normal del SaaS,
+            donde el avatar viene del login. Es estrictamente un paso de
+            <em>rehidratación</em> del perfil tras el handoff de la extensión.
+          </p>
+        </article>
+
+        <h2 id="incidents">Incidencias</h2>
+        <p>
+          CRUD de incidencias del usuario autenticado. Todos los endpoints requieren JWT y la
+          propiedad se verifica en cada acceso por id.
+        </p>
+
+        <article class="route" id="get-incidents">
+          <header class="route-header">
+            <span class="method method-GET">GET</span>
+            <span class="route-path">/api/incidents</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">
+            Lista paginada de incidencias del usuario actual, ordenadas por
+            <code>created_at DESC</code> (más recientes primero).
+          </p>
+
+          <h4>Query params</h4>
+          <table>
+            <thead><tr><th>Param</th><th>Tipo</th><th>Default</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>limit</code></td>
+                <td>int ≥ 1</td>
+                <td>20</td>
+                <td>
+                  Número máximo de incidencias a devolver en esta página. Se aplica un
+                  <code>Math.max(1, …)</code>, así que cualquier valor &lt; 1 (o no numérico) se
+                  normaliza a 1. No hay tope superior en backend; el frontend usa
+                  <code>25</code>.
+                </td>
+              </tr>
+              <tr>
+                <td><code>offset</code></td>
+                <td>int ≥ 0</td>
+                <td>0</td>
+                <td>
+                  Número de filas a saltar antes de empezar a devolver resultados. Valores
+                  negativos o no numéricos se normalizan a <code>0</code>. Combinado con
+                  <code>limit</code> implementa paginación clásica por desplazamiento.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4>Respuesta</h4>
+<pre><code>{
+  "success": true,
+  "data": {
+    "incidents": [ /* &lt;= limit incidencias */ ],
+    "total": 137   // total absoluto del usuario, no de la página
+  }
+}</code></pre>
+
+          <h4>Cómo funciona la paginación en la app</h4>
+          <p>
+            El frontend (<code>src/js/app.js</code>) usa paginación incremental con botón
+            <em>“Cargar más”</em>, no páginas numeradas:
+          </p>
+          <ol>
+            <li>
+              Al cargar el feed se llama con <code>offset = 0</code> y
+              <code>limit = 25</code> (constante <code>INCIDENTS_LIMIT</code>).
+            </li>
+            <li>
+              Tras recibir <code>n</code> incidencias se hace <code>offset += n</code>
+              acumulando un cursor local.
+            </li>
+            <li>
+              Si <code>offset &lt; total</code> el frontend pinta un botón
+              <strong>“Cargar más”</strong> al final del feed. Al pulsarlo se vuelve a llamar
+              al endpoint con el nuevo <code>offset</code> y los resultados se
+              <strong>añaden</strong> al feed actual (modo <code>append</code>).
+            </li>
+            <li>
+              Cuando <code>offset &gt;= total</code> el botón ya no se renderiza: no quedan
+              más incidencias por traer.
+            </li>
+            <li>
+              Cualquier acción que reinicia el feed (login, refresh manual, borrar todo)
+              vuelve a poner <code>offset = 0</code> y limpia el DOM.
+            </li>
+          </ol>
+
+          <div class="callout">
+            <div class="callout-title">Por qué offset y no cursor</div>
+            <p>
+              El volumen por usuario es bajo y el orden es estable (<code>created_at DESC</code>
+              + autoincrement). Offset es suficiente y mucho más simple que un cursor opaco.
+              Si en el futuro el feed se vuelve muy activo y aparecen incidencias nuevas
+              entre cargas (lo que podría duplicar o saltarse filas), convendría migrar a
+              cursor basado en <code>created_at + id</code>.
+            </p>
+          </div>
+        </article>
+
+        <article class="route" id="post-incidents">
+          <header class="route-header">
+            <span class="method method-POST">POST</span>
+            <span class="route-path">/api/incidents</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">Crea una nueva incidencia. Requiere al menos <code>transcript</code>.</p>
+          <h4>Body</h4>
+<pre><code>{
+  "transcript": "Texto transcrito...",
+  "sourceType": "voice" | "text",
+  "durationMs": 12345
+}</code></pre>
+          <h4>Respuestas</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>201</td><td>—</td><td><code>{ data: { incident } }</code></td></tr>
+              <tr><td>400</td><td><code>TRANSCRIPT_REQUIRED</code></td><td>Falta transcript o está vacío.</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="route" id="get-incidents-id">
+          <header class="route-header">
+            <span class="method method-GET">GET</span>
+            <span class="route-path">/api/incidents/:id</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">Devuelve una incidencia concreta. 403 si no pertenece al usuario.</p>
+        </article>
+
+        <article class="route" id="patch-incidents-id">
+          <header class="route-header">
+            <span class="method method-PATCH">PATCH</span>
+            <span class="route-path">/api/incidents/:id</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">Actualiza campos de la incidencia (status, bullets, title…).</p>
+          <h4>Respuestas</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>200</td><td>—</td><td><code>{ data: { incident } }</code></td></tr>
+              <tr><td>400</td><td><code>INVALID_ID</code> · <code>NO_VALID_FIELDS</code></td><td>Id no parseable o body sin campos válidos.</td></tr>
+              <tr><td>404</td><td><code>NOT_FOUND</code></td><td>No existe.</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="route" id="delete-incidents-id">
+          <header class="route-header">
+            <span class="method method-DELETE">DELETE</span>
+            <span class="route-path">/api/incidents/:id</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">Elimina la incidencia.</p>
+        </article>
+
+        <h2 id="ai">IA y tickets</h2>
+        <p>
+          Estos endpoints proxean a servicios externos usando las API keys cifradas del usuario.
+        </p>
+
+        <article class="route" id="post-summarize">
+          <header class="route-header">
+            <span class="method method-POST">POST</span>
+            <span class="route-path">/api/summarize</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">
+            Envía la transcripción al proveedor configurado por el usuario
+            (<code>anthropic</code> o <code>openai</code>) y devuelve el bug parseado.
+          </p>
+          <h4>Body</h4>
+<pre><code>{ "transcript": "..." }</code></pre>
+          <h4>Respuesta OK</h4>
+<pre><code>{
+  "is_bug": true,
+  "title": "...",
+  "transcript": "...",
+  "bullets": ["...", "..."]
+}</code></pre>
+          <h4>Errores</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>400</td><td><code>TRANSCRIPT_REQUIRED</code></td><td>Transcript vacío.</td></tr>
+              <tr><td>400</td><td><code>SETTINGS_NOT_CONFIGURED</code></td><td>El usuario no tiene API key del proveedor.</td></tr>
+              <tr><td>502</td><td><code>AI_API_ERROR</code> · <code>EMPTY_RESPONSE</code> · <code>INVALID_JSON</code></td><td>Fallo del proveedor o JSON no parseable.</td></tr>
+              <tr><td>504</td><td><code>TIMEOUT</code></td><td>Excede 30 s.</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="route" id="post-ticket">
+          <header class="route-header">
+            <span class="method method-POST">POST</span>
+            <span class="route-path">/api/ticket</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">
+            Crea una tarea en ClickUp con metadata adicional (asset, plataforma, versión) y
+            asigna el reporter resolviendo el email a userId.
+          </p>
+          <h4>Body</h4>
+<pre><code>{
+  "name": "Título",
+  "markdown_description": "...",
+  "reporterEmail": "dani@empresa.com",
+  "assetId": "ABC-123",
+  "platform": "iOS",
+  "product": "App",
+  "appVersion": "1.2.3"
+}</code></pre>
+          <h4>Errores</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>400</td><td><code>NAME_REQUIRED</code> · <code>SETTINGS_NOT_CONFIGURED</code></td><td>Falta nombre o config de ClickUp del usuario.</td></tr>
+              <tr><td>403</td><td><code>NO_MEMBER</code></td><td>El reporter no es miembro del workspace.</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="route" id="post-attachment">
+          <header class="route-header">
+            <span class="method method-POST">POST</span>
+            <span class="route-path">/api/attachment</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">
+            Adjunta uno o varios ficheros a una tarea de ClickUp existente.
+            Multipart con campo <code>attachment</code> (array) y <code>taskId</code>.
+          </p>
+          <h4>Errores</h4>
+          <table>
+            <thead><tr><th>Code</th><th>Error</th><th>Motivo</th></tr></thead>
+            <tbody>
+              <tr><td>400</td><td><code>TASK_ID_REQUIRED</code> · <code>FILE_REQUIRED</code> · <code>SETTINGS_NOT_CONFIGURED</code></td><td>Falta info.</td></tr>
+              <tr><td>5xx</td><td><code>UPLOAD_ERROR</code></td><td>Fallo subiendo a ClickUp; devuelve <code>uploaded</code> con los que sí se subieron.</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <h2 id="settings">Configuración del usuario</h2>
+
+        <article class="route" id="get-settings">
+          <header class="route-header">
+            <span class="method method-GET">GET</span>
+            <span class="route-path">/api/settings</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">
+            Devuelve la configuración actual. Las API keys nunca se exponen en claro,
+            sólo un boolean <code>configured</code> y un <code>hint</code> (últimos chars).
+          </p>
+          <h4>Respuesta</h4>
+<pre><code>{
+  "clickup_list_id": "193679011",
+  "ai_provider": "anthropic",
+  "clickup_api_key":  { "configured": true,  "hint": "····abcd" },
+  "anthropic_api_key":{ "configured": true,  "hint": "····wxyz" },
+  "openai_api_key":   { "configured": false, "hint": null }
+}</code></pre>
+        </article>
+
+        <article class="route" id="put-settings">
+          <header class="route-header">
+            <span class="method method-PUT">PUT</span>
+            <span class="route-path">/api/settings</span>
+            <span class="route-auth">Auth</span>
+          </header>
+          <p class="route-desc">
+            Actualiza configuración. Las API keys se cifran con AES-256-GCM antes de persistir.
+            Sólo se modifican los campos que vengan como string en el body.
+          </p>
+          <h4>Body</h4>
+<pre><code>{
+  "ai_provider": "anthropic" | "openai",
+  "clickup_list_id": "...",
+  "clickup_api_key": "...",
+  "anthropic_api_key": "...",
+  "openai_api_key": "..."
+}</code></pre>
+        </article>
+      </main>
+
+      <aside class="toc">
+        <div class="toc-title">En esta página</div>
+        <ul id="toc-list"></ul>
+      </aside>
+    </div>
+  </body>
+</html>
