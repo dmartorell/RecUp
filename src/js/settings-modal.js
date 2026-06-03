@@ -1,6 +1,11 @@
 import { authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
+import { icons } from './icons.js';
 import { UI } from './strings.js';
 import { showToast } from './toast.js';
+
+for (const el of document.querySelectorAll('.help-icon')) {
+  el.innerHTML = icons.help;
+}
 
 const modal = document.getElementById('settings-modal');
 const closeBtn = document.getElementById('settings-close-btn');

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help RecUp</title>
+    <link rel="icon" type="image/png" href="../img/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="help.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <p class="eyebrow">Ayuda · ClickUp</p>
+        <h1>Cómo encontrar el ID de la lista de ClickUp</h1>
+        <p class="lede">
+          El ID de lista le indica a RecUp dónde crear los tickets. Es un número
+          largo (normalmente empieza por <code>901...</code>) que identifica una
+          lista concreta dentro de tu Workspace. Por defecto, RecUp crea los
+          tickets en la lista
+          <code>Product Engineering / Problemas / Reportar problemas I+D</code>.
+        </p>
+        <br />
+        <p class="lede">
+          Por protocolo de trabajo, este ID de lista no debería modificarse. No
+          obstante, para casos específicos que lo requieran, ésta es la manera
+          de obtenerlo y actualizarlo en RecUp.
+        </p>
+      </header>
+
+      <h2>1. Abre la lista en ClickUp</h2>
+      <p>
+        Entra en
+        <a href="https://app.clickup.com" target="_blank" rel="noopener"
+          >app.clickup.com</a
+        >
+        y navega hasta la lista donde quieras que se creen los tickets desde
+        RecUp.
+      </p>
+      <img
+        class="screenshot"
+        src="img/clickup-list-id-step-1.png"
+        alt="Vista de una lista abierta en ClickUp"
+      />
+      <p class="screenshot-caption">La lista debe estar abierta y visible.</p>
+
+      <h2>2. Copia el enlace de la lista</h2>
+      <p>
+        Haz clic en los tres puntos <code>···</code> junto al nombre de la lista
+        → <strong>Copy link</strong>. También puedes copiar la URL directamente
+        desde la barra del navegador.
+      </p>
+      <img
+        class="screenshot"
+        src="img/clickup-list-id-step-2.png"
+        alt="Menú contextual de la lista con la opción Copy link resaltada"
+      />
+      <p class="screenshot-caption">Menú contextual de la lista.</p>
+
+      <h2>3. Extrae el ID del enlace</h2>
+      <p>El enlace tiene este formato:</p>
+      <p>
+        <code
+          >https://app.clickup.com/<strong>123456</strong>/v/li/<strong
+            >901xxxxxxxxx</strong
+          ></code
+        >
+      </p>
+      <p>
+        El ID de la lista es el último bloque de números —
+        <code>901xxxxxxxxx</code>. Ese es el valor que tienes que pegar en
+        RecUp.
+      </p>
+      <img
+        class="screenshot"
+        src="img/clickup-list-id-step-3.png"
+        alt="URL de la lista con el ID resaltado al final"
+      />
+      <p class="screenshot-caption">El ID es el último segmento de la URL.</p>
+
+      <div class="note">
+        <strong>Ojo:</strong> el primer número de la URL (después de
+        <code>clickup.com/</code>) es el ID del Workspace, no de la lista. Solo
+        necesitas el último bloque, después de <code>/li/</code>.
+      </div>
+
+      <h2>4. Pégalo en RecUp</h2>
+      <p>
+        Vuelve a RecUp, abre <strong>Ajustes</strong> y pega ese ID en el campo
+        <code>ID de la lista de ClickUp</code>. Guarda.
+      </p>
+
+      <footer>RecUp · Ayuda</footer>
+    </div>
+  </body>
+</html>

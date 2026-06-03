@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Help RecUp</title>
+    <link rel="icon" type="image/png" href="../img/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="help.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <p class="eyebrow">Ayuda · ClickUp</p>
+        <h1>Cómo generar tu API Key de ClickUp</h1>
+        <p class="lede">
+          La API Key permite a RecUp crear tickets en tu cuenta de ClickUp en tu
+          nombre. La generas una sola vez y la pegas en el modal de ajustes.
+        </p>
+      </header>
+
+      <h2>1. Abre tus ajustes personales en ClickUp</h2>
+      <p>
+        Inicia sesión en
+        <a href="https://app.clickup.com" target="_blank" rel="noopener"
+          >app.clickup.com</a
+        >
+        y haz clic en tu avatar (esquina superior derecha) →
+        <strong>Ajustes</strong>.
+      </p>
+      <img
+        class="screenshot"
+        src="img/clickup-api-key-step-1.png"
+        alt="Menú del avatar en ClickUp con la opción Ajustes resaltada"
+      />
+      <p class="screenshot-caption">Menú del avatar en ClickUp.</p>
+
+      <h2>2. Ve a la sección "API de ClickUp"</h2>
+      <p>
+        En el menú lateral izquierdo de la pantalla de ajustes, busca el
+        apartado <strong>API de ClickUp</strong>.
+      </p>
+      <img
+        class="screenshot"
+        src="img/clickup-api-key-step-2.png"
+        alt="Menú lateral de ajustes de ClickUp con la sección Api de ClickUp resaltada"
+      />
+      <p class="screenshot-caption">Sección Apps dentro de Settings.</p>
+
+      <h2>3. Genera el token en "API Token"</h2>
+      <p>
+        Dentro de esta sección verás la opción <strong>Generar Token</strong>.
+        Pulsa <strong>Generate</strong> para crear tu token personal. Cópialo —
+        empieza por <code>pk_</code>.
+      </p>
+      <img
+        class="screenshot"
+        src="img/clickup-api-key-step-3.png"
+        alt="Botón Generate de API Token en la sección Api Token de ClickUp"
+      />
+      <p class="screenshot-caption">Generación del token en ClickUp.</p>
+
+      <div class="note">
+        <strong>Importante:</strong> trata el token como una contraseña. No lo
+        compartas ni lo subas a repositorios. Si se filtra, vuelve a esta misma
+        pantalla y pulsa <em>Volver a generar</em> para invalidarlo.
+      </div>
+
+      <h2>4. Pégalo en RecUp</h2>
+      <p>
+        Vuelve a RecUp, abre <strong>Configuración</strong> desde el avatar y
+        pega el token en el campo <code>API Key de ClickUp</code>. Guarda.
+      </p>
+
+      <footer>RecUp · Ayuda</footer>
+    </div>
+  </body>
+</html>
