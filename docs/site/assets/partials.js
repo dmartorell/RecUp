@@ -66,9 +66,7 @@
     {
       id: 'intro',
       title: 'Inicio',
-      items: [
-        { label: 'Arquitectura general', href: './architecture.html' },
-      ],
+      items: [{ label: 'Arquitectura general', href: './architecture.html' }],
     },
     {
       id: 'flows',
@@ -93,9 +91,7 @@
     {
       id: 'scalability',
       title: 'Escalabilidad',
-      items: [
-        { label: 'Límites actuales', href: './scalability.html' },
-      ],
+      items: [{ label: 'Límites actuales', href: './scalability.html' }],
     },
     {
       id: 'ops',

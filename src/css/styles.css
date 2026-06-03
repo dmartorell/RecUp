@@ -23,6 +23,25 @@
   opacity: 0.4;
 }
 
+.help-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  color: #9ca3af;
+  align-self: flex-start;
+  position: relative;
+  top: -4px;
+  margin-left: -4px;
+  transition: color 0.15s ease;
+}
+
+.help-icon:hover,
+.help-icon:focus {
+  color: #4b5563;
+  outline: none;
+}
+
 html {
   scroll-behavior: smooth;
 }

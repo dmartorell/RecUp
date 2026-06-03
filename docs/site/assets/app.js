@@ -7,12 +7,16 @@
   // ---------- THEME ----------
   function applyTheme(theme) {
     root.setAttribute('data-theme', theme);
-    try { localStorage.setItem(THEME_KEY, theme); } catch {}
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {}
   }
 
   function initTheme() {
     let saved = null;
-    try { saved = localStorage.getItem(THEME_KEY); } catch {}
+    try {
+      saved = localStorage.getItem(THEME_KEY);
+    } catch {}
     if (saved === 'light' || saved === 'dark') return applyTheme(saved);
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     applyTheme(prefersDark ? 'dark' : 'light');
@@ -44,11 +48,16 @@
   }
 
   function getCollapsed() {
-    try { return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]')); }
-    catch { return new Set(); }
+    try {
+      return new Set(JSON.parse(localStorage.getItem(COLLAPSED_KEY) || '[]'));
+    } catch {
+      return new Set();
+    }
   }
   function saveCollapsed(set) {
-    try { localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set])); } catch {}
+    try {
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...set]));
+    } catch {}
   }
 
   function bindCollapsibleSections() {
@@ -64,7 +73,8 @@
         const isOpen = !section.classList.toggle('collapsed');
         btn.setAttribute('aria-expanded', String(isOpen));
         const current = getCollapsed();
-        if (isOpen) current.delete(id); else current.add(id);
+        if (isOpen) current.delete(id);
+        else current.add(id);
         saveCollapsed(current);
       });
     });
@@ -83,13 +93,19 @@
     } catch {}
 
     let raf = 0;
-    sidebar.addEventListener('scroll', () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        try { sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(sidebar.scrollTop)); } catch {}
-      });
-    }, { passive: true });
+    sidebar.addEventListener(
+      'scroll',
+      () => {
+        if (raf) return;
+        raf = requestAnimationFrame(() => {
+          raf = 0;
+          try {
+            sessionStorage.setItem(SIDEBAR_SCROLL_KEY, String(sidebar.scrollTop));
+          } catch {}
+        });
+      },
+      { passive: true },
+    );
   }
 
   function markActiveSidebar() {
@@ -169,12 +185,17 @@
   }
 
   // ---------- SEARCH ----------
-  function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function escapeRe(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
 
   // Normaliza para búsqueda: lowercase + strip diacríticos (NFD).
   // "Telemetría" → "telemetria", "PROD" → "prod".
   function norm(s) {
-    return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
   // Regex letra-a-letra que tolera acentos en el texto buscado.
@@ -243,12 +264,19 @@
     if (!input || !box) return;
     const index = window.RECUP_SEARCH_INDEX || [];
 
-    function close() { box.hidden = true; }
-    function open() { box.hidden = false; }
+    function close() {
+      box.hidden = true;
+    }
+    function open() {
+      box.hidden = false;
+    }
 
     function run() {
       const q = norm(input.value.trim());
-      if (!q) { close(); return; }
+      if (!q) {
+        close();
+        return;
+      }
       const terms = q.split(/\s+/).filter(Boolean);
       const scored = index
         .map((e) => ({ e, s: scoreEntry(e, terms) }))
@@ -261,7 +289,9 @@
     }
 
     input.addEventListener('input', run);
-    input.addEventListener('focus', () => { if (input.value.trim()) open(); });
+    input.addEventListener('focus', () => {
+      if (input.value.trim()) open();
+    });
 
     document.addEventListener('click', (e) => {
       if (e.target.closest('.topbar-search')) return;
@@ -275,7 +305,8 @@
         input.select();
       }
       if (e.key === 'Escape' && document.activeElement === input) {
-        input.blur(); close();
+        input.blur();
+        close();
       }
     });
 
