@@ -4,10 +4,41 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Límites actuales — RecUp Wiki</title>
-    <meta name="description" content="Bottlenecks actuales de RecUp: rate limiter in-memory, cache de ClickUp, tiers de Turso, Render y Sentry, timeout de IA sin retry y static files sin CDN." />
+    <meta
+      name="description"
+      content="Bottlenecks actuales de RecUp: rate limiter in-memory, cache de ClickUp, tiers de Turso, Render y Sentry, timeout de IA sin retry y static files sin CDN."
+    />
     <link rel="icon" type="image/png" href="./assets/favicon.png" />
-    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
-    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <style id="__nt">
+      html,
+      body {
+        background: #ffffff;
+      }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background: #1b1b1d;
+      }
+      html.__no-transition *,
+      html.__no-transition *::before,
+      html.__no-transition *::after {
+        transition: none;
+        animation: none;
+      }
+    </style>
+    <script>
+      (() => {
+        try {
+          const t = localStorage.getItem("recup-docs-theme");
+          if (t === "dark" || t === "light")
+            document.documentElement.setAttribute("data-theme", t);
+        } catch {}
+        document.documentElement.classList.add("__no-transition");
+        document.addEventListener("DOMContentLoaded", () => {
+          document.documentElement.classList.remove("__no-transition");
+          document.getElementById("__nt")?.remove();
+        });
+      })();
+    </script>
     <link rel="stylesheet" href="./assets/styles.css" />
     <script src="./assets/partials.js" defer></script>
     <script src="./assets/search-index.js" defer></script>
@@ -22,47 +53,65 @@
         <div class="breadcrumb">Escalabilidad</div>
         <h1>Límites actuales y cuándo romperán</h1>
         <p class="lead">
-          RecUp está optimizado para un equipo pequeño. Estos son los puntos donde la
-          arquitectura actual tiene techo, cuándo se notará y qué habría que cambiar.
+          RecUp está optimizado para un equipo pequeño. Estos son los puntos
+          donde la arquitectura actual tiene techo, cuándo se notará y qué
+          habría que cambiar.
         </p>
 
         <h2 id="rate-limiter">Rate limiter in-memory</h2>
         <p>
-          <strong>Dónde</strong>: <code>server/middleware/rateLimiter.js</code>. Implementado
-          con un <code>Map</code> en proceso: 10 peticiones/minuto por IP en las rutas de auth.
+          <strong>Dónde</strong>: <code>server/middleware/rateLimiter.js</code>.
+          Implementado con un <code>Map</code> en proceso: 10 peticiones/minuto
+          por IP en las rutas de auth.
         </p>
-        <p><strong>Cuándo duele</strong>: en el momento en que se desplieguen dos o más instancias
-        del servidor (escalado horizontal en Render). Cada instancia tiene su propio
-        <code>Map</code> en memoria — un atacante puede hacer 10 intentos contra cada
-        instancia sin que ninguna lo vea como rate-limited.</p>
-        <p><strong>Solución</strong>: sustituir el <code>Map</code> local por un contador en
-        <strong>Redis</strong> (o Upstash para serverless). Render ofrece Redis como add-on.</p>
+        <p>
+          <strong>Cuándo duele</strong>: en el momento en que se desplieguen dos
+          o más instancias del servidor (escalado horizontal en Render). Cada
+          instancia tiene su propio <code>Map</code> en memoria — un atacante
+          puede hacer 10 intentos contra cada instancia sin que ninguna lo vea
+          como rate-limited.
+        </p>
+        <p>
+          <strong>Solución</strong>: sustituir el <code>Map</code> local por un
+          contador en <strong>Redis</strong> (o Upstash para serverless). Render
+          ofrece Redis como add-on.
+        </p>
         <div class="callout info">
           <div class="callout-title">Estado actual</div>
-          <p>Con una sola instancia (Render free/starter tier), el rate limiter funciona
-          correctamente. El problema solo aparece con escalado horizontal.</p>
+          <p>
+            Con una sola instancia (Render free/starter tier), el rate limiter
+            funciona correctamente. El problema solo aparece con escalado
+            horizontal.
+          </p>
         </div>
 
         <h2 id="cache-clickup">Cache de ClickUp userId</h2>
         <p>
-          <strong>Dónde</strong>: <code>server/services/ClickUpService.js:4</code>.
-          La resolución <code>email → userId</code> de ClickUp se cachea en un
-          <code>Map</code> en proceso con TTL de 10 minutos
-          (<code>CLICKUP_CACHE_TTL = 10 * 60 * 1000</code>, en
-          <code>server/config/constants.js:9</code>).
+          <strong>Dónde</strong>:
+          <code>server/services/ClickUpService.js:4</code>. La resolución
+          <code>email → userId</code> de ClickUp se cachea en un
+          <code>Map</code> en proceso con TTL de 10 minutos (<code
+            >CLICKUP_CACHE_TTL = 10 * 60 * 1000</code
+          >, en <code>server/config/constants.js:9</code>).
         </p>
-        <p><strong>Cuándo duele</strong>: igual que el rate limiter — al escalar
-        horizontalmente, cada instancia hace sus propias llamadas a la API de ClickUp
-        sin beneficiarse del cache de las otras. Con un equipo pequeño y pocas instancias
-        el impacto es bajo (una llamada extra de ~200 ms por instancia cada 10 min), pero
-        con muchas instancias puede presionar el rate limit de la API de ClickUp.</p>
-        <p><strong>Solución</strong>: mover el cache a Redis con la misma TTL.</p>
+        <p>
+          <strong>Cuándo duele</strong>: igual que el rate limiter — al escalar
+          horizontalmente, cada instancia hace sus propias llamadas a la API de
+          ClickUp sin beneficiarse del cache de las otras. Con un equipo pequeño
+          y pocas instancias el impacto es bajo (una llamada extra de ~200 ms
+          por instancia cada 10 min), pero con muchas instancias puede presionar
+          el rate limit de la API de ClickUp.
+        </p>
+        <p>
+          <strong>Solución</strong>: mover el cache a Redis con la misma TTL.
+        </p>
 
         <h2 id="turso">Turso tier free</h2>
         <p>
           <strong>Qué es</strong>: la base de datos es
-          <a href="https://turso.tech" target="_blank" rel="noopener">Turso</a> (libSQL/SQLite
-          distribuido). En el tier gratuito, los límites publicados son:
+          <a href="https://turso.tech" target="_blank" rel="noopener">Turso</a>
+          (libSQL/SQLite distribuido). En el tier gratuito, los límites
+          publicados son:
         </p>
         <ul>
           <li>500 bases de datos</li>
@@ -70,86 +119,118 @@
           <li>1.000 millones de row reads/mes</li>
           <li>25 millones de row writes/mes</li>
         </ul>
-        <p><strong>Cuándo duele</strong>: con el volumen actual (equipo pequeño, pocos
-        incidents/día) los límites de reads y writes no serán un problema a medio plazo.
-        El almacenamiento puede crecer si los transcripts son largos y el volumen de
-        incidents aumenta.</p>
-        <p><strong>Solución</strong>: subir al tier starter de Turso (~$29/mes) cuando el
-        almacenamiento supere los 8 GB o los reads/writes se acerquen a los límites. No
-        requiere cambios de código.</p>
+        <p>
+          <strong>Cuándo duele</strong>: con el volumen actual (equipo pequeño,
+          pocos incidents/día) los límites de reads y writes no serán un
+          problema a medio plazo. El almacenamiento puede crecer si los
+          transcripts son largos y el volumen de incidents aumenta.
+        </p>
+        <p>
+          <strong>Solución</strong>: subir al tier starter de Turso (~$29/mes)
+          cuando el almacenamiento supere los 8 GB o los reads/writes se
+          acerquen a los límites. No requiere cambios de código.
+        </p>
 
         <h2 id="render">Render free tier</h2>
         <p>
-          <strong>Comportamiento</strong>: el servicio web de Render en tier gratuito
-          <strong>duerme tras 15 minutos de inactividad</strong>. El cold start al recibir
-          la siguiente petición tarda ~30 segundos.
+          <strong>Comportamiento</strong>: el servicio web de Render en tier
+          gratuito <strong>duerme tras 15 minutos de inactividad</strong>. El
+          cold start al recibir la siguiente petición tarda ~30 segundos.
         </p>
-        <p><strong>Cuándo duele</strong>: cualquier usuario que abra RecUp tras un periodo
-        de inactividad espera ~30 s con la pantalla en blanco (o con spinner) antes de ver
-        la app. En una demo ante un CTO es muy visible.</p>
-        <p><strong>Solución</strong>: pasar al tier starter de Render (~$7/mes), que mantiene
-        la instancia siempre activa. Alternativamente, un cron externo que haga ping cada
-        14 min puede evitar el sleep (workaround frágil, no recomendado para prod).</p>
-        <div class="callout warning">
+        <p>
+          <strong>Cuándo duele</strong>: cualquier usuario que abra RecUp tras
+          un periodo de inactividad espera ~30 s con la pantalla en blanco (o
+          con spinner) antes de ver la app. En una demo ante un CTO es muy
+          visible.
+        </p>
+        <p>
+          <strong>Solución</strong>: pasar al tier starter de Render (~$7/mes),
+          que mantiene la instancia siempre activa. Alternativamente, un cron
+          externo que haga ping cada 14 min puede evitar el sleep (workaround
+          frágil, no recomendado para prod).
+        </p>
+        <div class="callout warn">
           <div class="callout-title">750 h/mes en free tier</div>
-          <p>El tier gratuito de Render incluye 750 horas de cómputo al mes por cuenta.
-          Con un solo servicio (720 h/mes máximo) encaja justo, pero no deja margen para
-          otros servicios en la misma cuenta.</p>
+          <p>
+            El tier gratuito de Render incluye 750 horas de cómputo al mes por
+            cuenta. Con un solo servicio (720 h/mes máximo) encaja justo, pero
+            no deja margen para otros servicios en la misma cuenta.
+          </p>
         </div>
 
         <h2 id="sentry">Sentry free tier</h2>
         <p>
-          <strong>Límites</strong>: 5.000 errores/mes, 1 usuario en el equipo, retención
-          de 30 días.
+          <strong>Límites</strong>: 5.000 errores/mes, 1 usuario en el equipo,
+          retención de 30 días.
         </p>
-        <p><strong>Cuándo duele</strong>: si hay un bug que genera errores en bucle (p. ej.,
-        un timeout de IA que se reintenta) puede agotar la cuota en horas y dejar de
-        registrar errores el resto del mes. Con el volumen actual no es un riesgo inmediato.</p>
-        <p><strong>Solución</strong>: pasar al tier Team de Sentry o añadir alertas de
-        volumen de errores para detectar bucles antes de agotar la cuota.</p>
+        <p>
+          <strong>Cuándo duele</strong>: si hay un bug que genera errores en
+          bucle (p. ej., un timeout de IA que se reintenta) puede agotar la
+          cuota en horas y dejar de registrar errores el resto del mes. Con el
+          volumen actual no es un riesgo inmediato.
+        </p>
+        <p>
+          <strong>Solución</strong>: pasar al tier Team de Sentry o añadir
+          alertas de volumen de errores para detectar bucles antes de agotar la
+          cuota.
+        </p>
 
         <h2 id="ia-timeout">Timeout de IA sin retry</h2>
         <p>
-          <strong>Dónde</strong>: <code>server/routes/summarize.js:41</code>.
-          El timeout es de 30 segundos (<code>SUMMARIZE_TIMEOUT_MS = 30_000</code>).
-          Si Anthropic u OpenAI no responden en ese tiempo, el
-          <code>AbortController</code> cancela la request y el incident queda en estado
-          <code>error</code> permanentemente. No hay retry automático.
+          <strong>Dónde</strong>: <code>server/routes/summarize.js:41</code>. El
+          timeout es de 30 segundos (<code>SUMMARIZE_TIMEOUT_MS = 30_000</code
+          >). Si Anthropic u OpenAI no responden en ese tiempo, el
+          <code>AbortController</code> cancela la request y el incident queda en
+          estado <code>error</code> permanentemente. No hay retry automático.
         </p>
-        <p><strong>Cuándo duele</strong>: durante incidentes de latencia de Anthropic/OpenAI
-        (no infrecuentes en horas punta). El usuario ve el incident marcado como error y
-        tiene que volver a procesarlo manualmente.</p>
-        <p><strong>Solución</strong>: añadir 1–2 reintentos con backoff exponencial antes
-        de marcar como error. No requiere infraestructura adicional, solo lógica en
-        <code>routes/summarize.js</code>.</p>
+        <p>
+          <strong>Cuándo duele</strong>: durante incidentes de latencia de
+          Anthropic/OpenAI (no infrecuentes en horas punta). El usuario ve el
+          incident marcado como error y tiene que volver a procesarlo
+          manualmente.
+        </p>
+        <p>
+          <strong>Solución</strong>: añadir 1–2 reintentos con backoff
+          exponencial antes de marcar como error. No requiere infraestructura
+          adicional, solo lógica en <code>routes/summarize.js</code>.
+        </p>
 
         <h2 id="static-files">Static files servidos por Express</h2>
         <p>
-          <strong>Dónde</strong>: <code>server/index.js:7</code>.
-          El HTML, CSS y JS del frontend los sirve Express con
-          <code>express.static</code>. Cada petición de un asset pasa por el proceso de
-          Node.
+          <strong>Dónde</strong>: <code>server/index.js:7</code>. El HTML, CSS y
+          JS del frontend los sirve Express con <code>express.static</code>.
+          Cada petición de un asset pasa por el proceso de Node.
         </p>
-        <p><strong>Cuándo duele</strong>: con pocos usuarios simultáneos no es perceptible.
-        Con carga alta, servir assets estáticos desde Node consume workers que podrían
-        atender requests de API.</p>
-        <p><strong>Solución</strong>: mover los assets estáticos a un CDN (Cloudflare,
-        Render Static Sites, o similar). Los assets del frontend no cambian entre deploys,
-        son un candidato ideal para caché en edge.</p>
+        <p>
+          <strong>Cuándo duele</strong>: con pocos usuarios simultáneos no es
+          perceptible. Con carga alta, servir assets estáticos desde Node
+          consume workers que podrían atender requests de API.
+        </p>
+        <p>
+          <strong>Solución</strong>: mover los assets estáticos a un CDN
+          (Cloudflare, Render Static Sites, o similar). Los assets del frontend
+          no cambian entre deploys, son un candidato ideal para caché en edge.
+        </p>
 
         <h2 id="getsettings">getUserSettings por request</h2>
         <p>
-          <strong>Dónde</strong>: <code>server/db.js:83</code>. Cada request autenticada
-          que necesita las API keys del usuario (summarize, ticket, attachment) ejecuta un
-          <code>SELECT</code> a Turso y descifra las columnas en memoria.
+          <strong>Dónde</strong>: <code>server/db.js:83</code>. Cada request
+          autenticada que necesita las API keys del usuario (summarize, ticket,
+          attachment) ejecuta un <code>SELECT</code> a Turso y descifra las
+          columnas en memoria.
         </p>
-        <p><strong>Cuándo duele</strong>: con alta concurrencia y latencia elevada a Turso
-        (edge remoto), estas queries pueden acumularse. Con el volumen actual (equipo
-        pequeño, Turso en la misma región que Render) la latencia ronda los 10–30 ms y
-        no es un cuello de botella.</p>
-        <p><strong>Solución</strong>: cachear el resultado de <code>getUserSettings</code>
-        en memoria por <code>userId</code> con TTL corto (30–60 s). Invalidar el cache en
-        <code>PUT /api/settings</code>. No urgente.</p>
+        <p>
+          <strong>Cuándo duele</strong>: con alta concurrencia y latencia
+          elevada a Turso (edge remoto), estas queries pueden acumularse. Con el
+          volumen actual (equipo pequeño, Turso en la misma región que Render)
+          la latencia ronda los 10–30 ms y no es un cuello de botella.
+        </p>
+        <p>
+          <strong>Solución</strong>: cachear el resultado de
+          <code>getUserSettings</code> en memoria por <code>userId</code> con
+          TTL corto (30–60 s). Invalidar el cache en
+          <code>PUT /api/settings</code>. No urgente.
+        </p>
 
         <h2 id="resumen">Resumen</h2>
         <table>

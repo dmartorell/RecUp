@@ -4,10 +4,41 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Login y registro — RecUp Wiki</title>
-    <meta name="description" content="Flujo completo de autenticación en RecUp: registro, login, emisión de JWT, renovación silenciosa y logout global." />
+    <meta
+      name="description"
+      content="Flujo completo de autenticación en RecUp: registro, login, emisión de JWT, renovación silenciosa y logout global."
+    />
     <link rel="icon" type="image/png" href="./assets/favicon.png" />
-    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
-    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <style id="__nt">
+      html,
+      body {
+        background: #ffffff;
+      }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background: #1b1b1d;
+      }
+      html.__no-transition *,
+      html.__no-transition *::before,
+      html.__no-transition *::after {
+        transition: none;
+        animation: none;
+      }
+    </style>
+    <script>
+      (() => {
+        try {
+          const t = localStorage.getItem("recup-docs-theme");
+          if (t === "dark" || t === "light")
+            document.documentElement.setAttribute("data-theme", t);
+        } catch {}
+        document.documentElement.classList.add("__no-transition");
+        document.addEventListener("DOMContentLoaded", () => {
+          document.documentElement.classList.remove("__no-transition");
+          document.getElementById("__nt")?.remove();
+        });
+      })();
+    </script>
     <link rel="stylesheet" href="./assets/styles.css" />
     <script src="./assets/partials.js" defer></script>
     <script src="./assets/search-index.js" defer></script>
@@ -22,13 +53,13 @@
         <div class="breadcrumb">Flujos</div>
         <h1>Login y registro</h1>
         <p class="lead">
-          Cómo un usuario entra en RecUp: validación de dominio, comprobación bcrypt,
-          emisión del JWT y su almacenamiento en cliente. También cubre la renovación
-          silenciosa del token y el logout global ante un 401.
+          Cómo un usuario entra en RecUp: validación de dominio, comprobación
+          bcrypt, emisión del JWT y su almacenamiento en cliente. También cubre
+          la renovación silenciosa del token y el logout global ante un 401.
         </p>
 
         <h2 id="vision-general">Visión general</h2>
-<pre><code>[Frontend: login form]
+        <pre><code>[Frontend: login form]
         │  POST /api/auth/login  { email, password }
         ▼
 [server/routes/auth.js]
@@ -50,34 +81,40 @@
         </p>
         <ol>
           <li>
-            <strong>Campos obligatorios</strong> — <code>name</code> (1–100 chars),
-            <code>email</code> válido, <code>password</code> ≥ 8 chars.
+            <strong>Campos obligatorios</strong> — <code>name</code> (1–100
+            chars), <code>email</code> válido, <code>password</code> ≥ 8 chars.
           </li>
           <li>
-            <strong>Dominio restringido</strong> — si <code>ALLOWED_EMAIL_DOMAIN</code> está
-            configurado, el email debe terminar en ese dominio. Devuelve
-            <code>400 EMAIL_DOMAIN</code> si no.
+            <strong>Dominio restringido</strong> — si
+            <code>ALLOWED_EMAIL_DOMAIN</code> está configurado, el email debe
+            terminar en ese dominio. Devuelve <code>400 EMAIL_DOMAIN</code> si
+            no.
           </li>
           <li>
             <strong>Comprobación de workspace ClickUp</strong> — si existe
-            <code>CLICKUP_API_KEY</code> a nivel de servidor, verifica que el email pertenece
-            al workspace. Si la llamada a ClickUp falla, el registro continúa (<em>fail-open</em>).
+            <code>CLICKUP_API_KEY</code> a nivel de servidor, verifica que el
+            email pertenece al workspace. Si la llamada a ClickUp falla, el
+            registro continúa (<em>fail-open</em>).
           </li>
           <li>
-            <strong>Email único</strong> — <code>INSERT INTO users</code>; si hay conflicto
-            <code>UNIQUE</code>, devuelve <code>409 EMAIL_TAKEN</code>.
+            <strong>Email único</strong> — <code>INSERT INTO users</code>; si
+            hay conflicto <code>UNIQUE</code>, devuelve
+            <code>409 EMAIL_TAKEN</code>.
           </li>
           <li>
-            <strong>Emisión del JWT</strong> — en el mismo response del registro, el usuario
-            queda autenticado directamente (no hay paso de login separado).
+            <strong>Emisión del JWT</strong> — en el mismo response del
+            registro, el usuario queda autenticado directamente (no hay paso de
+            login separado).
           </li>
         </ol>
-        <div class="callout warning">
+        <div class="callout warn">
           <div class="callout-title">Tradeoff: enumeración en registro</div>
           <p>
-            El <code>409 EMAIL_TAKEN</code> revela qué emails están registrados. Aceptado porque
-            el dominio ya es conocido. Ver detalle en
-            <a href="security-threat-model.html#register-enumeration">Threat model</a>.
+            El <code>409 EMAIL_TAKEN</code> revela qué emails están registrados.
+            Aceptado porque el dominio ya es conocido. Ver detalle en
+            <a href="security-threat-model.html#register-enumeration"
+              >Threat model</a
+            >.
           </p>
         </div>
 
@@ -92,37 +129,44 @@
             Busca el usuario en Turso por <code>email.toLowerCase()</code>.
           </li>
           <li>
-            <strong>Si no existe</strong>: ejecuta <code>bcrypt.compare(password, DUMMY_HASH)</code>
-            para igualar el tiempo de respuesta y devuelve <code>401 INVALID_CREDENTIALS</code>.
-            Sin este dummy compare, la respuesta inmediata revelaría que el email no está
-            registrado.
+            <strong>Si no existe</strong>: ejecuta
+            <code>bcrypt.compare(password, DUMMY_HASH)</code> para igualar el
+            tiempo de respuesta y devuelve <code>401 INVALID_CREDENTIALS</code>.
+            Sin este dummy compare, la respuesta inmediata revelaría que el
+            email no está registrado.
           </li>
           <li>
-            <strong>Si existe</strong>: <code>bcrypt.compare(password, user.password)</code>.
-            Si no coincide, <code>401 INVALID_CREDENTIALS</code>.
+            <strong>Si existe</strong>:
+            <code>bcrypt.compare(password, user.password)</code>. Si no
+            coincide, <code>401 INVALID_CREDENTIALS</code>.
           </li>
           <li>
-            Resolución del avatar: descifra <code>clickup_api_key</code> del usuario y llama
-            a ClickUp para obtener la URL del avatar. Si lo obtiene, lo persiste en
-            <code>users.avatar_url</code>.
+            Resolución del avatar: descifra <code>clickup_api_key</code> del
+            usuario y llama a ClickUp para obtener la URL del avatar. Si lo
+            obtiene, lo persiste en <code>users.avatar_url</code>.
           </li>
           <li>Emite el JWT y devuelve <code>{ token, user }</code>.</li>
         </ol>
 
         <h2 id="jwt">JWT emitido</h2>
         <p>
-          La función <code>signToken</code> (<code>server/middleware/auth.js:5</code>) firma un
-          JWT HS256 con:
+          La función
+          <code>signToken</code> (<code>server/middleware/auth.js:5</code>)
+          firma un JWT HS256 con:
         </p>
         <ul>
           <li><code>sub</code> — userId (integer)</li>
           <li><code>name</code> — nombre del usuario</li>
           <li><code>email</code> — email</li>
-          <li><code>exp</code> — <code>now + 7d</code> (constante <code>JWT_EXPIRES_IN = '7d'</code>)</li>
+          <li>
+            <code>exp</code> — <code>now + 7d</code> (constante
+            <code>JWT_EXPIRES_IN = '7d'</code>)
+          </li>
         </ul>
         <p>
-          El secret es <code>JWT_SECRET</code> (env var en Render). Si no está configurado,
-          el fallback es <code>'dev-secret-change-me'</code>, que no es seguro en producción.
+          El secret es <code>JWT_SECRET</code> (env var en Render). Si no está
+          configurado, el fallback es <code>'dev-secret-change-me'</code>, que
+          no es seguro en producción.
         </p>
 
         <h2 id="almacenamiento-cliente">Almacenamiento en cliente</h2>
@@ -130,83 +174,125 @@
           Tras un login o registro exitoso, el frontend guarda la sesión en
           <code>localStorage</code>:
         </p>
-<pre><code>// src/js/app.js:207
+        <pre><code>// src/js/app.js:207
 localStorage.setItem(
   'recup_session',
   JSON.stringify({ token: data.data.token, user: data.data.user })
 );</code></pre>
         <p>
           La clave <code>recup_session</code> contiene <code>token</code> y
-          <code>user: { name, email, avatar }</code>. Al cargar la app, <code>checkAuth()</code>
-          lee esta entrada: si tiene token y user, muestra la app directamente sin un nuevo login.
+          <code>user: { name, email, avatar }</code>. Al cargar la app,
+          <code>checkAuth()</code>
+          lee esta entrada: si tiene token y user, muestra la app directamente
+          sin un nuevo login.
         </p>
         <div class="callout info">
-          <div class="callout-title">Por qué localStorage y no httpOnly cookie</div>
+          <div class="callout-title">
+            Por qué localStorage y no httpOnly cookie
+          </div>
           <p>
-            La SPA adjunta el JWT manualmente como <code>Authorization: Bearer …</code> en cada
-            fetch. Las cookies <code>httpOnly</code> protejen de XSS pero requieren que el
-            servidor gestione la cookie; ese modelo es más complejo con una SPA pura sin
+            La SPA adjunta el JWT manualmente como
+            <code>Authorization: Bearer …</code> en cada fetch. Las cookies
+            <code>httpOnly</code> protejen de XSS pero requieren que el servidor
+            gestione la cookie; ese modelo es más complejo con una SPA pura sin
             framework de sesión. Ver
-            <a href="security-threat-model.html#jwt-robado">Threat model — JWT robado</a>.
+            <a href="security-threat-model.html#jwt-robado"
+              >Threat model — JWT robado</a
+            >.
           </p>
         </div>
 
         <h2 id="renovacion-silenciosa">Renovación silenciosa del token</h2>
         <p>
-          El <code>authMiddleware</code> (<code>server/middleware/auth.js:21</code>) comprueba
-          en cada request autenticada si el token expira en menos de 3 días
-          (<code>JWT_RENEW_THRESHOLD_MS = 3 * 24 * 60 * 60 * 1000</code>). Si es así, firma un
-          token nuevo y lo devuelve en la cabecera de respuesta:
+          El
+          <code>authMiddleware</code>
+          (<code>server/middleware/auth.js:21</code>) comprueba en cada request
+          autenticada si el token expira en menos de 3 días (<code
+            >JWT_RENEW_THRESHOLD_MS = 3 * 24 * 60 * 60 * 1000</code
+          >). Si es así, firma un token nuevo y lo devuelve en la cabecera de
+          respuesta:
         </p>
-<pre><code>res.setHeader('X-New-Token', fresh);
+        <pre><code>res.setHeader('X-New-Token', fresh);
 res.setHeader('Access-Control-Expose-Headers', 'X-New-Token');</code></pre>
         <p>
-          El frontend tiene un interceptor de <code>fetch</code> instalado al arrancar
-          (<code>src/js/auth.js:57</code> — <code>installTokenRefreshInterceptor</code>) que
-          detecta esta cabecera y actualiza <code>localStorage</code> transparentemente:
+          El frontend tiene un interceptor de <code>fetch</code> instalado al
+          arrancar (<code>src/js/auth.js:57</code> —
+          <code>installTokenRefreshInterceptor</code>) que detecta esta cabecera
+          y actualiza <code>localStorage</code> transparentemente:
         </p>
-<pre><code>const fresh = res.headers.get('X-New-Token');
+        <pre><code>const fresh = res.headers.get('X-New-Token');
 if (fresh) updateSessionToken(fresh);</code></pre>
         <p>
-          El usuario nunca ve un prompt de re-login mientras use la app al menos una vez cada 4
-          días.
+          El usuario nunca ve un prompt de re-login mientras use la app al menos
+          una vez cada 4 días.
         </p>
 
         <h2 id="logout-global">Logout global ante 401</h2>
         <p>
-          Si cualquier fetch autenticado recibe un <code>401</code>, el interceptor llama a
-          <code>handleExpiredSession()</code> (<code>src/js/auth.js:26</code>), que:
+          Si cualquier fetch autenticado recibe un <code>401</code>, el
+          interceptor llama a
+          <code>handleExpiredSession()</code> (<code>src/js/auth.js:26</code>),
+          que:
         </p>
         <ol>
-          <li>Comprueba el flag <code>window.__recupSessionExpired</code> para ejecutarse solo una vez aunque haya múltiples requests en vuelo.</li>
-          <li>Elimina <code>recup_session</code> de <code>localStorage</code>.</li>
-          <li>Emite <code>window.postMessage({ type: 'recup:logout' })</code> (por si la extensión Chrome escucha).</li>
+          <li>
+            Comprueba el flag <code>window.__recupSessionExpired</code> para
+            ejecutarse solo una vez aunque haya múltiples requests en vuelo.
+          </li>
+          <li>
+            Elimina <code>recup_session</code> de <code>localStorage</code>.
+          </li>
+          <li>
+            Emite <code>window.postMessage({ type: 'recup:logout' })</code> (por
+            si la extensión Chrome escucha).
+          </li>
           <li>Muestra un toast de sesión expirada.</li>
           <li>Recarga la página tras 1,5 s, lo que lleva al login.</li>
         </ol>
         <p>
-          Las rutas públicas (<code>/api/auth/login</code>, <code>/api/auth/register</code>) están
-          excluidas de este comportamiento: un <code>401</code> en login es una contraseña
+          Las rutas públicas (<code>/api/auth/login</code>,
+          <code>/api/auth/register</code>) están excluidas de este
+          comportamiento: un <code>401</code> en login es una contraseña
           incorrecta, no una sesión caducada.
         </p>
 
         <h2 id="rutas-publicas">Rutas públicas vs. protegidas</h2>
         <p>
-          El <code>authMiddleware</code> se aplica explícitamente en cada router que lo necesita.
-          Las únicas rutas que no lo requieren son las de auth. En el servidor, la constante
-          <code>AUTH_PUBLIC_PATHS</code> se replica en el cliente (<code>src/js/auth.js:45</code>)
-          para que el interceptor sepa qué respuestas 401 ignorar.
+          El <code>authMiddleware</code> se aplica explícitamente en cada router
+          que lo necesita. Las únicas rutas que no lo requieren son las de auth.
+          En el servidor, la constante <code>AUTH_PUBLIC_PATHS</code> se replica
+          en el cliente (<code>src/js/auth.js:45</code>) para que el interceptor
+          sepa qué respuestas 401 ignorar.
         </p>
-<pre><code>const AUTH_PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register'];</code></pre>
+        <pre><code>const AUTH_PUBLIC_PATHS = ['/api/auth/login', '/api/auth/register'];</code></pre>
 
         <h2 id="archivos">Archivos clave</h2>
         <ul>
-          <li><code>server/routes/auth.js</code> — endpoints de register, login y <code>/api/auth/me</code></li>
-          <li><code>server/middleware/auth.js</code> — <code>signToken</code>, <code>authMiddleware</code>, renovación silenciosa</li>
-          <li><code>server/middleware/rateLimiter.js</code> — rate limit in-memory</li>
-          <li><code>src/js/auth.js</code> — <code>getSession</code>, <code>installTokenRefreshInterceptor</code>, <code>handleExpiredSession</code></li>
-          <li><code>src/js/app.js:136</code> — <code>checkAuth()</code> al arrancar la app</li>
-          <li><code>server/config/constants.js</code> — <code>JWT_EXPIRES_IN</code>, <code>JWT_RENEW_THRESHOLD_MS</code>, <code>RATE_LIMIT_*</code></li>
+          <li>
+            <code>server/routes/auth.js</code> — endpoints de register, login y
+            <code>/api/auth/me</code>
+          </li>
+          <li>
+            <code>server/middleware/auth.js</code> — <code>signToken</code>,
+            <code>authMiddleware</code>, renovación silenciosa
+          </li>
+          <li>
+            <code>server/middleware/rateLimiter.js</code> — rate limit in-memory
+          </li>
+          <li>
+            <code>src/js/auth.js</code> — <code>getSession</code>,
+            <code>installTokenRefreshInterceptor</code>,
+            <code>handleExpiredSession</code>
+          </li>
+          <li>
+            <code>src/js/app.js:136</code> — <code>checkAuth()</code> al
+            arrancar la app
+          </li>
+          <li>
+            <code>server/config/constants.js</code> —
+            <code>JWT_EXPIRES_IN</code>, <code>JWT_RENEW_THRESHOLD_MS</code>,
+            <code>RATE_LIMIT_*</code>
+          </li>
         </ul>
       </main>
 
@@ -218,7 +304,9 @@ if (fresh) updateSessionToken(fresh);</code></pre>
             <li><a href="#registro">Registro</a></li>
             <li><a href="#login">Login</a></li>
             <li><a href="#jwt">JWT emitido</a></li>
-            <li><a href="#almacenamiento-cliente">Almacenamiento en cliente</a></li>
+            <li>
+              <a href="#almacenamiento-cliente">Almacenamiento en cliente</a>
+            </li>
             <li><a href="#renovacion-silenciosa">Renovación silenciosa</a></li>
             <li><a href="#logout-global">Logout global ante 401</a></li>
             <li><a href="#rutas-publicas">Rutas públicas vs. protegidas</a></li>

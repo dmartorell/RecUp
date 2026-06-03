@@ -4,10 +4,41 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Despliegue en Render — RecUp Wiki</title>
-    <meta name="description" content="Cómo está desplegado RecUp en Render: variables de entorno, checklist de secretos, rotación de JWT_SECRET y CRYPTO_SECRET, y desarrollo local con SQLite en memoria." />
+    <meta
+      name="description"
+      content="Cómo está desplegado RecUp en Render: variables de entorno, checklist de secretos, rotación de JWT_SECRET y CRYPTO_SECRET, y desarrollo local con SQLite en memoria."
+    />
     <link rel="icon" type="image/png" href="./assets/favicon.png" />
-    <style id="__nt">html,body{background:#ffffff}html[data-theme=dark],html[data-theme=dark] body{background:#1b1b1d}html.__no-transition *,html.__no-transition *::before,html.__no-transition *::after{transition:none;animation:none}</style>
-    <script>(()=>{try{const t=localStorage.getItem('recup-docs-theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch{}document.documentElement.classList.add('__no-transition');document.addEventListener('DOMContentLoaded',()=>{document.documentElement.classList.remove('__no-transition');document.getElementById('__nt')?.remove();});})();</script>
+    <style id="__nt">
+      html,
+      body {
+        background: #ffffff;
+      }
+      html[data-theme="dark"],
+      html[data-theme="dark"] body {
+        background: #1b1b1d;
+      }
+      html.__no-transition *,
+      html.__no-transition *::before,
+      html.__no-transition *::after {
+        transition: none;
+        animation: none;
+      }
+    </style>
+    <script>
+      (() => {
+        try {
+          const t = localStorage.getItem("recup-docs-theme");
+          if (t === "dark" || t === "light")
+            document.documentElement.setAttribute("data-theme", t);
+        } catch {}
+        document.documentElement.classList.add("__no-transition");
+        document.addEventListener("DOMContentLoaded", () => {
+          document.documentElement.classList.remove("__no-transition");
+          document.getElementById("__nt")?.remove();
+        });
+      })();
+    </script>
     <link rel="stylesheet" href="./assets/styles.css" />
     <script src="./assets/partials.js" defer></script>
     <script src="./assets/search-index.js" defer></script>
@@ -22,37 +53,41 @@
         <div class="breadcrumb">Operación</div>
         <h1>Despliegue en Render + secrets</h1>
         <p class="lead">
-          RecUp corre en Render como un Web Service. Esta página es el runbook: dónde vive
-          cada variable de entorno, qué pasa si rotas un secreto y cómo levantar el entorno
-          local sin tocar la base de datos de producción.
+          RecUp corre en Render como un Web Service. Esta página es el runbook:
+          dónde vive cada variable de entorno, qué pasa si rotas un secreto y
+          cómo levantar el entorno local sin tocar la base de datos de
+          producción.
         </p>
 
         <h2 id="arranque">Comando de arranque</h2>
         <p>
-          Render ejecuta el comando configurado en el dashboard del servicio. El equivalente
-          local es:
+          Render ejecuta el comando configurado en el dashboard del servicio. El
+          equivalente local es:
         </p>
-<pre><code>node --import ./server/instrument.js server/index.js</code></pre>
+        <pre><code>node --import ./server/instrument.js server/index.js</code></pre>
         <p>
-          El flag <code>--import</code> carga <code>server/instrument.js</code> antes que
-          cualquier otro módulo, lo que garantiza que el SDK de Sentry está inicializado
-          antes de que Express procese cualquier request. En desarrollo con hot-reload:
+          El flag <code>--import</code> carga
+          <code>server/instrument.js</code> antes que cualquier otro módulo, lo
+          que garantiza que el SDK de Sentry está inicializado antes de que
+          Express procese cualquier request. En desarrollo con hot-reload:
         </p>
-<pre><code>bun --watch server/index.js</code></pre>
+        <pre><code>bun --watch server/index.js</code></pre>
         <div class="callout info">
           <div class="callout-title">bun --watch no carga instrument.js</div>
           <p>
-            En desarrollo con <code>bun --watch</code>, Sentry no se inicializa (no hay
-            <code>--import</code>). Es intencional: en local no interesa enviar errores a
-            Sentry. Si <code>SENTRY_DSN</code> no está configurada, el SDK simplemente no
-            se activa (<code>server/instrument.js:6</code>).
+            En desarrollo con <code>bun --watch</code>, Sentry no se inicializa
+            (no hay <code>--import</code>). Es intencional: en local no interesa
+            enviar errores a Sentry. Si <code>SENTRY_DSN</code> no está
+            configurada, el SDK simplemente no se activa
+            (<code>server/instrument.js:6</code>).
           </p>
         </div>
 
         <h2 id="env-vars">Variables de entorno</h2>
         <p>
-          Se configuran en el dashboard de Render: <strong>Service → Environment →
-          Environment Variables</strong>. No están en el repositorio.
+          Se configuran en el dashboard de Render:
+          <strong>Service → Environment → Environment Variables</strong>. No
+          están en el repositorio.
         </p>
 
         <table>
@@ -67,53 +102,86 @@
             <tr>
               <td><code>TURSO_DATABASE_URL</code></td>
               <td>Sí</td>
-              <td>URL de Turso: <code>libsql://&lt;db&gt;-&lt;org&gt;.turso.io</code>. En local con <code>:memory:</code> para tests.</td>
+              <td>
+                URL de Turso:
+                <code>libsql://&lt;db&gt;-&lt;org&gt;.turso.io</code>. En local
+                con <code>:memory:</code> para tests.
+              </td>
             </tr>
             <tr>
               <td><code>TURSO_AUTH_TOKEN</code></td>
               <td>Sí en prod</td>
-              <td>Token de Turso. Omitir en local con <code>:memory:</code> (no se autentica).</td>
+              <td>
+                Token de Turso. Omitir en local con <code>:memory:</code> (no se
+                autentica).
+              </td>
             </tr>
             <tr>
               <td><code>JWT_SECRET</code></td>
               <td>Sí</td>
-              <td>Clave HMAC para firmar JWTs. El servidor no arranca si falta. Rotar invalida todos los tokens emitidos.</td>
+              <td>
+                Clave HMAC para firmar JWTs. El servidor no arranca si falta.
+                Rotar invalida todos los tokens emitidos.
+              </td>
             </tr>
             <tr>
               <td><code>CRYPTO_SECRET</code></td>
               <td>Sí</td>
-              <td>Clave para AES-256-GCM. El servidor no arranca si falta. Perder este valor hace irrecuperables todas las API keys cifradas en BD.</td>
+              <td>
+                Clave para AES-256-GCM. El servidor no arranca si falta. Perder
+                este valor hace irrecuperables todas las API keys cifradas en
+                BD.
+              </td>
             </tr>
             <tr>
               <td><code>CLICKUP_API_KEY</code></td>
               <td>No</td>
-              <td>API key de ClickUp a nivel de servidor. Se usa en registro para verificar que el email pertenece al workspace. Si falta, el registro es <em>fail-open</em>.</td>
+              <td>
+                API key de ClickUp a nivel de servidor. Se usa en registro para
+                verificar que el email pertenece al workspace. Si falta, el
+                registro es <em>fail-open</em>.
+              </td>
             </tr>
             <tr>
               <td><code>ALLOWED_EMAIL_DOMAIN</code></td>
               <td>No</td>
-              <td>Si está presente (p. ej. <code>@alfredsmart.com</code>), solo se permiten registros con ese dominio.</td>
+              <td>
+                Si está presente (p. ej. <code>@alfredsmart.com</code>), solo se
+                permiten registros con ese dominio.
+              </td>
             </tr>
             <tr>
               <td><code>SENTRY_DSN</code></td>
               <td>No</td>
-              <td>DSN de Sentry. Si no está, el SDK no se activa y no se envían errores.</td>
+              <td>
+                DSN de Sentry. Si no está, el SDK no se activa y no se envían
+                errores.
+              </td>
             </tr>
             <tr>
               <td><code>SENTRY_ENVIRONMENT</code></td>
               <td>No</td>
-              <td>Tag de entorno en Sentry. Por defecto: <code>development</code>. Poner <code>production</code> en Render.</td>
+              <td>
+                Tag de entorno en Sentry. Por defecto: <code>development</code>.
+                Poner <code>production</code> en Render.
+              </td>
             </tr>
             <tr>
               <td><code>PORT</code></td>
               <td>No</td>
-              <td>Puerto en el que escucha Express. Por defecto: <code>3000</code>. Render lo inyecta automáticamente.</td>
+              <td>
+                Puerto en el que escucha Express. Por defecto:
+                <code>3000</code>. Render lo inyecta automáticamente.
+              </td>
             </tr>
           </tbody>
         </table>
 
         <h2 id="checklist">Checklist de secretos críticos</h2>
-        <p>Antes de un primer despliegue o tras un reset, verificar que estas variables están configuradas en Render:</p>
+        <p>
+          Antes de un primer despliegue o tras un reset, verificar que estas
+          variables están configuradas en Render:
+        </p>
         <ul>
           <li>
             <strong><code>JWT_SECRET</code></strong> — generar con
@@ -121,66 +189,82 @@
           </li>
           <li>
             <strong><code>CRYPTO_SECRET</code></strong> — generar con
-            <code>openssl rand -base64 32</code>. Guardar una copia offline en lugar seguro.
-            Si se pierde, las API keys de todos los usuarios son irrecuperables.
+            <code>openssl rand -base64 32</code>. Guardar una copia offline en
+            lugar seguro. Si se pierde, las API keys de todos los usuarios son
+            irrecuperables.
           </li>
           <li>
             <strong><code>TURSO_DATABASE_URL</code></strong> y
-            <strong><code>TURSO_AUTH_TOKEN</code></strong> — obtener del dashboard de
-            Turso (<em>Database → Connect</em>).
+            <strong><code>TURSO_AUTH_TOKEN</code></strong> — obtener del
+            dashboard de Turso (<em>Database → Connect</em>).
           </li>
         </ul>
-        <div class="callout warning">
+        <div class="callout warn">
           <div class="callout-title">Nunca commitear estos valores</div>
           <p>
-            El fichero <code>.env.example</code> tiene las claves en blanco a modo de
-            plantilla. El <code>.gitignore</code> excluye <code>.env</code>.
-            Si accidentalmente se hace commit de un secreto real, rotarlo inmediatamente
-            (Render → Environment → editar variable) y considerar el antiguo comprometido.
+            El fichero <code>.env.example</code> tiene las claves en blanco a
+            modo de plantilla. El <code>.gitignore</code> excluye
+            <code>.env</code>. Si accidentalmente se hace commit de un secreto
+            real, rotarlo inmediatamente (Render → Environment → editar
+            variable) y considerar el antiguo comprometido.
           </p>
         </div>
 
         <h2 id="rotar-jwt">Rotar JWT_SECRET</h2>
         <p>
           Cambiar <code>JWT_SECRET</code> en Render y redesplegar invalida
-          <strong>todos los JWTs emitidos</strong>. Los usuarios activos recibirán un
-          <code>401</code> en su próxima request autenticada, lo que dispara el logout
-          automático y los redirige al login.
+          <strong>todos los JWTs emitidos</strong>. Los usuarios activos
+          recibirán un <code>401</code> en su próxima request autenticada, lo
+          que dispara el logout automático y los redirige al login.
         </p>
         <ol>
-          <li>Generar el nuevo secret: <code>openssl rand -base64 48</code>.</li>
-          <li>Actualizar la variable en Render → <em>Manual Deploy</em> (o esperar el
-          siguiente deploy automático).</li>
+          <li>
+            Generar el nuevo secret: <code>openssl rand -base64 48</code>.
+          </li>
+          <li>
+            Actualizar la variable en Render → <em>Manual Deploy</em> (o esperar
+            el siguiente deploy automático).
+          </li>
           <li>Avisar al equipo: todos tendrán que volver a hacer login.</li>
         </ol>
         <p>
-          No hay sesiones persistidas en BD (el JWT es stateless), así que no hace falta
-          migrar nada.
+          No hay sesiones persistidas en BD (el JWT es stateless), así que no
+          hace falta migrar nada.
         </p>
 
         <h2 id="rotar-crypto">Rotar CRYPTO_SECRET</h2>
         <p>
-          Más delicado que rotar el JWT: las API keys cifradas en BD son irrecuperables
-          con el secret antiguo una vez cambiado. El proceso seguro:
+          Más delicado que rotar el JWT: las API keys cifradas en BD son
+          irrecuperables con el secret antiguo una vez cambiado. El proceso
+          seguro:
         </p>
         <ol>
           <li>
-            Con el servidor corriendo y el secret antiguo activo, exportar todas las API
-            keys descifradas (script ad-hoc contra Turso).
+            Con el servidor corriendo y el secret antiguo activo, exportar todas
+            las API keys descifradas (script ad-hoc contra Turso).
           </li>
-          <li>Generar el nuevo secret: <code>openssl rand -base64 32</code>.</li>
-          <li>Re-cifrar todas las keys con el nuevo secret y actualizar las filas en Turso.</li>
-          <li>Actualizar <code>CRYPTO_SECRET</code> en Render y redesplegar.</li>
+          <li>
+            Generar el nuevo secret: <code>openssl rand -base64 32</code>.
+          </li>
+          <li>
+            Re-cifrar todas las keys con el nuevo secret y actualizar las filas
+            en Turso.
+          </li>
+          <li>
+            Actualizar <code>CRYPTO_SECRET</code> en Render y redesplegar.
+          </li>
         </ol>
         <p>
-          Actualmente no existe este script. Si se compromete el secret y no hay tiempo
-          para la rotación ordenada, la opción rápida es poner todas las columnas
-          de API key a <code>NULL</code> en Turso y pedir a los usuarios que las
-          reconfiguren.
+          Actualmente no existe este script. Si se compromete el secret y no hay
+          tiempo para la rotación ordenada, la opción rápida es poner todas las
+          columnas de API key a <code>NULL</code> en Turso y pedir a los
+          usuarios que las reconfiguren.
         </p>
         <p>
           Ver más detalle en
-          <a href="security-encryption.html#rotacion">Cifrado de API keys → Rotación</a>.
+          <a href="security-encryption.html#rotacion"
+            >Cifrado de API keys → Rotación</a
+          >.
         </p>
 
         <h2 id="local">Desarrollo local</h2>
@@ -190,11 +274,11 @@
           Para desarrollo y tests, el servidor acepta una BD SQLite en memoria.
           No necesita <code>TURSO_AUTH_TOKEN</code> ni conexión de red:
         </p>
-<pre><code># .env local (no commitear)
+        <pre><code># .env local (no commitear)
 TURSO_DATABASE_URL=:memory:
 JWT_SECRET=dev-secret-local
 CRYPTO_SECRET=dev-crypto-local-32bytes-padding!</code></pre>
-<pre><code>bun --watch server/index.js</code></pre>
+        <pre><code>bun --watch server/index.js</code></pre>
         <p>
           La BD se inicializa vacía en cada arranque. Usar
           <code>bun scripts/seed-users.js</code> para crear usuarios de prueba.
@@ -202,26 +286,45 @@ CRYPTO_SECRET=dev-crypto-local-32bytes-padding!</code></pre>
 
         <h3 id="local-turso">Con Turso local o remoto</h3>
         <p>
-          Para probar con datos reales de desarrollo (no la BD de prod), crear una BD
-          separada en Turso (<em>Create database</em>) y apuntar <code>TURSO_DATABASE_URL</code>
+          Para probar con datos reales de desarrollo (no la BD de prod), crear
+          una BD separada en Turso (<em>Create database</em>) y apuntar
+          <code>TURSO_DATABASE_URL</code>
           a ella. Nunca apuntar el entorno local a la BD de producción.
         </p>
 
         <h3 id="local-tests">Tests</h3>
         <p>
           Los tests usan siempre <code>:memory:</code> via el preload
-          <code>tests/preload.js</code>, que sobreescribe <code>TURSO_DATABASE_URL</code>
-          antes de que cargue cualquier módulo. No requieren configuración adicional:
+          <code>tests/preload.js</code>, que sobreescribe
+          <code>TURSO_DATABASE_URL</code>
+          antes de que cargue cualquier módulo. No requieren configuración
+          adicional:
         </p>
-<pre><code>bun test</code></pre>
+        <pre><code>bun test</code></pre>
 
         <h2 id="archivos">Archivos clave</h2>
         <ul>
-          <li><code>server/config/env.js</code> — validación de variables al arrancar; las obligatorias llaman a <code>process.exit(1)</code> si faltan</li>
-          <li><code>server/instrument.js</code> — inicialización de Sentry, cargado antes que todo lo demás vía <code>--import</code></li>
-          <li><code>.env.example</code> — plantilla de variables (sin valores reales)</li>
-          <li><code>tests/preload.js</code> — sobreescribe <code>TURSO_DATABASE_URL=:memory:</code> para tests</li>
-          <li><code>scripts/seed-users.js</code> — crea usuarios de prueba en la BD local</li>
+          <li>
+            <code>server/config/env.js</code> — validación de variables al
+            arrancar; las obligatorias llaman a <code>process.exit(1)</code> si
+            faltan
+          </li>
+          <li>
+            <code>server/instrument.js</code> — inicialización de Sentry,
+            cargado antes que todo lo demás vía <code>--import</code>
+          </li>
+          <li>
+            <code>.env.example</code> — plantilla de variables (sin valores
+            reales)
+          </li>
+          <li>
+            <code>tests/preload.js</code> — sobreescribe
+            <code>TURSO_DATABASE_URL=:memory:</code> para tests
+          </li>
+          <li>
+            <code>scripts/seed-users.js</code> — crea usuarios de prueba en la
+            BD local
+          </li>
         </ul>
       </main>
 
@@ -234,7 +337,8 @@ CRYPTO_SECRET=dev-crypto-local-32bytes-padding!</code></pre>
             <li><a href="#checklist">Checklist de secretos</a></li>
             <li><a href="#rotar-jwt">Rotar JWT_SECRET</a></li>
             <li><a href="#rotar-crypto">Rotar CRYPTO_SECRET</a></li>
-            <li><a href="#local">Desarrollo local</a>
+            <li>
+              <a href="#local">Desarrollo local</a>
               <ul>
                 <li><a href="#local-memory">SQLite en memoria</a></li>
                 <li><a href="#local-turso">Con Turso</a></li>
