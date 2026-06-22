@@ -246,8 +246,16 @@ body {
 
 .idle-actions {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
+}
+
+.extension-version {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
 }
 
 .btn-send {

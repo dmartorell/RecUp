@@ -38,6 +38,14 @@ function injectPostMessage(tabId, msg, retries = 5, delay = 400) {
     });
 }
 
+function hydrateExtensionVersion() {
+  const versionEl = document.getElementById('extension-version');
+  const version = chrome.runtime.getManifest().version;
+  if (versionEl) versionEl.textContent = `v${version}`;
+}
+
+hydrateExtensionVersion();
+
 const UI = {
   LOGIN_BTN: 'Entrar',
   LOGIN_BTN_LOADING: 'Entrando...',
