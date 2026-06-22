@@ -10,6 +10,7 @@ import incidentsRouter from './routes/incidents.js';
 import settingsRouter from './routes/settings.js';
 import summarizeRouter from './routes/summarize.js';
 import ticketRouter from './routes/ticket.js';
+import versionRouter from './routes/version.js';
 
 export const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use(authRouter);
 app.use(summarizeRouter);
 app.use(ticketRouter);
+app.use(versionRouter);
 app.use(attachmentRouter);
 app.use('/api/incidents', incidentsRouter);
 app.use(settingsRouter);

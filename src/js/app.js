@@ -62,6 +62,26 @@ function hydrateStaticStrings() {
 
 hydrateStaticStrings();
 
+async function hydrateAppVersion() {
+  const versionEl = document.getElementById('app-version');
+  if (!versionEl) return;
+
+  try {
+    const res = await fetch('/api/version');
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (!data.version) return;
+
+    versionEl.textContent = `v${data.version}`;
+    versionEl.classList.remove('hidden');
+  } catch (_) {
+    // Version display is informational; avoid blocking the app if it fails.
+  }
+}
+
+hydrateAppVersion();
+
 function isBrowserCompatible() {
   return !!window.chrome;
 }
