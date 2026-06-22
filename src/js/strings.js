@@ -31,6 +31,8 @@ export const UI = {
   STATUS_ERROR: 'Error',
   STATUS_SENT: 'Enviado',
   DELETE_LABEL: 'Eliminar',
+  DELETE_SUCCESS: 'Incidencia borrada.',
+  DELETE_ERROR: 'Error al borrar la incidencia.',
   NO_BUG_MSG: 'No hay información suficiente para generar el ticket.',
   NO_VOICE: 'No se detecto voz. Intenta grabar de nuevo.',
   RETRY_BTN: 'Reintentar',

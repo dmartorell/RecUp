@@ -164,6 +164,23 @@ body {
   color: #4b5563;
 }
 
+.incident-delete:disabled {
+  cursor: default;
+}
+
+.incident-delete.is-loading:hover {
+  color: #9ca3af;
+}
+
+.incident-delete-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #e5e7eb;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
 .incident-text {
   font-size: 0.9rem;
   line-height: 1.6;
