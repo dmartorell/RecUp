@@ -113,7 +113,11 @@ function attachDeleteHandler(incident, hasId) {
     const incidentId = incident.dataset.incidentId;
 
     try {
-      if (hasId && incidentId) {
+      if (hasId && !incidentId) {
+        throw new Error(UI.DELETE_ERROR);
+      }
+
+      if (hasId) {
         const res = await fetch(`/api/incidents/${incidentId}`, {
           method: 'DELETE',
           headers: authHeaders(),
