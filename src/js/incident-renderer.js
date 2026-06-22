@@ -1,7 +1,7 @@
 import { authHeaders, handleExpiredSession, isUnauthorized } from './auth.js';
 import { icons } from './icons.js';
 import { saveIncidentResult } from './incident-api.js';
-import { UI } from './strings.js';
+import { apiError, UI } from './strings.js';
 import { summarize } from './summarizer.js';
 import { openTicketModal } from './ticket-modal.js';
 import { formatDuration, parseUTC, timeAgo } from './time.js';
@@ -86,25 +86,60 @@ function attachTicketButton(incident, footer) {
   });
 }
 
+async function getDeleteErrorMessage(res) {
+  try {
+    const payload = await res.json();
+    return apiError(payload?.error);
+  } catch {
+    return `${UI.DELETE_ERROR} (${res.status})`;
+  }
+}
+
+function setDeleteButtonLoading(button, isLoading) {
+  button.disabled = isLoading;
+  button.classList.toggle('is-loading', isLoading);
+  button.setAttribute('aria-busy', String(isLoading));
+  button.innerHTML = isLoading
+    ? '<span class="incident-delete-spinner" aria-hidden="true"></span>'
+    : icons.delete;
+}
+
 function attachDeleteHandler(incident, hasId) {
-  incident.querySelector('.incident-delete').addEventListener('click', async () => {
+  const deleteButton = incident.querySelector('.incident-delete');
+  deleteButton.addEventListener('click', async () => {
+    if (deleteButton.disabled) return;
+
+    setDeleteButtonLoading(deleteButton, true);
     const incidentId = incident.dataset.incidentId;
-    if (hasId && incidentId) {
-      try {
+
+    try {
+      if (hasId && !incidentId) {
+        throw new Error(UI.DELETE_ERROR);
+      }
+
+      if (hasId) {
         const res = await fetch(`/api/incidents/${incidentId}`, {
           method: 'DELETE',
           headers: authHeaders(),
         });
         if (isUnauthorized(res)) {
           handleExpiredSession();
+          setDeleteButtonLoading(deleteButton, false);
           return;
         }
-      } catch (e) {
-        console.warn('delete incident:', e);
+        if (!res.ok) {
+          throw new Error(await getDeleteErrorMessage(res));
+        }
       }
+
+      incident.remove();
+      updateEmptyState();
+      showToast(UI.DELETE_SUCCESS);
+    } catch (e) {
+      console.warn('delete incident:', e);
+      setDeleteButtonLoading(deleteButton, false);
+      showToast(e.message || UI.DELETE_ERROR);
     }
-    incident.remove();
-    updateEmptyState();
   });
 }
 
