@@ -90,6 +90,24 @@ Incident data flows through `data-*` DOM attributes (`incidentId`, `summaryTitle
 
 Manifest V3. Service worker creates a context menu "Enviar a RecUp" that opens the webapp with query params (`contextText`, `token`, `email`, `name`). The web app's `app.js` reads these params via `adoptExtensionSession()` and `handleExternalText()`, then clears them from the URL with `history.replaceState`.
 
+### React migration standards
+
+When working on the React migration or new frontend React code, use the repo standards and skills:
+
+- `.claude/skills/react-migration/SKILL.md`
+- `.claude/skills/react-team-standards/SKILL.md`
+- `.claude/standards/commons/*.md`
+- `.claude/standards/typescript/coding-style.md`
+- `.claude/standards/recup/frontend-architecture.md`
+- `.claude/standards/recup/chrome-extension-compatibility.md`
+
+Migration defaults:
+
+- Use React + TypeScript in `client/` (`.ts`/`.tsx`).
+- Preserve Chrome Extension compatibility 1:1.
+- Do not change `/api/*` contracts as part of frontend migration.
+- Keep `localStorage.recup_session`, `recup_input_mode`, query params, and `postMessage` contracts stable.
+
 ### Database
 
 Two tables: `users` (with per-user `clickup_api_key`, `clickup_list_id`, `anthropic_api_key`, `openai_api_key`, `ai_provider`) and `incidents` (`status` ∈ `procesando|completado|error`, `bullets` stored as JSON string). Tests use an in-memory SQLite DB — the preload at `tests/preload.js` sets `TURSO_DATABASE_URL=:memory:`.
